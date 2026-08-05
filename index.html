@@ -9345,6 +9345,14 @@ var SB_TABLES = [
 ];
 var SB_SKIP = ['auth_cfg','theme','logo_empresa','logos_clientes','_last_save','notif_email','org_nome_obra'];
 var SB_HIST_TABLES = ['hist_marcos','hist_linhas_mo','hist_linhas_equip','hist_config'];
+/* Tabelas "log"/feed — o app nunca atribui id a essas entradas (unshift/push
+   simples), então o Postgres gera o id (bigserial) e nós só guardamos "dados". */
+var SB_LOG_TABLES = {
+  atividades:            { desc:true,  limit:10 },
+  audit_log:             { desc:true,  limit:200 },
+  reajuste_historico:    { desc:false, limit:null },
+  reajuste_mo_historico: { desc:false, limit:null }
+};
 
 function sbCfg(){
   return {
@@ -9443,14 +9451,14 @@ async function sbPushTable(table){
     }
     return;
   }
-  if(table==='atividades'){
-    var acts=DB.load('atividades')||[];
-    var rows3=acts.map(function(o){ return {dados:{texto:o&&o.texto, cor:o&&o.cor, data:o&&o.data}}; });
-    var del3=await client.from('atividades').delete().not('id','is',null);
-    if(del3.error) throw new Error('Supabase (atividades): '+del3.error.message);
+  if(SB_LOG_TABLES[table]){
+    var items=DB.load(table)||[];
+    var rows3=items.map(function(o){ return {dados:o}; });
+    var del3=await client.from(table).delete().not('id','is',null);
+    if(del3.error) throw new Error('Supabase ('+table+'): '+del3.error.message);
     if(rows3.length){
-      var ins3=await client.from('atividades').insert(rows3);
-      if(ins3.error) throw new Error('Supabase (atividades): '+ins3.error.message);
+      var ins3=await client.from(table).insert(rows3);
+      if(ins3.error) throw new Error('Supabase ('+table+'): '+ins3.error.message);
     }
     return;
   }
@@ -9497,12 +9505,15 @@ async function sbPullTable(table){
       DB.save('empresa_cfg', obj);
       return;
     }
-    if(table==='atividades'){
-      var sel3=await client.from('atividades').select('id,dados').order('id',{ascending:false}).limit(10);
-      if(sel3.error) throw new Error('Supabase (atividades): '+sel3.error.message);
+    if(SB_LOG_TABLES[table]){
+      var logCfg=SB_LOG_TABLES[table];
+      var q3=client.from(table).select('id,dados').order('id',{ascending:!logCfg.desc});
+      if(logCfg.limit) q3=q3.limit(logCfg.limit);
+      var sel3=await q3;
+      if(sel3.error) throw new Error('Supabase ('+table+'): '+sel3.error.message);
       var rows3=sel3.data||[];
       if(!rows3.length) return;
-      DB.save('atividades', rows3.map(function(r){ return r.dados; }));
+      DB.save(table, rows3.map(function(r){ return r.dados; }));
       return;
     }
     var sel4=await client.from(table).select('*');

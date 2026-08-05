@@ -48,18 +48,20 @@ create table public.clientes        (id integer primary key, dados jsonb not nul
 create table public.fornecedores    (id integer primary key, dados jsonb not null);
 create table public.orcamentos      (id integer primary key, dados jsonb not null);
 create table public.materiais_db    (id integer primary key, dados jsonb not null);
-create table public.reajuste_historico    (id integer primary key, dados jsonb not null);
-create table public.reajuste_mo_historico (id integer primary key, dados jsonb not null);
-create table public.audit_log       (id integer primary key, dados jsonb not null);
 create table public.hist_instancias (id integer primary key, dados jsonb not null);
 create table public.custos_padrao   (id integer primary key, dados jsonb not null);
 create table public.org_nos         (id integer primary key, dados jsonb not null);
-create table public.notif_eventos   (id integer primary key, dados jsonb not null);
+-- notif_eventos usa ids de texto no app (ex.: 'novo_profissional', 'custom_171...').
+create table public.notif_eventos   (id text primary key, dados jsonb not null);
 
 -- ---------------------------------------------------------------------------
--- atividades — feed sem id no app; o Postgres gera o id.
+-- Tabelas "log"/feed — o app nunca atribui id a essas entradas (usa
+-- unshift/push simples), então o Postgres gera o id automaticamente.
 -- ---------------------------------------------------------------------------
-create table public.atividades (id bigserial primary key, dados jsonb not null);
+create table public.atividades            (id bigserial primary key, dados jsonb not null);
+create table public.audit_log             (id bigserial primary key, dados jsonb not null);
+create table public.reajuste_historico    (id bigserial primary key, dados jsonb not null);
+create table public.reajuste_mo_historico (id bigserial primary key, dados jsonb not null);
 
 -- ---------------------------------------------------------------------------
 -- hist_marcos / hist_linhas_mo / hist_linhas_equip — várias instâncias de
