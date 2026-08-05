@@ -9408,6 +9408,9 @@ function sbLocalKeysForTable(table){
   if(table==='hist_config') return DB.keys().filter(function(k){return /^hist_config_\d+$/.test(k);});
   return [table];
 }
+/* Cada tabela guarda o objeto inteiro numa coluna "dados" (jsonb), igual ao
+   que já era salvo no localStorage — sem colunas fixas por campo, para não
+   quebrar quando um objeto (ex.: orçamentos) ganhar um campo novo/aninhado. */
 async function sbPushTable(table){
   var client=sbClient();
   if(SB_HIST_TABLES.indexOf(table)>=0){
@@ -9416,9 +9419,9 @@ async function sbPushTable(table){
       var instId=sbInstIdFromKey(k);
       var val=DB.load(k);
       if(table==='hist_config'){
-        if(val && typeof val==='object') rows.push(Object.assign({instId:instId}, val));
+        if(val && typeof val==='object') rows.push({instId:instId, dados:val});
       } else if(Array.isArray(val)){
-        val.forEach(function(o){ rows.push(Object.assign({}, o, {instId:instId})); });
+        val.forEach(function(o){ rows.push({id:o.id, instId:instId, dados:o}); });
       }
     });
     var del=await client.from(table).delete().not('instId','is',null);
@@ -9442,7 +9445,7 @@ async function sbPushTable(table){
   }
   if(table==='atividades'){
     var acts=DB.load('atividades')||[];
-    var rows3=acts.map(function(o){ return {texto:o&&o.texto, cor:o&&o.cor, data:o&&o.data}; });
+    var rows3=acts.map(function(o){ return {dados:{texto:o&&o.texto, cor:o&&o.cor, data:o&&o.data}}; });
     var del3=await client.from('atividades').delete().not('id','is',null);
     if(del3.error) throw new Error('Supabase (atividades): '+del3.error.message);
     if(rows3.length){
@@ -9452,7 +9455,7 @@ async function sbPushTable(table){
     return;
   }
   var val4=DB.load(table);
-  var rows4=Array.isArray(val4)?val4:[];
+  var rows4=(Array.isArray(val4)?val4:[]).map(function(o){ return {id:o.id, dados:o}; });
   var del4=await client.from(table).delete().not('id','is',null);
   if(del4.error) throw new Error('Supabase ('+table+'): '+del4.error.message);
   if(rows4.length){
@@ -9478,12 +9481,9 @@ async function sbPullTable(table){
       Object.keys(byInst).forEach(function(instId){
         var key=table+'_'+instId;
         if(table==='hist_config'){
-          var row=byInst[instId][0]||{}, cfg={};
-          Object.keys(row).forEach(function(k){ if(k!=='instId') cfg[k]=row[k]; });
-          DB.save(key, cfg);
+          DB.save(key, byInst[instId][0] ? byInst[instId][0].dados : {});
         } else {
-          var list=byInst[instId].map(function(r){ var o={}; Object.keys(r).forEach(function(k){ if(k!=='instId') o[k]=r[k]; }); return o; });
-          DB.save(key, list);
+          DB.save(key, byInst[instId].map(function(r){ return r.dados; }));
         }
       });
       return;
@@ -9498,18 +9498,18 @@ async function sbPullTable(table){
       return;
     }
     if(table==='atividades'){
-      var sel3=await client.from('atividades').select('texto,cor,data,id').order('id',{ascending:false}).limit(10);
+      var sel3=await client.from('atividades').select('id,dados').order('id',{ascending:false}).limit(10);
       if(sel3.error) throw new Error('Supabase (atividades): '+sel3.error.message);
       var rows3=sel3.data||[];
       if(!rows3.length) return;
-      DB.save('atividades', rows3.map(function(r){ return {texto:r.texto,cor:r.cor,data:r.data}; }));
+      DB.save('atividades', rows3.map(function(r){ return r.dados; }));
       return;
     }
     var sel4=await client.from(table).select('*');
     if(sel4.error) throw new Error('Supabase ('+table+'): '+sel4.error.message);
     var rows4=sel4.data||[];
     if(!rows4.length) return;
-    DB.save(table, rows4);
+    DB.save(table, rows4.map(function(r){ return r.dados; }));
   } finally { window._syncingSupabase=false; }
 }
 async function sbTestConnection(){
@@ -9530,14 +9530,25 @@ async function sbFullSync(){
   SB.busy=true;
   try{
     sbSetStatus('Sincronizando...','var(--amber)');
+    var falhas=[];
     /* Primeiro envia o estado local para o Supabase. Isso evita que um banco
-       vazio apague os dados atuais na primeira conexão. */
-    for(var i=0;i<SB_TABLES.length;i++){ await sbPushTable(SB_TABLES[i]); }
+       vazio apague os dados atuais na primeira conexão. Um erro numa tabela
+       não deve impedir a sincronização das demais. */
+    for(var i=0;i<SB_TABLES.length;i++){
+      try{ await sbPushTable(SB_TABLES[i]); }catch(e){ falhas.push(e.message); console.error(e); }
+    }
     /* Depois confirma a leitura do que está no Supabase e atualiza o cache local. */
-    for(var k=0;k<SB_TABLES.length;k++){ await sbPullTable(SB_TABLES[k]); }
-    sbSetStatus('Sincronizado ✓','var(--green)');
+    for(var k=0;k<SB_TABLES.length;k++){
+      try{ await sbPullTable(SB_TABLES[k]); }catch(e){ falhas.push(e.message); console.error(e); }
+    }
+    if(falhas.length){
+      sbSetStatus('Sincronizado com falhas ⚠️','var(--amber)');
+      showToast('⚠️ Sincronizado com '+falhas.length+' falha(s): '+falhas[0],'error');
+    } else {
+      sbSetStatus('Sincronizado ✓','var(--green)');
+      showToast('☁️ Sincronização real concluída com o Supabase.','success');
+    }
     DB.save('sb_last_sync',new Date().toISOString());
-    showToast('☁️ Sincronização real concluída com o Supabase.','success');
   }finally{ SB.busy=false; }
 }
 function scheduleSupabaseSync(){
