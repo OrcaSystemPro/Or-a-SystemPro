@@ -3067,9 +3067,26 @@ function showToast(msg, type) {
   setTimeout(function(){ el.classList.remove('show'); }, 3000);
 }
 
-function doLogin() {
+function sbEmailForUser(username){
+  return (username||'').toLowerCase().replace(/[^a-z0-9._-]/g,'')+'@orcasystem.local';
+}
+async function doLogin() {
   var u = document.getElementById('login-user').value.trim();
   var p = document.getElementById('login-pass').value;
+
+  // Login unificado com a nuvem: tenta autenticar no Supabase com as
+  // MESMAS credenciais digitadas (e-mail derivado do usuário local).
+  // Numa máquina nova (ou depois de trocar a senha), isso baixa o
+  // estado real ANTES de validar o login local — sem tela extra. Se
+  // falhar (sem conta na nuvem, ou offline), segue só com os dados
+  // locais já salvos neste navegador.
+  try{
+    if(typeof sbLogin==='function'){
+      await sbLogin(sbEmailForUser(u), p);
+      if(typeof sbFullSync==='function') await sbFullSync();
+    }
+  }catch(e){ console.warn('Login na nuvem não realizado (seguindo local):', e && e.message); }
+
   // CORREÇÃO: Verificar contra credenciais salvas no localStorage
   var authCfg = DB.load('auth_cfg') || { user: 'Admim-Vag.r10', pass: 'Vemsr8759' };
   if (u === authCfg.user && p === authCfg.pass) {
@@ -9353,10 +9370,16 @@ var SB_LOG_TABLES = {
   reajuste_mo_historico: { desc:false, limit:null }
 };
 
+/* URL e anon key não são segredo (a anon key é feita para ficar pública no
+   HTML, protegida pelo RLS que exige login) — fixadas aqui para que nenhuma
+   máquina nova precise digitá-las. Só e-mail/senha continuam manuais/derivados
+   do login local (ver sbEmailForUser em doLogin). */
+var SB_DEFAULT_URL = 'https://pjqpbugzboqxtsjuwhbt.supabase.co';
+var SB_DEFAULT_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBqcXBidWd6Ym9xeHRzanV3aGJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5NTUyNjYsImV4cCI6MjEwMTUzMTI2Nn0.2LUYB-AOcefQhMi-Z6mG1kbBRS07eQkbxySHGZS_D8o';
 function sbCfg(){
   return {
-    url: ((document.getElementById('cfg-supabase-url')||{}).value || DB.load('sb_url') || '').trim(),
-    anonKey: ((document.getElementById('cfg-supabase-anon-key')||{}).value || DB.load('sb_anon_key') || '').trim()
+    url: ((document.getElementById('cfg-supabase-url')||{}).value || DB.load('sb_url') || SB_DEFAULT_URL).trim(),
+    anonKey: ((document.getElementById('cfg-supabase-anon-key')||{}).value || DB.load('sb_anon_key') || SB_DEFAULT_ANON_KEY).trim()
   };
 }
 function sbSetStatus(text,color){
@@ -9392,11 +9415,11 @@ async function sbSession(){
   var r = await client.auth.getSession();
   return r.data && r.data.session;
 }
-async function sbLogin(){
+async function sbLogin(emailArg, senhaArg){
   var c=sbPersistCfg();
   if(!c.url || !c.anonKey) throw new Error('Informe a Project URL e a Anon Key do Supabase.');
-  var email=(document.getElementById('cfg-supabase-email')||{}).value||'';
-  var senha=(document.getElementById('cfg-supabase-senha')||{}).value||'';
+  var email=emailArg || (document.getElementById('cfg-supabase-email')||{}).value||'';
+  var senha=senhaArg || (document.getElementById('cfg-supabase-senha')||{}).value||'';
   if(!email || !senha) throw new Error('Informe e-mail e senha do Supabase.');
   var client=sbClient();
   var r = await client.auth.signInWithPassword({ email:email, password:senha });
@@ -9541,17 +9564,26 @@ async function sbTestConnection(){
 }
 /* Faz o push+pull de uma lista específica de tabelas. Usada tanto pelo
    sync completo (manual/login/restauração) quanto pelo sync automático
-   (que só sincroniza a(s) tabela(s) realmente salva(s), não as 19). */
-async function sbSyncTables(tables, silent){
+   (que só sincroniza a(s) tabela(s) realmente salva(s), não as 19).
+
+   pullFirst controla a ordem:
+   - false (padrão, usado pelo auto-sync de uma tabela recém-editada):
+     envia primeiro — a edição local é a fonte da verdade, não deve ser
+     sobrescrita por um pull antes de chegar ao servidor.
+   - true (usado pelo sync completo/login/restauração): baixa primeiro.
+     Essencial numa máquina nova, onde o estado local só tem os dados
+     padrão (initDB semeia profissionais/materiais/clientes default) —
+     enviar primeiro apagaria os dados reais da nuvem antes de lê-los.
+     Se o banco estiver mesmo vazio (primeira conexão de todas), o pull
+     não faz nada e o push seguinte semeia a nuvem normalmente. */
+async function sbSyncTables(tables, silent, pullFirst){
   var falhas=[];
-  /* Primeiro envia o estado local para o Supabase — evita que um banco
-     vazio apague dados na primeira conexão. Um erro numa tabela não deve
-     impedir a sincronização das demais. */
+  var ordem = pullFirst ? [sbPullTable, sbPushTable] : [sbPushTable, sbPullTable];
   for(var i=0;i<tables.length;i++){
-    try{ await sbPushTable(tables[i]); }catch(e){ falhas.push(e.message); console.error(e); }
+    try{ await ordem[0](tables[i]); }catch(e){ falhas.push(e.message); console.error(e); }
   }
   for(var k=0;k<tables.length;k++){
-    try{ await sbPullTable(tables[k]); }catch(e){ falhas.push(e.message); console.error(e); }
+    try{ await ordem[1](tables[k]); }catch(e){ falhas.push(e.message); console.error(e); }
   }
   if(falhas.length){
     sbSetStatus('Sincronizado com falhas ⚠️','var(--amber)');
@@ -9571,7 +9603,7 @@ async function sbFullSync(){
   SB.busy=true;
   try{
     sbSetStatus('Sincronizando...','var(--amber)');
-    await sbSyncTables(SB_TABLES, false);
+    await sbSyncTables(SB_TABLES, false, true);
   }finally{ SB.busy=false; }
 }
 /* Sync automático: só reenvia as tabelas que realmente foram salvas desde
