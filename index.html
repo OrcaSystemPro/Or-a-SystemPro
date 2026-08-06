@@ -9598,7 +9598,19 @@ function testConnection(){
   DB.save=function(k,v){ _save.call(DB,k,v); if(!window._syncingSupabase && SB_SKIP.indexOf(k)<0) scheduleSupabaseSync(); };
 })();
 
+/* Ao abrir a página, restaura a sessão salva pelo supabase-js (se existir)
+   sem pedir e-mail/senha de novo, e já dispara uma sincronização. */
+function sbAutoRestore(){
+  var c=sbCfg();
+  if(!c.url || !c.anonKey) return;
+  sbSession().then(function(session){
+    if(!session) return;
+    sbSetStatus('Autenticado ✅','var(--green)');
+    return sbFullSync();
+  }).catch(function(e){ console.error(e); });
+}
 setTimeout(sbLoadCfgUI,300);
+setTimeout(sbAutoRestore,600);
 
 
 // ── Relatórios: seletor de orçamento ativo ──────────────────────
