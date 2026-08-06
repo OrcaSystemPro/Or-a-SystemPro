@@ -9335,7 +9335,7 @@ function exportCSV() {
    mantida pelo próprio supabase-js; a URL/anon key ficam no localStorage
    do sistema para não pedir configuração novamente.
    ══════════════════════════════════════════════════════════════════ */
-var SB = window.SB || { client:null, busy:false, timer:null, _url:null, _key:null };
+var SB = window.SB || { client:null, busy:false, timer:null, _url:null, _key:null, dirty:{} };
 window.SB = SB;
 
 var SB_TABLES = [
@@ -9343,7 +9343,6 @@ var SB_TABLES = [
   'reajuste_historico','reajuste_mo_historico','audit_log','hist_instancias','hist_marcos',
   'hist_linhas_mo','hist_linhas_equip','hist_config','custos_padrao','org_nos','notif_eventos','empresa_cfg'
 ];
-var SB_SKIP = ['auth_cfg','theme','logo_empresa','logos_clientes','_last_save','notif_email','org_nome_obra'];
 var SB_HIST_TABLES = ['hist_marcos','hist_linhas_mo','hist_linhas_equip','hist_config'];
 /* Tabelas "log"/feed — o app nunca atribui id a essas entradas (unshift/push
    simples), então o Postgres gera o id (bigserial) e nós só guardamos "dados". */
@@ -9415,6 +9414,14 @@ function sbLocalKeysForTable(table){
   if(table==='hist_linhas_equip') return DB.keys().filter(function(k){return /^hist_linhas_equip_\d+$/.test(k);});
   if(table==='hist_config') return DB.keys().filter(function(k){return /^hist_config_\d+$/.test(k);});
   return [table];
+}
+/* Mapeia uma chave do localStorage para a tabela Supabase correspondente.
+   Retorna null para chaves que não fazem parte da sincronização (ex.:
+   cats_*, theme, auth_cfg, gs_*, sb_*) — essas nunca disparam sync. */
+function sbTableForKey(key){
+  if(SB_TABLES.indexOf(key)>=0) return key;
+  var m = /^(hist_marcos|hist_linhas_mo|hist_linhas_equip|hist_config)_\d+$/.exec(key);
+  return m ? m[1] : null;
 }
 /* Cada tabela guarda o objeto inteiro numa coluna "dados" (jsonb), igual ao
    que já era salvo no localStorage — sem colunas fixas por campo, para não
@@ -9532,6 +9539,29 @@ async function sbTestConnection(){
   sbSetStatus('Conectado ✅','var(--green)');
   return true;
 }
+/* Faz o push+pull de uma lista específica de tabelas. Usada tanto pelo
+   sync completo (manual/login/restauração) quanto pelo sync automático
+   (que só sincroniza a(s) tabela(s) realmente salva(s), não as 19). */
+async function sbSyncTables(tables, silent){
+  var falhas=[];
+  /* Primeiro envia o estado local para o Supabase — evita que um banco
+     vazio apague dados na primeira conexão. Um erro numa tabela não deve
+     impedir a sincronização das demais. */
+  for(var i=0;i<tables.length;i++){
+    try{ await sbPushTable(tables[i]); }catch(e){ falhas.push(e.message); console.error(e); }
+  }
+  for(var k=0;k<tables.length;k++){
+    try{ await sbPullTable(tables[k]); }catch(e){ falhas.push(e.message); console.error(e); }
+  }
+  if(falhas.length){
+    sbSetStatus('Sincronizado com falhas ⚠️','var(--amber)');
+    showToast('⚠️ Sincronizado com '+falhas.length+' falha(s): '+falhas[0],'error');
+  } else {
+    sbSetStatus('Sincronizado ✓','var(--green)');
+    if(!silent) showToast('☁️ Sincronização real concluída com o Supabase.','success');
+  }
+  DB.save('sb_last_sync',new Date().toISOString());
+}
 async function sbFullSync(){
   if(SB.busy) return;
   var c=sbPersistCfg();
@@ -9541,25 +9571,20 @@ async function sbFullSync(){
   SB.busy=true;
   try{
     sbSetStatus('Sincronizando...','var(--amber)');
-    var falhas=[];
-    /* Primeiro envia o estado local para o Supabase. Isso evita que um banco
-       vazio apague os dados atuais na primeira conexão. Um erro numa tabela
-       não deve impedir a sincronização das demais. */
-    for(var i=0;i<SB_TABLES.length;i++){
-      try{ await sbPushTable(SB_TABLES[i]); }catch(e){ falhas.push(e.message); console.error(e); }
-    }
-    /* Depois confirma a leitura do que está no Supabase e atualiza o cache local. */
-    for(var k=0;k<SB_TABLES.length;k++){
-      try{ await sbPullTable(SB_TABLES[k]); }catch(e){ falhas.push(e.message); console.error(e); }
-    }
-    if(falhas.length){
-      sbSetStatus('Sincronizado com falhas ⚠️','var(--amber)');
-      showToast('⚠️ Sincronizado com '+falhas.length+' falha(s): '+falhas[0],'error');
-    } else {
-      sbSetStatus('Sincronizado ✓','var(--green)');
-      showToast('☁️ Sincronização real concluída com o Supabase.','success');
-    }
-    DB.save('sb_last_sync',new Date().toISOString());
+    await sbSyncTables(SB_TABLES, false);
+  }finally{ SB.busy=false; }
+}
+/* Sync automático: só reenvia as tabelas que realmente foram salvas desde
+   a última vez (SB.dirty), não as 19 de uma vez. */
+async function sbSyncDirty(){
+  if(SB.busy) return;
+  var tables=Object.keys(SB.dirty);
+  if(!tables.length) return;
+  SB.dirty={};
+  SB.busy=true;
+  try{
+    sbSetStatus('Sincronizando...','var(--amber)');
+    await sbSyncTables(tables, true);
   }finally{ SB.busy=false; }
 }
 function scheduleSupabaseSync(){
@@ -9568,7 +9593,7 @@ function scheduleSupabaseSync(){
   SB.timer=setTimeout(function(){
     sbSession().then(function(session){
       if(!session) return;
-      return sbFullSync();
+      return sbSyncDirty();
     }).catch(function(e){console.error(e);showToast('⚠️ Falha na sincronização: '+e.message,'error');});
   },2500);
 }
@@ -9589,13 +9614,23 @@ function connectSupabase(){
 function testConnection(){
   sbTestConnection().then(function(){showToast('✅ Conexão real com o Supabase validada.','success');}).catch(function(e){showToast('❌ '+e.message,'error');});
 }
-/* Auto-sync: cada DB.save continua funcionando localmente, mas também agenda
-   uma sincronização real quando o Supabase estiver conectado. */
+/* Auto-sync: cada DB.save continua funcionando localmente. Quando a chave
+   salva corresponde a uma tabela do Supabase, marca só essa tabela como
+   pendente — não dispara sync de tudo a cada pequena ação, só da tabela
+   que você realmente salvou (com debounce de 2,5s para agrupar ações
+   próximas, ex.: salvar um cliente também registra uma atividade). */
 (function(){
   if(window._orcaDBWrapped) return;
   window._orcaDBWrapped=true;
   var _save=DB.save;
-  DB.save=function(k,v){ _save.call(DB,k,v); if(!window._syncingSupabase && SB_SKIP.indexOf(k)<0) scheduleSupabaseSync(); };
+  DB.save=function(k,v){
+    _save.call(DB,k,v);
+    if(window._syncingSupabase) return;
+    var table=sbTableForKey(k);
+    if(!table) return;
+    SB.dirty[table]=true;
+    scheduleSupabaseSync();
+  };
 })();
 
 /* Ao abrir a página, restaura a sessão salva pelo supabase-js (se existir)
