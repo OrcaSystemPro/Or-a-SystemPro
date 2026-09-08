@@ -1002,7 +1002,7 @@ tr:hover td { background: rgba(79,110,247,0.05); }
               style="background:var(--bg3);border:1px solid var(--border2);border-radius:8px;color:var(--text);padding:7px 12px;font-size:13px;outline:none;cursor:pointer;max-width:280px;">
               <option value="">— Selecione o Orçamento —</option>
             </select>
-            <button class="btn-sm" onclick="imprimirDashboard()" style="padding:8px 14px;white-space:nowrap;">🖨 Imprimir</button>
+            <button class="btn-sm" onclick="imprimirDashboardOrcamento()" style="padding:8px 14px;white-space:nowrap;">🖨 Imprimir</button>
           </div>
         </div>
 
@@ -1947,7 +1947,7 @@ tr:hover td { background: rgba(79,110,247,0.05); }
             <div class="builder-panel-head">📈 Dashboard Exportável</div>
             <div class="builder-panel-body">
               <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">Exporta o dashboard completo com gráficos em PDF.</p>
-              <button class="report-btn" style="width:100%;justify-content:center;" onclick="exportarDashboard()">Exportar</button>
+              <button class="report-btn" style="width:100%;justify-content:center;" onclick="imprimirDashboardOrcamento()">Exportar</button>
             </div>
           </div>
           <div class="builder-panel">
@@ -11318,6 +11318,280 @@ showPage = function(page, nb, sb) {
   }
 };
 
+
+// ══ IMPRIMIR DASHBOARD DE UM ORÇAMENTO (tela "📊 Dashboard") ══
+// Mesmos cálculos de trocarOrcDashboard() — para o PDF sempre bater com a tela
+// do orçamento selecionado (NÃO confundir com imprimirDashboard(), que é o
+// relatório agregado da tela "🌐 Dashboard Geral").
+function imprimirDashboardOrcamento() {
+  var orcs = DB.load('orcamentos')||[];
+  var orc = orcs.find(function(o){return o.id===_dashOrcId;});
+  if (!orc) { showToast('Selecione um orçamento no Dashboard antes de imprimir.','warning'); return; }
+
+  var cfg = getCfg ? getCfg() : {};
+  var today = new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+  var logoEmp = DB.load('logo_empresa');
+  var logoHtml = logoEmp
+    ? '<img src="'+logoEmp+'" style="height:52px;max-width:170px;object-fit:contain">'
+    : '<div style="font-size:20px;font-weight:900;color:#1a3c7a">'+( cfg.nome||'OrcaSystem Pro')+'</div>';
+
+  var dadosParaDashboard = orc;
+  var revAtiva = null;
+  if (orc.revisaoAtual && orc.revisoes && orc.revisoes.length > 0) {
+    revAtiva = orc.revisoes.find(function(r) { return r.codigo === orc.revisaoAtual; });
+    if (revAtiva && revAtiva.itensRevisados) {
+      dadosParaDashboard = Object.assign({}, orc, revAtiva.itensRevisados);
+    }
+  }
+  var valorFinal = revAtiva ? revAtiva.valorComDesconto : (orc.valor||0);
+
+  var tHH =(dadosParaDashboard.hhItens  ||[]).reduce(function(s,r){return s+(r.total||0);},0);
+  var tHM =(dadosParaDashboard.hmItens  ||[]).reduce(function(s,r){return s+(r.total||0);},0);
+  var tMat=(dadosParaDashboard.matItens ||[]).reduce(function(s,r){return s+(r.total||r.valorUnit*r.qtd||0);},0);
+  var tOut=(dadosParaDashboard.outItens ||[]).reduce(function(s,r){return s+(r.total||r.valorUnit*(r.qtdItens||1)*(r.qtdPessoas||1)*(r.qtdDias||r.qtd||1)||0);},0);
+  var tCon=(dadosParaDashboard.consItens||[]).reduce(function(s,r){return s+(r.total||r.valorUnit*r.qtd||0);},0);
+  var tTer=(dadosParaDashboard.tercItens||[]).reduce(function(s,r){return s+(r.total||r.valorUnit*r.qtd||0);},0);
+  var subT=tHH+tHM+tMat+tOut+tCon+tTer;
+
+  var taxasOrc=resolverTaxas(dadosParaDashboard);
+  var tImp=subT*taxasOrc.pImp, tTax=subT*taxasOrc.pTax;
+
+  var fatDir=0;
+  ['matItens','hmItens','tercItens'].forEach(function(k){
+    (dadosParaDashboard[k]||[]).forEach(function(r){ if(r.fat==='direto') fatDir+=(r.total||r.valorUnit*r.qtd||0); });
+  });
+  var margemBruta = valorFinal>0 ? Math.round((valorFinal-subT)/valorFinal*100) : 0;
+
+  var bD=[
+    {l:'Materiais',v:tMat,c:'#1a3c7a'},{l:'HH',v:tHH,c:'#22c55e'},{l:'HM',v:tHM,c:'#14b8a6'},
+    {l:'Outros',v:tOut,c:'#f59e0b'},{l:'Consumív.',v:tCon,c:'#8b5cf6'},{l:'Terceiros',v:tTer,c:'#f97316'},
+    {l:'Impostos',v:tImp,c:'#ef4444'},{l:'Taxas',v:tTax,c:'#a855f7'}
+  ].filter(function(d){return d.v>0;});
+  if(!bD.length && valorFinal>0) bD=[
+    {l:'Materiais',v:valorFinal*0.34,c:'#1a3c7a'},{l:'HH',v:valorFinal*0.10,c:'#22c55e'},
+    {l:'Outros',v:valorFinal*0.12,c:'#f59e0b'},{l:'Consumív.',v:valorFinal*0.06,c:'#8b5cf6'},
+    {l:'Impostos',v:valorFinal*0.28,c:'#ef4444'},{l:'Taxas',v:valorFinal*0.05,c:'#f97316'}
+  ];
+  var maxB=bD.length?Math.max.apply(null,bD.map(function(d){return d.v;})):1;
+  var BAR_H=100;
+
+  function buildDonut(dados,r_out,r_in,cx,cy){
+    var soma=dados.reduce(function(s,d){return s+d.v;},0)||1;
+    var svg=''; var ang=-Math.PI/2;
+    dados.forEach(function(d){
+      var a=d.v/soma*2*Math.PI;
+      if(d.v/soma>0.999){
+        svg+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r_out+'" fill="'+d.c+'"/>';
+      } else {
+        var x1=cx+r_out*Math.cos(ang), y1=cy+r_out*Math.sin(ang);
+        var x2=cx+r_out*Math.cos(ang+a), y2=cy+r_out*Math.sin(ang+a);
+        var xi1=cx+r_in*Math.cos(ang), yi1=cy+r_in*Math.sin(ang);
+        var xi2=cx+r_in*Math.cos(ang+a), yi2=cy+r_in*Math.sin(ang+a);
+        var big=a>Math.PI?1:0;
+        svg+='<path d="M'+x1.toFixed(1)+','+y1.toFixed(1)+
+          ' A'+r_out+','+r_out+' 0 '+big+',1 '+x2.toFixed(1)+','+y2.toFixed(1)+
+          ' L'+xi2.toFixed(1)+','+yi2.toFixed(1)+
+          ' A'+r_in+','+r_in+' 0 '+big+',0 '+xi1.toFixed(1)+','+yi1.toFixed(1)+
+          ' Z" fill="'+d.c+'"/>';
+      }
+      ang+=a;
+    });
+    return svg;
+  }
+
+  var cols=['#3d7ff5','#22c55e','#f59e0b','#8b5cf6','#14b8a6','#f97316'];
+  var fasesArr=(orc.fasesOrc||[]).map(function(f,fi){
+    var sf=0;
+    [orc.hhItens||[],orc.hmItens||[],orc.matItens||[],orc.outItens||[],orc.consItens||[],orc.tercItens||[]].forEach(function(arr){
+      arr.forEach(function(it){if(parseInt(it.faseIdx)===fi)sf+=(it.total||it.valorUnit*it.qtd||0);});
+    });
+    return {label:f.id+'a — '+f.titulo,val:sf,fator:f.fator||0,color:cols[fi%cols.length]};
+  }).filter(function(f){return f.val>0;});
+  var maxFase=fasesArr.length?Math.max.apply(null,fasesArr.map(function(f){return f.val;})):1;
+
+  var sB={aprovado:'#dcfce7',elaboracao:'#dbeafe',enviado:'#ede9fe',pendente:'#fef3c7',perdido:'#fee2e2'};
+  var sC={aprovado:'#166534',elaboracao:'#1e40af',enviado:'#5b21b6',pendente:'#b45309',perdido:'#dc2626'};
+
+  var doc='<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Dashboard — '+orc.cod+'</title>'+
+  '<style>'+
+    '*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact;color-adjust:exact}'+
+    'body{color:#111;background:#fff;font-size:12px;padding:22px 28px;max-width:980px;margin:0 auto}'+
+    '.hd{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:12px;border-bottom:3px solid #1a3c7a;margin-bottom:16px}'+
+    '.hd-r{text-align:right;font-size:11px;color:#555;line-height:1.8}'+
+    '.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}'+
+    '.kpi{border:1px solid #c5d8f0;border-radius:8px;padding:12px 14px;background:#f7fafd}'+
+    '.kpi .lbl{font-size:9px;text-transform:uppercase;color:#888;letter-spacing:.6px;margin-bottom:5px}'+
+    '.kpi .val{font-size:18px;font-weight:800;letter-spacing:-0.5px;color:#1a3c7a;line-height:1.1}'+
+    '.kpi .sub{font-size:10px;color:#888;margin-top:4px}'+
+    '.kpi .bar-bg{height:4px;background:#e0eaf6;border-radius:2px;margin-top:8px;overflow:hidden}'+
+    '.kpi .bar-fg{height:100%;border-radius:2px;background:#1a3c7a}'+
+    '.sec{font-size:12px;font-weight:700;color:#fff;background:#1a3c7a;padding:6px 12px;border-radius:4px;margin:14px 0 10px;text-transform:uppercase;letter-spacing:.4px}'+
+    '.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px}'+
+    '.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}'+
+    '.card{border:1px solid #c5d8f0;border-radius:8px;padding:14px;background:#f7fafd}'+
+    '.card .ctit{font-size:10px;text-transform:uppercase;color:#666;letter-spacing:.5px;margin-bottom:10px;font-weight:700}'+
+    '.res-row{display:flex;justify-content:space-between;padding:4px 8px;border-radius:4px;font-size:11px;margin-bottom:2px}'+
+    '.bar-wrap{display:flex;align-items:flex-end;gap:5px;height:'+BAR_H+'px;padding-bottom:0}'+
+    '.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:0}'+
+    '.bar-fill{width:100%;border-radius:3px 3px 0 0;min-height:3px}'+
+    '.bar-val{font-size:8px;color:#333;font-weight:700;white-space:nowrap}'+
+    '.ft{margin-top:16px;padding-top:10px;border-top:2px solid #1a3c7a;display:flex;justify-content:space-between;font-size:10px;color:#888}'+
+    '@media print{button{display:none}body{padding:14px 18px}*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}}'+
+  '</style></head><body>'+
+
+  '<div class="no-print" style="position:fixed;top:10px;right:10px;z-index:99">'+
+    '<button onclick="window.print()" style="padding:8px 18px;background:#1a3c7a;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:700">🖨 Imprimir / PDF</button>'+
+  '</div>'+
+
+  '<div class="hd">'+
+    '<div>'+logoHtml+'<div style="font-size:12px;font-weight:700;color:#1a3c7a;margin-top:7px">DASHBOARD — '+orc.cod+'</div></div>'+
+    '<div class="hd-r">'+
+      '<div><strong>Emitido em:</strong> '+today+'</div>'+
+      '<div><strong>CNPJ:</strong> '+(cfg.cnpj||'—')+'</div>'+
+      '<div><strong>Responsável:</strong> '+(cfg.responsavel||cfg.nome||'—')+'</div>'+
+    '</div>'+
+  '</div>'+
+
+  '<div class="kpis">'+
+    '<div class="kpi">'+
+      '<div class="lbl">Faturamento Total</div><div class="val">'+fmt(valorFinal)+'</div>'+
+      '<div class="sub">'+orc.cliente+' — '+(orc.local||'—')+'</div>'+
+      '<div class="bar-bg"><div class="bar-fg" style="width:100%"></div></div>'+
+    '</div>'+
+    '<div class="kpi">'+
+      '<div class="lbl">Faturamento Direto</div><div class="val" style="color:#0f766e">'+fmt(fatDir)+'</div>'+
+      '<div class="sub">Itens sem tributos/fatores · '+(valorFinal>0?((fatDir/valorFinal)*100).toFixed(1):0)+'% do total</div>'+
+      '<div class="bar-bg"><div class="bar-fg" style="width:'+(valorFinal>0?Math.min(100,Math.round(fatDir/valorFinal*100)):0)+'%;background:#0f766e"></div></div>'+
+    '</div>'+
+    '<div class="kpi">'+
+      '<div class="lbl">Custo Total Detalhado</div><div class="val" style="color:#dc2626">'+fmt(subT)+'</div>'+
+      '<div class="sub">Soma dos itens cadastrados neste orçamento</div>'+
+      '<div class="bar-bg"><div class="bar-fg" style="width:'+(valorFinal>0?Math.round(subT/valorFinal*100):0)+'%;background:#dc2626"></div></div>'+
+    '</div>'+
+    '<div class="kpi">'+
+      '<div class="lbl">Margem Bruta Estimada</div><div class="val" style="color:'+(margemBruta>=15?'#166534':'#b45309')+'">'+margemBruta+'%</div>'+
+      '<div class="sub">Faturamento − custo detalhado</div>'+
+      '<div class="bar-bg"><div class="bar-fg" style="width:'+Math.min(100,margemBruta*2)+'%;background:'+(margemBruta>=15?'#166534':'#b45309')+'"></div></div>'+
+    '</div>'+
+  '</div>'+
+
+  '<div class="g3">'+
+    '<div class="card">'+
+      '<div class="ctit">Composição de Custos</div>'+
+      (function(){
+        if(!bD.length) return '<div style="color:#888;font-size:11px;padding:20px 0;text-align:center">Sem dados detalhados</div>';
+        var html='<div class="bar-wrap">';
+        bD.forEach(function(d){
+          var h=Math.max(3,Math.round(d.v/maxB*BAR_H));
+          var vstr=d.v>=1e6?(d.v/1e6).toFixed(1)+'M':d.v>=1000?(d.v/1000).toFixed(0)+'K':Math.round(d.v).toString();
+          html+='<div class="bar-col"><div class="bar-val">'+vstr+'</div>'+
+            '<div class="bar-fill" style="height:'+h+'px;background:'+d.c+';width:100%;border-radius:3px 3px 0 0"></div></div>';
+        });
+        html+='</div>';
+        html+='<div style="display:flex;flex-wrap:wrap;gap:4px 8px;margin-top:8px;border-top:1px solid #e0eaf6;padding-top:8px;">';
+        bD.forEach(function(d){
+          html+='<div style="display:flex;align-items:center;gap:3px;font-size:9px;color:#555;">'+
+            '<div style="width:8px;height:8px;border-radius:2px;background:'+d.c+';flex-shrink:0"></div>'+d.l+'</div>';
+        });
+        html+='</div>';
+        return html;
+      })()+
+    '</div>'+
+    '<div class="card" style="display:flex;flex-direction:column;align-items:center;">'+
+      '<div class="ctit" style="align-self:flex-start">Distribuição %</div>'+
+      (function(){
+        if(!bD.length) return '<div style="color:#888;font-size:11px">Sem dados</div>';
+        var soma=bD.reduce(function(s,d){return s+d.v;},0)||1;
+        var svg='<svg width="130" height="130" viewBox="0 0 130 130">'+buildDonut(bD,60,28,65,65)+'</svg>';
+        var leg='<div style="width:100%">';
+        bD.forEach(function(d){
+          var pct=Math.round(d.v/soma*100);
+          leg+='<div style="display:flex;align-items:center;gap:5px;margin-bottom:4px;">'+
+            '<div style="width:8px;height:8px;border-radius:50%;background:'+d.c+';flex-shrink:0"></div>'+
+            '<span style="font-size:9px;color:#444;flex:1">'+d.l+'</span>'+
+            '<span style="font-size:9px;font-weight:700;color:'+d.c+'">'+pct+'%</span></div>';
+        });
+        leg+='</div>';
+        return '<div style="display:flex;gap:12px;align-items:center;width:100%">'+svg+leg+'</div>';
+      })()+
+    '</div>'+
+    '<div class="card">'+
+      '<div class="ctit">Distribuição por Fase</div>'+
+      (function(){
+        if(!fasesArr.length) return '<div style="color:#888;font-size:11px;padding:20px 0;text-align:center">Configure fases neste orçamento</div>';
+        var totalF=fasesArr.reduce(function(s,f){return s+f.val;},0)||1;
+        return fasesArr.map(function(f){
+          var pct=Math.round(f.val/totalF*100);
+          var bar_w=Math.round(f.val/maxFase*100);
+          return '<div style="margin-bottom:9px;">'+
+            '<div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px;">'+
+              '<span style="color:#333;font-weight:600">'+f.label.substring(0,28)+(f.fator>0?' BDI '+f.fator+'%':'')+'</span>'+
+              '<span style="color:'+f.color+';font-weight:700">'+pct+'% · '+fmt(f.val)+'</span>'+
+            '</div>'+
+            '<div style="height:7px;background:#e0eaf6;border-radius:4px;overflow:hidden;">'+
+              '<div style="height:100%;width:'+bar_w+'%;background:'+f.color+';border-radius:4px;"></div>'+
+            '</div>'+
+          '</div>';
+        }).join('');
+      })()+
+    '</div>'+
+  '</div>'+
+
+  '<div class="sec">Resumo Financeiro</div>'+
+  '<div class="g2">'+
+    '<div class="card">'+
+      '<div class="ctit">Composição de Custos</div>'+
+      [
+        {l:'Materiais',v:tMat,c:'#1a3c7a'},{l:'Hora Homem (HH)',v:tHH,c:'#22c55e'},
+        {l:'Hora Máquina (HM)',v:tHM,c:'#14b8a6'},{l:'Outros Custos',v:tOut,c:'#b45309'},
+        {l:'Consumíveis',v:tCon,c:'#5b21b6'},{l:'Terceiros',v:tTer,c:'#c2410c'},
+        {l:'Subtotal Custos',v:subT,c:'#1a3c7a',bold:true},
+        {l:'Impostos NF ('+(taxasOrc.pImp*100).toFixed(1)+'%)',v:tImp,c:'#dc2626'},
+        {l:'Taxas ADM ('+(taxasOrc.pTax*100).toFixed(1)+'%)',v:tTax,c:'#7c3aed'},
+        {l:'TOTAL FATURADO',v:valorFinal,c:'#1a3c7a',big:true}
+      ].filter(function(r){return r.v>0;}).map(function(r){
+        return '<div class="res-row" style="background:'+(r.big?'#1a3c7a':r.bold?'#eef4fb':'transparent')+';'+(r.big?'color:#fff;':'')+'">' +
+          '<span style="'+(r.big?'color:#fff;':'color:#555;')+'font-weight:'+(r.bold||r.big?700:400)+'">'+r.l+'</span>'+
+          '<span style="font-weight:700;color:'+(r.big?'#7dd3fc':r.c)+'">'+fmt(r.v)+'</span>'+
+        '</div>';
+      }).join('')+
+    '</div>'+
+    '<div class="card">'+
+      '<div class="ctit">📋 Dados do Orçamento</div>'+
+      [
+        {l:'Código',v:orc.cod,bold:true},
+        {l:'Descrição',v:(orc.desc||'—').substring(0,32)},
+        {l:'Cliente',v:(orc.cliente||'—')},
+        {l:'Local',v:(orc.local||'—')},
+        {l:'Status',v:'<span style="padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;background:'+(sB[orc.status]||'#eee')+';color:'+(sC[orc.status]||'#333')+'">'+orc.status+'</span>'},
+        {l:'Valor Total',v:fmt(valorFinal),color:'#1a3c7a'},
+        {l:'Custo Detalhado',v:subT>0?fmt(subT):'Sem itens',color:'#dc2626'},
+        {l:'Margem Bruta Est.',v:margemBruta>0?margemBruta+'%':'—',color:margemBruta>=15?'#166534':'#b45309'},
+        {l:'Total Materiais',v:fmt(tMat)},
+        {l:'Total HH',v:fmt(tHH)},
+        {l:'Fat. Direto (sem trib.)',v:fmt(fatDir)},
+        {l:'Fat. Innova (c/ trib.)',v:fmt(subT-fatDir)},
+        {l:'Fases',v:(orc.fasesOrc||[]).length+' fase(s) configurada(s)'},
+        {l:'Data',v:orc.data}
+      ].map(function(r){
+        return '<div class="res-row" style="background:'+(r.bold?'#eef4fb':'#f7fafd')+';border-bottom:1px solid #eef2fb;">'+
+          '<span style="color:#555;font-weight:'+(r.bold?700:400)+'">'+r.l+'</span>'+
+          '<span style="font-weight:700;color:'+(r.color||'#1a3c7a')+'">'+r.v+'</span>'+
+        '</div>';
+      }).join('')+
+    '</div>'+
+  '</div>'+
+
+  '<div class="ft">'+
+    '<div>'+(cfg.nome||'OrcaSystem Pro')+' — CNPJ: '+(cfg.cnpj||'—')+' — '+(cfg.tel||'—')+' — '+(cfg.email||'—')+'</div>'+
+    '<div>Gerado em '+new Date().toLocaleString('pt-BR')+'</div>'+
+  '</div>'+
+  '</body></html>';
+
+  var w=window.open('','_blank');
+  if(w){w.document.write(doc);w.document.close();}
+  showToast('Dashboard do orçamento pronto para imprimir!','success');
+}
 
 // ══ IMPRIMIR DASHBOARD ══
 function imprimirDashboard() {
