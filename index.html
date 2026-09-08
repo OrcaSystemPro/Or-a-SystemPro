@@ -11323,114 +11323,74 @@ showPage = function(page, nb, sb) {
 function imprimirDashboard() {
   var cfg = getCfg ? getCfg() : {};
   var orcs = DB.load('orcamentos')||[];
-  var fmtV = function(v){ return 'R$ '+(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); };
   var today = new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
   var logoEmp = DB.load('logo_empresa');
   var logoHtml = logoEmp
     ? '<img src="'+logoEmp+'" style="height:52px;max-width:170px;object-fit:contain">'
     : '<div style="font-size:20px;font-weight:900;color:#1a3c7a">'+( cfg.nome||'OrcaSystem Pro')+'</div>';
 
-  // ── Totais REAIS de todos os orçamentos ──
-  var totalFat=0, tMat=0,tHH=0,tHM=0,tOut=0,tCons=0,tTerc=0;
-  orcs.forEach(function(o){
-    totalFat+=(o.valor||0);
-    tMat +=(o.matItens ||[]).reduce(function(s,r){return s+(r.total||r.valorUnit*r.qtd||0);},0);
-    tHH  +=(o.hhItens  ||[]).reduce(function(s,r){return s+(r.total||0);},0);
-    tHM  +=(o.hmItens  ||[]).reduce(function(s,r){return s+(r.total||0);},0);
-    tOut +=(o.outItens ||[]).reduce(function(s,r){return s+(r.total||r.valorUnit*r.qtd||0);},0);
-    tCons+=(o.consItens||[]).reduce(function(s,r){return s+(r.total||r.valorUnit*r.qtd||0);},0);
-    tTerc+=(o.tercItens||[]).reduce(function(s,r){return s+(r.total||r.valorUnit*r.qtd||0);},0);
-  });
-  var subT=tMat+tHH+tHM+tOut+tCons+tTerc;
-  var tImp=subT*0.275, tTax=subT*0.05;
+  // ── Mesmos cálculos de renderDashboardGeral() (tela "🌐 Dashboard Geral") ──
+  // para o PDF sempre bater com os números mostrados na tela.
+  var sLb={aprovado:'Aprovado',elaboracao:'Elaboracao',enviado:'Enviado',pendente:'Pendente',perdido:'Perdido'};
+  var sHex={aprovado:'#166534',elaboracao:'#1e40af',enviado:'#5b21b6',pendente:'#b45309',perdido:'#dc2626'};
+  var sBg ={aprovado:'#dcfce7',elaboracao:'#dbeafe',enviado:'#ede9fe',pendente:'#fef3c7',perdido:'#fee2e2'};
 
-  // Faturamento direto vs innova
-  var fatDir=0, fatInn=0;
-  orcs.forEach(function(o){
-    ['matItens','hmItens','tercItens'].forEach(function(k){
-      (o[k]||[]).forEach(function(r){
-        if(r.fat==='direto') fatDir+=(r.total||r.valorUnit*r.qtd||0);
-        else fatInn+=(r.total||r.valorUnit*r.qtd||0);
-      });
-    });
-    // HH, outros, cons sempre Innova
-    tHH; tOut; tCons;
-  });
+  var totalFat=orcs.reduce(function(s,o){return s+(o.valor||0);},0);
+  var aprv=orcs.filter(function(o){return o.status==='aprovado';}).length;
+  var elab=orcs.filter(function(o){return o.status==='elaboracao';}).length;
+  var tHHg=0; orcs.forEach(function(o){tHHg+=(o.hhItens||[]).reduce(function(s,r){return s+(r.total||0);},0);});
 
-  // Distribuição por fase
-  var fasesMap={};
-  var faseCores=['#1a3c7a','#22c55e','#f59e0b','#8b5cf6','#14b8a6','#f97316','#ec4899'];
+  var gM=0,gH=0,gHM=0,gO=0,gC=0,gT=0,gImp=0,gTax=0;
   orcs.forEach(function(o){
-    (o.fasesOrc||[]).forEach(function(f,fi){
-      var key=f.titulo||('Fase '+(fi+1));
-      if(!fasesMap[key]) fasesMap[key]={label:key,val:0,color:faseCores[fi%faseCores.length]};
-      ['hhItens','hmItens','matItens','outItens','consItens','tercItens'].forEach(function(k){
-        (o[k]||[]).forEach(function(it){if(parseInt(it.faseIdx)===fi) fasesMap[key].val+=(it.total||it.valorUnit*it.qtd||0);});
-      });
-    });
+    var oMat=(o.matItens||[]).reduce(function(s,r){return s+(r.total||r.valorUnit*r.qtd||0);},0);
+    var oH=(o.hhItens||[]).reduce(function(s,r){return s+(r.total||0);},0);
+    var oHM=(o.hmItens||[]).reduce(function(s,r){return s+(r.total||0);},0);
+    var oO=(o.outItens||[]).reduce(function(s,r){return s+(r.total||r.valorUnit*(r.qtdItens||1)*(r.qtdPessoas||1)*(r.qtdDias||r.qtd||1)||0);},0);
+    var oC=(o.consItens||[]).reduce(function(s,r){return s+(r.total||r.valorUnit*r.qtd||0);},0);
+    var oT=(o.tercItens||[]).reduce(function(s,r){return s+(r.total||r.valorUnit*r.qtd||0);},0);
+    var oSub=oMat+oH+oHM+oO+oC+oT;
+    var oTaxas=resolverTaxas(o);
+    gImp+=oSub*oTaxas.pImp;
+    gTax+=oSub*oTaxas.pTax;
+    gM+=oMat; gH+=oH; gHM+=oHM; gO+=oO; gC+=oC; gT+=oT;
   });
-  var fasesArr=Object.values(fasesMap).filter(function(f){return f.val>0;});
-  fasesArr.sort(function(a,b){return b.val-a.val;});
-  var maxFase=fasesArr.length?fasesArr[0].val:1;
+  var subT=gM+gH+gHM+gO+gC+gT;
 
-  // Dados do gráfico de barras
+  // Dados do gráfico de barras — igual ao card "Composição Global de Custos"
   var bD=[
-    {l:'Materiais',v:tMat,c:'#1a3c7a'},
-    {l:'Hora Homem',v:tHH,c:'#22c55e'},
-    {l:'Hora Máq.',v:tHM,c:'#14b8a6'},
-    {l:'Outros',v:tOut,c:'#f59e0b'},
-    {l:'Consumív.',v:tCons,c:'#8b5cf6'},
-    {l:'Terceiros',v:tTerc,c:'#f97316'},
-    {l:'Impostos',v:tImp,c:'#ef4444'},
-    {l:'Taxas ADM',v:tTax,c:'#7c3aed'}
+    {l:'Materiais',v:gM,c:'#3d7ff5'},
+    {l:'HH',v:gH,c:'#22c55e'},
+    {l:'HM',v:gHM,c:'#14b8a6'},
+    {l:'Outros',v:gO,c:'#f59e0b'},
+    {l:'Consumív.',v:gC,c:'#8b5cf6'},
+    {l:'Terceiros',v:gT,c:'#f97316'},
+    {l:'Impostos',v:gImp,c:'#ef4444'},
+    {l:'Taxas',v:gTax,c:'#a855f7'}
   ].filter(function(d){return d.v>0;});
+  if(!bD.length && totalFat>0) bD=[
+    {l:'Materiais',v:totalFat*0.34,c:'#3d7ff5'},{l:'HH',v:totalFat*0.10,c:'#22c55e'},
+    {l:'Outros',v:totalFat*0.12,c:'#f59e0b'},{l:'Consumív.',v:totalFat*0.06,c:'#8b5cf6'},
+    {l:'Impostos',v:totalFat*0.28,c:'#ef4444'},{l:'Taxas',v:totalFat*0.05,c:'#f97316'}
+  ];
   var maxB=bD.length?Math.max.apply(null,bD.map(function(d){return d.v;})):1;
   var BAR_H=100; // altura máxima px das barras
 
-  // Gráfico donut (pizza)
-  function buildDonut(dados,r_out,r_in,cx,cy){
-    var soma=dados.reduce(function(s,d){return s+d.v;},0)||1;
-    var svg=''; var ang=-Math.PI/2;
-    dados.forEach(function(d){
-      var a=d.v/soma*2*Math.PI;
-      if(d.v/soma>0.999){
-        svg+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r_out+'" fill="'+d.c+'"/>';
-      } else {
-        var x1=cx+r_out*Math.cos(ang), y1=cy+r_out*Math.sin(ang);
-        var x2=cx+r_out*Math.cos(ang+a), y2=cy+r_out*Math.sin(ang+a);
-        var xi1=cx+r_in*Math.cos(ang), yi1=cy+r_in*Math.sin(ang);
-        var xi2=cx+r_in*Math.cos(ang+a), yi2=cy+r_in*Math.sin(ang+a);
-        var big=a>Math.PI?1:0;
-        svg+='<path d="M'+x1.toFixed(1)+','+y1.toFixed(1)+
-          ' A'+r_out+','+r_out+' 0 '+big+',1 '+x2.toFixed(1)+','+y2.toFixed(1)+
-          ' L'+xi2.toFixed(1)+','+yi2.toFixed(1)+
-          ' A'+r_in+','+r_in+' 0 '+big+',0 '+xi1.toFixed(1)+','+yi1.toFixed(1)+
-          ' Z" fill="'+d.c+'"/>';
-      }
-      ang+=a;
-    });
-    return svg;
-  }
+  // Orçamentos por status — igual ao card "Orçamentos por Status"
+  var byS={}; orcs.forEach(function(o){byS[o.status]=(byS[o.status]||0)+1;});
+  var statusRows=Object.keys(byS).map(function(s){
+    var p=orcs.length?Math.round(byS[s]/orcs.length*100):0;
+    return {s:s,label:sLb[s]||s,n:byS[s],p:p,color:sHex[s]||'#1a3c7a'};
+  });
 
-  // Linhas da tabela de orçamentos
+  // Linhas da tabela de orçamentos — igual ao card "Todos os Orçamentos"
   var orcRows=orcs.map(function(o){
-    var sc={aprovado:'#166534',elaboracao:'#1e40af',enviado:'#5b21b6',pendente:'#b45309',perdido:'#dc2626'};
-    var bg={aprovado:'#dcfce7',elaboracao:'#dbeafe',enviado:'#ede9fe',pendente:'#fef3c7',perdido:'#fee2e2'};
     var s=o.status||'elaboracao';
-    var tO=(o.matItens||[]).reduce(function(s,r){return s+(r.total||r.valorUnit*r.qtd||0);},0)
-          +(o.hhItens||[]).reduce(function(s,r){return s+(r.total||0);},0)
-          +(o.hmItens||[]).reduce(function(s,r){return s+(r.total||0);},0)
-          +(o.outItens||[]).reduce(function(s,r){return s+(r.total||r.valorUnit*r.qtd||0);},0)
-          +(o.consItens||[]).reduce(function(s,r){return s+(r.total||r.valorUnit*r.qtd||0);},0)
-          +(o.tercItens||[]).reduce(function(s,r){return s+(r.total||r.valorUnit*r.qtd||0);},0);
     return '<tr>'+
       '<td style="padding:7px 10px;border:1px solid #e0eaf6;font-weight:600;color:#1a3c7a">'+o.cod+'</td>'+
       '<td style="padding:7px 10px;border:1px solid #e0eaf6">'+(o.desc||'').substring(0,44)+'</td>'+
       '<td style="padding:7px 10px;border:1px solid #e0eaf6">'+(o.cliente||'—')+'</td>'+
-      '<td style="padding:7px 10px;border:1px solid #e0eaf6">'+(o.local||'—')+'</td>'+
-      '<td style="padding:7px 10px;border:1px solid #e0eaf6;text-align:right;color:#1a3c7a;font-weight:700">'+fmt(o.valor)+'</td>'+
-      '<td style="padding:7px 10px;border:1px solid #e0eaf6;text-align:right;font-size:11px;color:#555">'+(tO>0?fmt(tO):'—')+'</td>'+
-      '<td style="padding:7px 10px;border:1px solid #e0eaf6;text-align:center"><span style="padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;background:'+(bg[s]||'#eee')+';color:'+(sc[s]||'#333')+'">'+s+'</span></td>'+
+      '<td style="padding:7px 10px;border:1px solid #e0eaf6;text-align:right;color:#166534;font-weight:700">'+fmt(o.valor||0)+'</td>'+
+      '<td style="padding:7px 10px;border:1px solid #e0eaf6;text-align:center"><span style="padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;background:'+(sBg[s]||'#eee')+';color:'+(sHex[s]||'#333')+'">'+(sLb[s]||s)+'</span></td>'+
       '<td style="padding:7px 10px;border:1px solid #e0eaf6;font-size:11px;color:#666">'+o.data+'</td>'+
     '</tr>';
   }).join('');
@@ -11482,48 +11442,40 @@ function imprimirDashboard() {
     '</div>'+
   '</div>'+
 
-  // ── KPIs: 4 cards com métricas relevantes ──
-  (function(){
-    var aprovados=orcs.filter(function(o){return o.status==='aprovado';});
-    var valorApr=aprovados.reduce(function(s,o){return s+(o.valor||0);},0);
-    var taxaApr=orcs.length?Math.round(aprovados.length/orcs.length*100):0;
-    var ticketMedio=orcs.length?totalFat/orcs.length:0;
-    var custoReal=subT>0?subT:totalFat*0.72;
-    var margemBruta=totalFat>0?Math.round((totalFat-custoReal)/totalFat*100):0;
-    return '<div class="kpis">'+
-      '<div class="kpi">'+
-        '<div class="lbl">Faturamento Total</div>'+
-        '<div class="val">'+fmt(totalFat)+'</div>'+
-        '<div class="sub">'+orcs.length+' orçamento(s) · ticket médio '+fmt(ticketMedio)+'</div>'+
-        '<div class="bar-bg"><div class="bar-fg" style="width:100%"></div></div>'+
-      '</div>'+
-      '<div class="kpi">'+
-        '<div class="lbl">Faturamento Direto</div>'+
-        '<div class="val" style="color:#0f766e">'+fmt(fatDir)+'</div>'+
-        '<div class="sub">Itens sem tributos/fatores · '+(totalFat>0?((fatDir/totalFat)*100).toFixed(1):0)+'% do total</div>'+
-        '<div class="bar-bg"><div class="bar-fg" style="width:'+(totalFat>0?Math.min(100,Math.round(fatDir/totalFat*100)):0)+'%;background:#0f766e"></div></div>'+
-      '</div>'+
-      '<div class="kpi">'+
-        '<div class="lbl">Custo Total Detalhado</div>'+
-        '<div class="val" style="color:#dc2626">'+fmt(custoReal)+'</div>'+
-        '<div class="sub">Soma de todos os itens cadastrados</div>'+
-        '<div class="bar-bg"><div class="bar-fg" style="width:'+(totalFat>0?Math.round(custoReal/totalFat*100):0)+'%;background:#dc2626"></div></div>'+
-      '</div>'+
-      '<div class="kpi">'+
-        '<div class="lbl">Margem Bruta Estimada</div>'+
-        '<div class="val" style="color:'+(margemBruta>=15?'#166534':'#b45309')+'">'+margemBruta+'%</div>'+
-        '<div class="sub">Faturamento − custo detalhado</div>'+
-        '<div class="bar-bg"><div class="bar-fg" style="width:'+Math.min(100,margemBruta*2)+'%;background:'+(margemBruta>=15?'#166534':'#b45309')+'"></div></div>'+
-      '</div>'+
-    '</div>';
-  })()+
+  // ── KPIs: mesmos 4 cards da tela "🌐 Dashboard Geral" ──
+  '<div class="kpis">'+
+    '<div class="kpi">'+
+      '<div class="lbl">Faturamento Total</div>'+
+      '<div class="val">'+fmt(totalFat)+'</div>'+
+      '<div class="sub">soma de todos os orçamentos</div>'+
+      '<div class="bar-bg"><div class="bar-fg" style="width:100%"></div></div>'+
+    '</div>'+
+    '<div class="kpi">'+
+      '<div class="lbl">Aprovados</div>'+
+      '<div class="val" style="color:#166534">'+aprv+'</div>'+
+      '<div class="sub">de '+orcs.length+' orçamento(s)</div>'+
+      '<div class="bar-bg"><div class="bar-fg" style="width:'+(orcs.length?Math.round(aprv/orcs.length*100):0)+'%;background:#166534"></div></div>'+
+    '</div>'+
+    '<div class="kpi">'+
+      '<div class="lbl">Em Elaboração</div>'+
+      '<div class="val" style="color:#b45309">'+elab+'</div>'+
+      '<div class="sub">aguardando envio</div>'+
+      '<div class="bar-bg"><div class="bar-fg" style="width:'+(orcs.length?Math.round(elab/orcs.length*100):0)+'%;background:#b45309"></div></div>'+
+    '</div>'+
+    '<div class="kpi">'+
+      '<div class="lbl">Total HH (Mão de Obra)</div>'+
+      '<div class="val">'+(tHHg>0?fmt(tHHg):'—')+'</div>'+
+      '<div class="sub">'+(tHHg>0?'soma dos orçamentos detalhados':'sem itens HH cadastrados')+'</div>'+
+      '<div class="bar-bg"><div class="bar-fg" style="width:'+(totalFat>0?Math.min(100,Math.round(tHHg/totalFat*100)):0)+'%"></div></div>'+
+    '</div>'+
+  '</div>'+
 
-  // ── GRÁFICOS: barras + donut + fases ──
-  '<div class="g3">'+
+  // ── GRÁFICOS: barras + status (igual às 2 caixas da tela) ──
+  '<div class="g2">'+
 
-    // Card 1 — Barras (sem sobreposição)
+    // Card 1 — Composição Global de Custos
     '<div class="card">'+
-      '<div class="ctit">Composição de Custos</div>'+
+      '<div class="ctit">Composição Global de Custos</div>'+
       (function(){
         if(!bD.length) return '<div style="color:#888;font-size:11px;padding:20px 0;text-align:center">Sem dados detalhados</div>';
         var html='<div class="bar-wrap">';
@@ -11547,43 +11499,19 @@ function imprimirDashboard() {
       })()+
     '</div>'+
 
-    // Card 2 — Donut
-    '<div class="card" style="display:flex;flex-direction:column;align-items:center;">'+
-      '<div class="ctit" style="align-self:flex-start">Distribuição %</div>'+
-      (function(){
-        if(!bD.length) return '<div style="color:#888;font-size:11px">Sem dados</div>';
-        var soma=bD.reduce(function(s,d){return s+d.v;},0)||1;
-        var svg='<svg width="130" height="130" viewBox="0 0 130 130">'+buildDonut(bD,60,28,65,65)+'</svg>';
-        var leg='<div style="width:100%">';
-        bD.forEach(function(d){
-          var pct=Math.round(d.v/soma*100);
-          leg+='<div style="display:flex;align-items:center;gap:5px;margin-bottom:4px;">'+
-            '<div style="width:8px;height:8px;border-radius:50%;background:'+d.c+';flex-shrink:0"></div>'+
-            '<span style="font-size:9px;color:#444;flex:1">'+d.l+'</span>'+
-            '<span style="font-size:9px;font-weight:700;color:'+d.c+'">'+pct+'%</span>'+
-          '</div>';
-        });
-        leg+='</div>';
-        return '<div style="display:flex;gap:12px;align-items:center;width:100%">'+svg+leg+'</div>';
-      })()+
-    '</div>'+
-
-    // Card 3 — Fases
+    // Card 2 — Orçamentos por Status
     '<div class="card">'+
-      '<div class="ctit">Distribuição por Fase</div>'+
+      '<div class="ctit">Orçamentos por Status</div>'+
       (function(){
-        if(!fasesArr.length) return '<div style="color:#888;font-size:11px;padding:20px 0;text-align:center">Configure fases nos orçamentos</div>';
-        var totalF=fasesArr.reduce(function(s,f){return s+f.val;},0)||1;
-        return fasesArr.map(function(f){
-          var pct=Math.round(f.val/totalF*100);
-          var bar_w=Math.round(f.val/maxFase*100);
-          return '<div style="margin-bottom:9px;">'+
-            '<div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px;">'+
-              '<span style="color:#333;font-weight:600">'+f.label.substring(0,28)+'</span>'+
-              '<span style="color:'+f.color+';font-weight:700">'+pct+'% · '+fmt(f.val)+'</span>'+
+        if(!statusRows.length) return '<div style="color:#888;font-size:11px;padding:20px 0;text-align:center">Sem orçamentos</div>';
+        return statusRows.map(function(r){
+          return '<div style="margin-bottom:10px;">'+
+            '<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px;">'+
+              '<span style="color:#333">'+r.label+'</span>'+
+              '<span style="font-weight:700;color:'+r.color+'">'+r.n+' ('+r.p+'%)</span>'+
             '</div>'+
-            '<div style="height:7px;background:#e0eaf6;border-radius:4px;overflow:hidden;">'+
-              '<div style="height:100%;width:'+bar_w+'%;background:'+f.color+';border-radius:4px;"></div>'+
+            '<div style="height:8px;background:#e0eaf6;border-radius:4px;overflow:hidden;">'+
+              '<div style="height:100%;width:'+r.p+'%;background:'+r.color+';border-radius:4px;"></div>'+
             '</div>'+
           '</div>';
         }).join('');
@@ -11591,85 +11519,16 @@ function imprimirDashboard() {
     '</div>'+
   '</div>'+
 
-  // ── RESUMO FINANCEIRO ──
-  '<div class="sec">Resumo Financeiro</div>'+
-  '<div class="g2">'+
-    '<div class="card">'+
-      '<div class="ctit">Composição de Custos</div>'+
-      [
-        {l:'Materiais',v:tMat,c:'#1a3c7a'},
-        {l:'Hora Homem (HH)',v:tHH,c:'#22c55e'},
-        {l:'Hora Máquina (HM)',v:tHM,c:'#14b8a6'},
-        {l:'Outros Custos',v:tOut,c:'#b45309'},
-        {l:'Consumíveis',v:tCons,c:'#5b21b6'},
-        {l:'Terceiros',v:tTerc,c:'#c2410c'},
-        {l:'Subtotal Custos',v:subT,c:'#1a3c7a',bold:true},
-        {l:'Impostos NF (27,5%)',v:tImp,c:'#dc2626'},
-        {l:'Taxas ADM (5%)',v:tTax,c:'#7c3aed'},
-        {l:'TOTAL FATURADO',v:totalFat,c:'#1a3c7a',big:true}
-      ].filter(function(r){return r.v>0;}).map(function(r){
-        return '<div class="res-row" style="background:'+(r.big?'#1a3c7a':r.bold?'#eef4fb':'transparent')+';'+(r.big?'color:#fff;':'')+'">' +
-          '<span style="'+(r.big?'color:#fff;':'color:#555;')+'font-weight:'+(r.bold||r.big?700:400)+'">'+r.l+'</span>'+
-          '<span style="font-weight:700;color:'+(r.big?'#7dd3fc':r.c)+'">'+fmt(r.v)+'</span>'+
-        '</div>';
-      }).join('')+
-    '</div>'+
-    '<div class="card">'+
-      '<div class="ctit">📋 Dados do Maior Orçamento</div>'+
-      (function(){
-        if(!orcs.length) return '<div style="color:#888;font-size:11px;padding:10px">Sem orçamentos</div>';
-        var orc=orcs.slice().sort(function(a,b){return (b.valor||0)-(a.valor||0);})[0];
-        var tO=(orc.matItens||[]).reduce(function(s,r){return s+(r.total||r.valorUnit*r.qtd||0);},0)
-              +(orc.hhItens||[]).reduce(function(s,r){return s+(r.total||0);},0)
-              +(orc.hmItens||[]).reduce(function(s,r){return s+(r.total||0);},0)
-              +(orc.outItens||[]).reduce(function(s,r){return s+(r.total||r.valorUnit*r.qtd||0);},0)
-              +(orc.consItens||[]).reduce(function(s,r){return s+(r.total||r.valorUnit*r.qtd||0);},0)
-              +(orc.tercItens||[]).reduce(function(s,r){return s+(r.total||r.valorUnit*r.qtd||0);},0);
-        var orcFatDir=(orc.matItens||[]).filter(function(r){return r.fat==='direto';}).reduce(function(s,r){return s+(r.total||r.valorUnit*r.qtd||0);},0)
-                    +(orc.hmItens||[]).filter(function(r){return r.fat==='direto';}).reduce(function(s,r){return s+(r.total||0);},0)
-                    +(orc.tercItens||[]).filter(function(r){return r.fat==='direto';}).reduce(function(s,r){return s+(r.total||r.valorUnit*r.qtd||0);},0);
-        var orcMargem=orc.valor>0&&tO>0?((orc.valor-tO)/orc.valor*100):0;
-        var orcHH=(orc.hhItens||[]).reduce(function(s,r){return s+(r.total||0);},0);
-        var orcMat=(orc.matItens||[]).reduce(function(s,r){return s+(r.total||r.valorUnit*r.qtd||0);},0);
-        var sB={aprovado:'#dcfce7',elaboracao:'#dbeafe',enviado:'#ede9fe',pendente:'#fef3c7',perdido:'#fee2e2'};
-        var sC={aprovado:'#166534',elaboracao:'#1e40af',enviado:'#5b21b6',pendente:'#b45309',perdido:'#dc2626'};
-        var rows=[
-          {l:'Código',v:orc.cod,bold:true},
-          {l:'Descrição',v:(orc.desc||'—').substring(0,32)},
-          {l:'Cliente',v:(orc.cliente||'—')},
-          {l:'Local',v:(orc.local||'—')},
-          {l:'Status',v:'<span style="padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;background:'+(sB[orc.status]||'#eee')+';color:'+(sC[orc.status]||'#333')+'">'+orc.status+'</span>'},
-          {l:'Valor Total',v:fmt(orc.valor),color:'#1a3c7a'},
-          {l:'Custo Detalhado',v:tO>0?fmt(tO):'Sem itens',color:'#dc2626'},
-          {l:'Margem Bruta Est.',v:orcMargem>0?orcMargem.toFixed(1)+'%':'—',color:orcMargem>=15?'#166534':'#b45309'},
-          {l:'Total Materiais',v:fmt(orcMat)},
-          {l:'Total HH',v:fmt(orcHH)},
-          {l:'Fat. Direto (sem trib.)',v:fmt(orcFatDir)},
-          {l:'Fat. Innova (c/ trib.)',v:fmt(tO-orcFatDir)},
-          {l:'Fases',v:(orc.fasesOrc||[]).length+' fase(s) configurada(s)'},
-          {l:'Data',v:orc.data}
-        ];
-        return rows.map(function(r){
-          return '<div class="res-row" style="background:'+(r.bold?'#eef4fb':'#f7fafd')+';border-bottom:1px solid #eef2fb;">'+
-            '<span style="color:#555;font-weight:'+(r.bold?700:400)+'">'+r.l+'</span>'+
-            '<span style="font-weight:700;color:'+(r.color||'#1a3c7a')+'">'+r.v+'</span>'+
-          '</div>';
-        }).join('');
-      })()+
-    '</div>'+
-  '</div>'+
-
-  // ── TABELA DE ORÇAMENTOS ──
+  // ── TABELA DE ORÇAMENTOS (mesmas colunas do card "Todos os Orçamentos") ──
   '<div class="sec">Todos os Orçamentos</div>'+
   '<table><thead><tr>'+
-    '<th>Código</th><th>Descrição</th><th>Cliente</th><th>Local</th>'+
-    '<th style="text-align:right">Valor Total</th><th style="text-align:right">Custo Detalhado</th>'+
+    '<th>Código</th><th>Descrição</th><th>Cliente</th>'+
+    '<th style="text-align:right">Valor Total</th>'+
     '<th style="text-align:center">Status</th><th>Data</th>'+
   '</tr></thead><tbody>'+orcRows+'</tbody>'+
   '<tfoot><tr style="background:#e8f0fc;font-weight:700">'+
-    '<td colspan="4" style="padding:8px 10px;border:1px solid #c5d8f0;color:#1a3c7a">TOTAL GERAL</td>'+
-    '<td style="padding:8px 10px;border:1px solid #c5d8f0;text-align:right;color:#1a3c7a;font-size:14px">'+fmt(totalFat)+'</td>'+
-    '<td style="padding:8px 10px;border:1px solid #c5d8f0;text-align:right;color:#dc2626">'+fmt(subT)+'</td>'+
+    '<td colspan="3" style="padding:8px 10px;border:1px solid #c5d8f0;color:#1a3c7a">TOTAL GERAL</td>'+
+    '<td style="padding:8px 10px;border:1px solid #c5d8f0;text-align:right;color:#166534;font-size:14px">'+fmt(totalFat)+'</td>'+
     '<td colspan="2" style="padding:8px 10px;border:1px solid #c5d8f0"></td>'+
   '</tr></tfoot></table>'+
 
