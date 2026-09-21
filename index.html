@@ -3239,7 +3239,99 @@ function initDB() {
       {texto:'Orçamento ORC-2025-002 em elaboração',cor:'#f59e0b',data:'há 1 sem'}
     ]);
   }
+  _importarProfissionaisTabela2026();
   _migrarOrcamentosRevisaoEmbutida();
+}
+
+// Inclui na aba "Mão de Obra" os profissionais da planilha
+// "Salarios_Obras_Custo_Hora_220h_85.xlsx" (aba "Custo Hora", coluna "Valor da
+// hora produtiva" = custo mensal com adicionais + encargos ÷ 176 h produtivas).
+// Roda uma única vez: cada profissional importado recebe origem='tabela-2026-09'
+// e, se ALGUM registro da lista já tiver essa marca, a importação é pulada —
+// assim quem for excluído depois não volta a cada login (a marca viaja junto
+// com a lista, então também vale para outros computadores via sincronização).
+// Profissionais que já existem com o mesmo nome (sem acento/maiúscula) NÃO são
+// duplicados nem sobrescritos — o valor que o usuário já tem continua valendo.
+function _importarProfissionaisTabela2026() {
+  var ORIGEM = 'tabela-2026-09';
+  var TABELA = [
+    ['Mecânica','Auxiliar Mecânico',28.07,2470],
+    ['Mecânica','Mecânico I',38.41,3380],
+    ['Mecânica','Mecânico II',41.36,3640],
+    ['Mecânica','Mecânico III / Montador',44.32,3900],
+    ['Mecânica','Mecânico Ajustador',53.18,4680],
+    ['Mecânica','Técnico Mecânico',59.09,5200],
+    ['Mecânica','Líder Mecânico',62.05,5460],
+    ['Elétrica','Ajudante de Eletricista',31.02,2730],
+    ['Elétrica','Eletricista I',41.36,3640],
+    ['Elétrica','Eletricista II',44.32,3900],
+    ['Elétrica','Eletricista III / Montador',47.27,4160],
+    ['Elétrica','Eletricista Força e Controle',56.14,4940],
+    ['Elétrica','Técnico Eletrotécnico',62.05,5460],
+    ['Elétrica','Lider Eletrica',65,5720],
+    ['Fábrica | Corte','Operador de Oxicorte CNC',43.88,3861],
+    ['Caldeiraria | Solda','Ajudante Caldeiraria',28.81,2535],
+    ['Caldeiraria | Solda','Caldeireiro I',44.32,3900],
+    ['Caldeiraria | Solda','Caldeireiro II',53.18,4680],
+    ['Caldeiraria | Solda','Caldeireiro III',63.7,5605.6],
+    ['Caldeiraria | Solda','Caldeireiro Montador',38.41,3380],
+    ['Caldeiraria | Solda','Encanador Obra / Tubulação',63.76,5610.8],
+    ['Caldeiraria | Solda','Soldador Fábrica / Montagem',45.8,4030],
+    ['Caldeiraria | Solda','Meio Oficial Soldador Fábrica / Montagem',44.32,3900],
+    ['Caldeiraria | Solda','Soldador Obra / Tubulação',67.51,5941],
+    ['Caldeiraria | Solda','Encarregado Solda / Tubulação',79.55,7000.5],
+    ['Segurança Do Trabalho','Tec. Segurança do Trabalho I',56.14,4940],
+    ['Segurança Do Trabalho','Tec. Segurança do Trabalho II',63.52,5590],
+    ['Segurança Do Trabalho','Tec. Segurança do Trabalho III',65,5720],
+    ['Almoxarifado','Almoxarife I',33.98,2990],
+    ['Almoxarifado','Almoxarife II',36.93,3250],
+    ['Almoxarifado','Almoxarife III',39.89,3510],
+    ['Adm','Assistente Administrativo',32.5,2860],
+    ['Adm','Assistente Compras',31.82,2800],
+    ['Pintura','Ajudante de Pintor',26.67,2347.06],
+    ['Pintura','Pintor',41.36,3640],
+    ['Pintura','Jatista',45.8,4030],
+    ['Montagem / Obras','Montador de Andaime',41.36,3640],
+    ['Montagem / Obras','Encarregado Montador de Andaime',60.57,5330],
+    ['Transporte','Motorista',36.93,3250],
+    ['Transporte','Motorista Operador de Munck',45.8,4030],
+    ['Transporte','Operador de Maquinas Pesadas',51.7,4550],
+    ['Civil','Carpinteiro',47.27,4160],
+    ['Civil','Pedreiro',47.27,4160],
+    ['Civil','Servente',28.07,2470],
+    ['Civil','Mestre de Obras',82.73,7280],
+    ['Alimentação','Cozinheira Industrial',33.23,2924.2],
+    ['Limpeza','Auxiliar de Limpeza',23.95,2107.3],
+    ['Qualidade','Inspetor de Qualidade',73.86,6500]
+  ];
+
+  var list = DB.load('profissionais') || [];
+  if (list.some(function(p){ return p.origem === ORIGEM; })) return;
+
+  var norm = function(s){
+    return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
+  };
+  var existentes = {};
+  list.forEach(function(p){ existentes[norm(p.func)] = true; });
+
+  var hoje = new Date().toISOString().split('T')[0];
+  var proxId = list.length ? Math.max.apply(null, list.map(function(p){ return p.id; })) + 1 : 1;
+  var ignorados = [];
+
+  TABELA.forEach(function(t){
+    if (existentes[norm(t[1])]) { ignorados.push(t[1]); return; }
+    list.push({
+      id: proxId++, func: t[1], valor: t[2], valorOriginal: t[2],
+      dataInclusao: hoje, reajustes: [], unidade: 'HORA',
+      obs: 'Tabela 2026 · ' + t[0] + ' · remuneração c/ adicionais ' + fmt(t[3]) + '/mês · custo-hora sobre 176 h produtivas, encargos 100%',
+      origem: ORIGEM
+    });
+  });
+
+  if (ignorados.length === TABELA.length) return;
+  DB.save('profissionais', list);
+  console.warn('[importação] Profissionais da tabela 2026 incluídos:', TABELA.length - ignorados.length,
+    '| já existiam (mantidos como estavam):', ignorados.join(', ') || 'nenhum');
 }
 
 // Corrige orçamentos afetados por uma versão anterior da simulação de
