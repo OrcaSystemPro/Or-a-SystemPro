@@ -3240,6 +3240,7 @@ function initDB() {
     ]);
   }
   _importarProfissionaisTabela2026();
+  _atualizarProfissionaisExistentesTabela2026();
   _migrarOrcamentosRevisaoEmbutida();
 }
 
@@ -3252,9 +3253,8 @@ function initDB() {
 // com a lista, então também vale para outros computadores via sincronização).
 // Profissionais que já existem com o mesmo nome (sem acento/maiúscula) NÃO são
 // duplicados nem sobrescritos — o valor que o usuário já tem continua valendo.
-function _importarProfissionaisTabela2026() {
-  var ORIGEM = 'tabela-2026-09';
-  var TABELA = [
+var PROF_ORIGEM_TABELA = 'tabela-2026-09';
+var PROFISSIONAIS_TABELA_2026 = [
     ['Mecânica','Auxiliar Mecânico',28.07,2470],
     ['Mecânica','Mecânico I',38.41,3380],
     ['Mecânica','Mecânico II',41.36,3640],
@@ -3303,14 +3303,17 @@ function _importarProfissionaisTabela2026() {
     ['Alimentação','Cozinheira Industrial',33.23,2924.2],
     ['Limpeza','Auxiliar de Limpeza',23.95,2107.3],
     ['Qualidade','Inspetor de Qualidade',73.86,6500]
-  ];
+];
 
+function _normNomeProf(s) {
+  return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
+}
+
+function _importarProfissionaisTabela2026() {
+  var ORIGEM = PROF_ORIGEM_TABELA, TABELA = PROFISSIONAIS_TABELA_2026, norm = _normNomeProf;
   var list = DB.load('profissionais') || [];
   if (list.some(function(p){ return p.origem === ORIGEM; })) return;
 
-  var norm = function(s){
-    return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
-  };
   var existentes = {};
   list.forEach(function(p){ existentes[norm(p.func)] = true; });
 
@@ -3331,7 +3334,41 @@ function _importarProfissionaisTabela2026() {
   if (ignorados.length === TABELA.length) return;
   DB.save('profissionais', list);
   console.warn('[importação] Profissionais da tabela 2026 incluídos:', TABELA.length - ignorados.length,
-    '| já existiam (mantidos como estavam):', ignorados.join(', ') || 'nenhum');
+    '| já existiam com o mesmo nome:', ignorados.join(', ') || 'nenhum');
+}
+
+// Passa para o valor da tabela 2026 os profissionais que JÁ existiam com o
+// mesmo nome quando a importação acima rodou (ela os deixou como estavam).
+// Valor e valor original ficam iguais ao da tabela (sem aparecer como
+// "reajuste"); o valor antigo fica registrado na observação. Roda uma única
+// vez (marca ajusteValorTabela nos registros da tabela) — depois disso o
+// usuário pode editar o valor à vontade sem que volte.
+function _atualizarProfissionaisExistentesTabela2026() {
+  var ORIGEM = PROF_ORIGEM_TABELA, norm = _normNomeProf;
+  var list = DB.load('profissionais') || [];
+  if (list.some(function(p){ return p.ajusteValorTabela; })) return;
+
+  var porNome = {};
+  PROFISSIONAIS_TABELA_2026.forEach(function(t){ porNome[norm(t[1])] = t; });
+
+  var alterados = [];
+  list.forEach(function(p){
+    if (p.origem === ORIGEM) return;
+    var t = porNome[norm(p.func)]; if (!t) return;
+    var antigo = p.valor || 0;
+    var obsAntiga = (p.obs || '').trim();
+    p.valor = t[2]; p.valorOriginal = t[2]; p.reajustes = [];
+    p.obs = 'Tabela 2026 · ' + t[0] + ' · remuneração c/ adicionais ' + fmt(t[3]) + '/mês · custo-hora sobre 176 h produtivas, encargos 100%' +
+            ' · valor anterior ' + fmt(antigo) + '/h' + (obsAntiga ? ' · obs. anterior: ' + obsAntiga : '');
+    p.origem = ORIGEM;
+    alterados.push(p.func + ' ' + antigo + ' → ' + t[2]);
+  });
+
+  var temTabela = false;
+  list.forEach(function(p){ if (p.origem === ORIGEM) { p.ajusteValorTabela = true; temTabela = true; } });
+  if (!temTabela) return;
+  DB.save('profissionais', list);
+  if (alterados.length) console.warn('[importação] Passaram para o valor da tabela 2026:', alterados.join(' | '));
 }
 
 // Corrige orçamentos afetados por uma versão anterior da simulação de
