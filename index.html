@@ -1437,7 +1437,10 @@ tr:hover td { background: rgba(79,110,247,0.05); }
         <div id="t-hh" class="tab-panel">
           <div class="table-header" style="padding:0 0 14px;background:none;border:none;">
             <h3>Hora Homem (Mão de Obra)</h3>
-            <button class="btn-sm" onclick="addHH()">+ Adicionar HH</button>
+            <div style="display:flex;gap:8px;">
+              <button class="btn-ghost" onclick="atualizarValoresCadastro('hh')" style="font-size:12px" title="Substitui o valor/hora dos itens pelo valor atual do cadastro de colaboradores">↻ Atualizar valores pelo cadastro</button>
+              <button class="btn-sm" onclick="addHH()">+ Adicionar HH</button>
+            </div>
           </div>
           <div class="table-wrap">
             <table>
@@ -1476,7 +1479,10 @@ tr:hover td { background: rgba(79,110,247,0.05); }
         <div id="t-hm" class="tab-panel">
           <div class="table-header" style="padding:0 0 14px;background:none;border:none;">
             <h3>Hora Máquina (Equipamentos)</h3>
-            <button class="btn-sm" onclick="addHM()">+ Adicionar HM</button>
+            <div style="display:flex;gap:8px;">
+              <button class="btn-ghost" onclick="atualizarValoresCadastro('hm')" style="font-size:12px" title="Substitui o valor/hora dos itens pelo valor atual do cadastro de máquinas">↻ Atualizar valores pelo cadastro</button>
+              <button class="btn-sm" onclick="addHM()">+ Adicionar HM</button>
+            </div>
           </div>
           <div class="table-wrap">
             <table>
@@ -3118,9 +3124,12 @@ function fmt(v) {
 // Regra: usar o MENOR valor entre Preferências Financeiras e Taxas Gerais do orçamento
 // Evita duplicidade e garante consistência em todo o sistema
 // ══════════════════════════════════════════════════════════════════
+// Imposto padrão das Preferências: zero é um valor válido; só usa 27,5% se o campo estiver vazio
+function _impPadrao(cfg) { var v = parseFloat(cfg && cfg.imp_padrao); return isNaN(v) ? 27.5 : v; }
+
 function resolverTaxas(orc) {
   var cfg = DB.load('empresa_cfg') || {};
-  var cfgImp = (parseFloat(cfg.imp_padrao) || 27.5) / 100;   // Preferências Financeiras
+  var cfgImp = _impPadrao(cfg) / 100;   // Preferências Financeiras
   var cfgTax = (parseFloat(cfg.taxa_padrao) || 5) / 100;
   
   // Valor do orçamento (salvo quando criado/editado)
@@ -6915,6 +6924,56 @@ function getEtapaOptsSelected(faseIdx, etapaIdx) {
 
 function inpStyle() { return 'background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:4px;'; }
 
+// ── Itens de HH/HM: o orçamento guarda o próprio valor/hora e o nome do item ─────────────
+// Mudanças posteriores no cadastro (reajuste, renomeação, reimportação) NÃO alteram um
+// orçamento já lançado; para trazer os valores atuais use "Atualizar valores pelo cadastro".
+function _normNome(s) { return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim(); }
+// Localiza o registro do cadastro de um item. Se o id gravado aponta para um registro com
+// outro nome (cadastro renumerado), procura pelo nome; se não achar, devolve null e o item
+// segue com os dados gravados nele mesmo.
+function _resolverCadastro(row, lista, campoId, campoNome) {
+  var c = lista.find(function(x){ return x.id === row[campoId]; }) || null;
+  var nomeItem = row[campoNome === 'func' ? 'func' : 'nome'];
+  if (c && nomeItem && nomeItem !== '—' && nomeItem !== '--' && _normNome(c[campoNome]) !== _normNome(nomeItem)) {
+    var q = lista.find(function(x){ return _normNome(x[campoNome]) === _normNome(nomeItem); });
+    if (q) { row[campoId] = q.id; c = q; } else { c = null; }
+  }
+  return c;
+}
+function _valorItem(row, cad) {
+  var v = parseFloat(row.valorH);
+  return (row.valorH !== undefined && row.valorH !== null && !isNaN(v)) ? v : (cad ? (parseFloat(cad.valor)||0) : 0);
+}
+// Ação explícita: traz para o orçamento aberto os valores/hora atuais do cadastro
+function atualizarValoresCadastro(tipo) {
+  var ehHH = (tipo === 'hh');
+  var lista = DB.load(ehHH ? 'profissionais' : 'maquinas') || [];
+  var itens = ehHH ? hhItens : hmItens;
+  var mud = 0, semCad = 0, comDesc = 0;
+  itens.forEach(function(row){
+    var c = _resolverCadastro(row, lista, ehHH ? 'profId' : 'maqId', ehHH ? 'func' : 'nome');
+    if (!c) { semCad++; return; }
+    if (row.descontoAplicado !== undefined) { comDesc++; return; }
+    if (Math.abs((parseFloat(c.valor)||0) - _valorItem(row, c)) > 0.005) mud++;
+  });
+  if (!mud) { showToast('Todos os itens já estão com o valor do cadastro' + (semCad ? ' (' + semCad + ' sem cadastro correspondente)' : ''), 'info'); return; }
+  if (!confirm('Atualizar ' + mud + ' item(ns) com o valor/hora atual do cadastro?\n\nO total do orçamento será recalculado.' + (comDesc ? '\n' + comDesc + ' item(ns) com desconto aplicado não serão alterados.' : '') + (semCad ? '\n' + semCad + ' item(ns) sem cadastro correspondente não serão alterados.' : ''))) return;
+  itens.forEach(function(row){
+    var c = _resolverCadastro(row, lista, ehHH ? 'profId' : 'maqId', ehHH ? 'func' : 'nome');
+    if (!c || row.descontoAplicado !== undefined) return;
+    row.valorH = parseFloat(c.valor)||0;
+    if (ehHH) row.func = c.func; else row.nome = c.nome;
+  });
+  if (ehHH) renderHHTable(); else renderHMTable();
+  try { calcResumo(); } catch (e) {}
+  showToast('✅ ' + mud + ' item(ns) atualizado(s) pelo cadastro', 'success');
+}
+function _seloCadastro(row, cad, vBase) {
+  if (!cad) return '<span title="Este item não tem registro correspondente no cadastro; usa o nome e o valor gravados no orçamento." style="font-size:9px;background:rgba(148,163,184,0.2);color:var(--text2);padding:1px 5px;border-radius:4px;margin-left:4px;">valor do orçamento</span>';
+  if (row.descontoAplicado === undefined && Math.abs((parseFloat(cad.valor)||0) - vBase) > 0.005) return '<span title="O cadastro hoje está em ' + fmt(parseFloat(cad.valor)||0) + '/h. O orçamento mantém o valor com que o item foi lançado." style="font-size:9px;background:rgba(59,130,246,0.18);color:var(--accent);padding:1px 5px;border-radius:4px;margin-left:4px;">cadastro: ' + fmt(parseFloat(cad.valor)||0) + '</span>';
+  return '';
+}
+
 function addHH() {
   var profs = DB.load('profissionais')||[];
   hhItens.push({
@@ -6940,10 +6999,8 @@ function renderHHTable() {
   var totalHHVal = 0;
   var IS2 = inpStyle()+'width:46px;text-align:center;font-size:12px;';
   tbody.innerHTML = hhItens.map(function(row, i) {
-    var prof  = profs.find(function(p){ return p.id === row.profId; });
-    var vBase = (row.descontoAplicado !== undefined && row.valorH !== undefined)
-                  ? row.valorH
-                  : (prof ? prof.valor : (row.valorH || 0));
+    var prof  = _resolverCadastro(row, profs, 'profId', 'func');
+    var vBase = _valorItem(row, prof);
     var v50   = vBase * 1.5;
     var v75   = vBase * 1.75;
     var v100  = vBase * 2;
@@ -6963,8 +7020,7 @@ function renderHHTable() {
     hhItens[i].h100    = h100;
     hhItens[i].qtdDias = qtdDias;
     hhItens[i].total   = tot;
-    var profRef = profs.find(function(p){return p.id===row.profId;});
-    hhItens[i].func   = profRef ? profRef.func : (row.func||'—');
+    hhItens[i].func   = prof ? prof.func : (row.func||'—');
     hhItens[i].valorH = vBase;
     hhItens[i].qtd    = row.qtdH || 1;
     hhItens[i].horas  = hNor;
@@ -6972,8 +7028,9 @@ function renderHHTable() {
     var descBadge = row.descontoAplicado
       ? '<span style="font-size:9px;background:rgba(245,158,11,0.2);color:var(--amber);padding:1px 5px;border-radius:4px;margin-left:4px;">−'+row.descontoAplicado+'%</span>'
       : '';
-    var profOpts = profs.map(function(p){
-      return '<option value="'+p.id+'"'+(p.id===row.profId?' selected':'')+'>'+p.func+'</option>';
+    descBadge += _seloCadastro(row, prof, vBase);
+    var profOpts = (prof ? '' : '<option value="" selected>'+(row.func||'—')+'</option>') + profs.map(function(p){
+      return '<option value="'+p.id+'"'+((prof && p.id===row.profId)?' selected':'')+'>'+p.func+'</option>';
     }).join('');
     return '<tr>'+
       '<td><select onchange="hhChangeProf('+i+',this)" style="'+inpStyle()+'font-size:12px;width:170px">'+profOpts+'</select>'+descBadge+'</td>'+
@@ -7002,7 +7059,7 @@ function hhChangeProf(i,sel) {
   var profs=DB.load('profissionais')||[];
   var p=profs.find(function(x){return x.id===parseInt(sel.value);});
   // [FIX-RAIZ-6] Ao trocar profissional, limpar desconto pois valor é novo
-  if(p){hhItens[i].profId=p.id;hhItens[i].valorH=p.valor;delete hhItens[i].descontoAplicado;} renderHHTable();
+  if(p){hhItens[i].profId=p.id;hhItens[i].valorH=p.valor;hhItens[i].func=p.func;delete hhItens[i].descontoAplicado;} renderHHTable();
 }
 
 function addHM() {
@@ -7020,10 +7077,8 @@ function renderHMTable() {
   }
   var totalHMVal=0;
   tbody.innerHTML=hmItens.map(function(row,i){
-    var mq=mqs.find(function(m){return m.id===row.maqId;});
-    var vBase = (row.descontoAplicado !== undefined && row.valorH !== undefined)
-                  ? row.valorH
-                  : (mq ? mq.valor : (row.valorH || 0));
+    var mq=_resolverCadastro(row, mqs, 'maqId', 'nome');
+    var vBase = _valorItem(row, mq);
     var fator=row.fatorMult||1, qtd=row.qtd||1, horas=row.horas||8, dias=row.qtdDias||1;
     // CORREÇÃO: Total = Valor/h × Fator × Qtd × Horas × Dias
     var tot=vBase*fator*qtd*horas*dias;
@@ -7033,7 +7088,8 @@ function renderHMTable() {
       ? '<span style="font-size:9px;background:rgba(245,158,11,0.2);color:var(--amber);padding:1px 5px;border-radius:4px;margin-left:4px;">−'+row.descontoAplicado+'%</span>'
       : '';
     var IS='background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:4px;font-size:12px;';
-    var mOpts=mqs.map(function(m){return '<option value="'+m.id+'"'+(m.id===row.maqId?' selected':'')+'>'+m.nome+' -- '+fmt(m.valor)+'/h</option>';}).join('');
+    descBadge += _seloCadastro(row, mq, vBase);
+    var mOpts=(mq ? '' : '<option value="" selected>'+(row.nome||'--')+'</option>')+mqs.map(function(m){return '<option value="'+m.id+'"'+((mq && m.id===row.maqId)?' selected':'')+'>'+m.nome+' -- '+fmt(m.valor)+'/h</option>';}).join('');
     var fatOpts=[{v:'1',l:'NORMAL'},{v:'1.5',l:'EX 50%'},{v:'1.75',l:'EX 75%'},{v:'2',l:'EX 100%'}].map(function(o){return '<option value="'+o.v+'"'+(fator===parseFloat(o.v)?' selected':'')+'>'+o.l+'</option>';}).join('');
     return '<tr>'+
       '<td><select onchange="hmChangeMaq('+i+',this)" style="'+IS+'width:160px">'+mOpts+'</select>'+descBadge+'</td>'+
@@ -7057,7 +7113,7 @@ function hmChangeMaq(i,sel) {
   var mqs=DB.load('maquinas')||[];
   var m=mqs.find(function(x){return x.id===parseInt(sel.value);});
   // [FIX-RAIZ-7] Ao trocar máquina, limpar desconto pois valor é novo
-  if(m){hmItens[i].maqId=m.id;hmItens[i].valorH=m.valor;delete hmItens[i].descontoAplicado;} renderHMTable();
+  if(m){hmItens[i].maqId=m.id;hmItens[i].valorH=m.valor;hmItens[i].nome=m.nome;delete hmItens[i].descontoAplicado;} renderHMTable();
 }
 
 
@@ -7658,15 +7714,13 @@ function salvarOrcamento() {
   var pImpSave2 = (impInput2 && impInput2.value !== '') ? parseFloat(impInput2.value) : 27.5;
   var pTaxSave2 = (taxInput2 && taxInput2.value !== '') ? parseFloat(taxInput2.value) : 5;
   var hhEnrich2 = hhItens.map(function(r){
-    var p=profsDB2.find(function(x){return x.id===r.profId;});
+    var p=_resolverCadastro(r, profsDB2, 'profId', 'func');
     // [FIX-RAIZ-1] NÃO sobrescrever valorH se item tem desconto — preservar valor diluído
-    var valorHFinal = (r.descontoAplicado !== undefined && r.valorH !== undefined)
-                        ? r.valorH
-                        : (p ? p.valor : (r.valorH||0));
+    var valorHFinal = _valorItem(r, p);
     return Object.assign({},r,{func:p?p.func:(r.func||'—'),valorH:valorHFinal,qtd:r.qtdH||1,horas:r.hNor||r.horas||0});
   });
   var hmEnrich2 = hmItens.map(function(r){
-    var mq=maqsDB2.find(function(x){return x.id===r.maqId;});
+    var mq=_resolverCadastro(r, maqsDB2, 'maqId', 'nome');
     return Object.assign({},r,{nome:mq?mq.nome:(r.nome||'—')});
   });
   list.push({id:newId,cod:cod,desc:document.getElementById('n-desc').value||'Serviço',
@@ -10441,7 +10495,8 @@ function restaurarBackup() {
       try {
         var dados = JSON.parse(event.target.result);
         
-        if (confirm('⚠️ Isso substituirá TODOS os dados atuais.\n\nDeseja continuar?')) {
+        if (confirm('⚠️ Isso substituirá os dados atuais pelos do arquivo.\n\nAntes de restaurar, o sistema salva automaticamente um backup do estado atual na sua pasta de downloads.\n\nDeseja continuar?')) {
+          try { fazerBackup(); } catch (eBk) { if (!confirm('Não foi possível gerar o backup automático (' + eBk.message + ').\n\nRestaurar mesmo assim?')) return; }
           Object.keys(dados).forEach(function(key) {
             if (dados[key] !== null && dados[key] !== undefined) {
               DB.save(key, dados[key]);
@@ -10721,11 +10776,9 @@ function atualizarOrcamento() {
   // Enriquecer hhItens com func e horas para relatórios
   var profsDB = DB.load('profissionais')||[];
   var hhEnrich = hhItens.map(function(r){
-    var p = profsDB.find(function(x){return x.id===r.profId;});
+    var p = _resolverCadastro(r, profsDB, 'profId', 'func');
     // [FIX-RAIZ-2] NÃO sobrescrever valorH se item tem desconto — preservar valor diluído
-    var valorHFinal = (r.descontoAplicado !== undefined && r.valorH !== undefined)
-                        ? r.valorH
-                        : (p ? p.valor : (r.valorH||0));
+    var valorHFinal = _valorItem(r, p);
     return Object.assign({}, r, {
       func:  p ? p.func : (r.func||'—'),
       valorH: valorHFinal,
@@ -10735,7 +10788,7 @@ function atualizarOrcamento() {
   });
   var hmEnrich = hmItens.map(function(r){
     var mqs = DB.load('maquinas')||[];
-    var mq = mqs.find(function(x){return x.id===r.maqId;});
+    var mq = _resolverCadastro(r, mqs, 'maqId', 'nome');
     return Object.assign({}, r, { nome: mq?mq.nome:(r.nome||'—') });
   });
   
@@ -11267,7 +11320,7 @@ function sincronizarImpostosBDI() {
       impNfEl.value = iPct.toFixed(2);  // usa o I% do BDI
     } else {
       var cfg = DB.load('empresa_cfg') || {};
-      impNfEl.value = parseFloat(cfg.imp_padrao) || 27.5; // usa padrão das prefs
+      impNfEl.value = _impPadrao(cfg); // usa padrão das prefs
     }
   }
 
@@ -11285,7 +11338,7 @@ function sincronizarImpostosBDI() {
     if (elBdiPct) elBdiPct.textContent = (bdi.pct * 100).toFixed(2) + '%';
   } else {
     var cfg2 = DB.load('empresa_cfg') || {};
-    var impPad = parseFloat(cfg2.imp_padrao) || 27.5;
+    var impPad = _impPadrao(cfg2);
     var elSemPct = document.getElementById('imp-bdi-sem-pct');
     if (elSemPct) elSemPct.textContent = impPad.toFixed(2) + '%';
   }
