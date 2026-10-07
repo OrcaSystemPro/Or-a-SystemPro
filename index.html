@@ -1649,6 +1649,15 @@ tr:hover td { background: rgba(79,110,247,0.05); }
                     </span>
                   </div>
                 </div>
+                <div style="padding:10px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;margin-bottom:10px;font-size:12px;">
+                  <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;">
+                    <input id="imp-por-dentro-orc" type="checkbox" onchange="definirImpPorDentro(this.checked)" style="margin-top:3px;">
+                    <span>
+                      <strong style="color:var(--text);">Calcular impostos percentuais "por dentro" do preço</strong><br>
+                      <span style="color:var(--text3);font-size:11px;line-height:1.5;">Desligado (padrão): o percentual incide sobre o custo. Ligado: incide sobre o preço final, como na nota fiscal — preço = (custo + BDI + fator de venda) ÷ (1 − soma dos percentuais). Vale só para este orçamento e não altera impostos em valor fixo.</span>
+                    </span>
+                  </label>
+                </div>
                 <div id="imp-bdi-card" style="border-radius:10px;overflow:hidden;">
 
                   <!-- Linha: BDI ativo -->
@@ -3659,8 +3668,9 @@ function trocarOrcDashboard(id) {
   var taxasOrc = resolverTaxas(dadosParaDashboard);
   var pImpReal = taxasOrc.pImp;
   var pTaxReal = taxasOrc.pTax;
-  var tImp = subT * pImpReal;
-  var tTax = subT * pTaxReal;
+  var _nucD = calcularOrcamentoSalvo(orc, dadosParaDashboard);   // cálculo único
+  var tImp = _nucD.impGeral + _nucD.impFase;   // impostos efetivos do orçamento
+  var tTax = _nucD.bdi + _nucD.fv;             // BDI + fator de venda
 
   function se(id,v){var el=document.getElementById(id);if(el)el.textContent=v;}
   // CORREÇÃO: Usar valor da revisão ativa se disponível
@@ -3678,12 +3688,12 @@ function trocarOrcDashboard(id) {
     {label:'HM',val:tHM,color:'#14b8a6'},{label:'Outros',val:tOut,color:'#f59e0b'},
     {label:'Consumiv.',val:tCon,color:'#8b5cf6'},{label:'Terceiros',val:tTer,color:'#f97316'},
     // CORREÇÃO: Usar valores reais de impostos e taxas calculados
-    {label:'Impostos',val:tImp,color:'#ef4444'},{label:'Taxas',val:tTax,color:'#a855f7'}
+    {label:'Impostos',val:tImp,color:'#ef4444'},{label:'BDI/Fator',val:tTax,color:'#a855f7'}
   ].filter(function(d){return d.val>0;});
   if(!bR.length&&orc.valor>0) bR=[
     {label:'Materiais',val:orc.valor*0.34,color:'#3d7ff5'},{label:'HH',val:orc.valor*0.10,color:'#22c55e'},
     {label:'Outros',val:orc.valor*0.12,color:'#f59e0b'},{label:'Consumiv.',val:orc.valor*0.06,color:'#8b5cf6'},
-    {label:'Impostos',val:orc.valor*0.28,color:'#ef4444'},{label:'Taxas',val:orc.valor*0.05,color:'#f97316'}
+    {label:'Impostos',val:orc.valor*0.28,color:'#ef4444'},{label:'BDI/Fator',val:orc.valor*0.05,color:'#f97316'}
   ];
   var mxV=bR.length?Math.max.apply(null,bR.map(function(d){return d.val;})):1;
   var tEl=document.getElementById('dash-bars-title');
@@ -3726,7 +3736,7 @@ function trocarOrcDashboard(id) {
       {l:'Consumiveis',v:tCon,c:'var(--purple)'},{l:'Terceiros',v:tTer,c:'var(--orange)'},
       {l:'Subtotal',v:subT,c:'var(--text)',b:true},
       // CORREÇÃO: Usar percentuais reais do orçamento
-      {l:'Impostos '+(pImpReal*100).toFixed(1)+'%',v:tImp,c:'var(--red)'},{l:'Taxas ADM '+(pTaxReal*100).toFixed(1)+'%',v:tTax,c:'var(--amber)'},
+      {l:'BDI e fator de venda',v:tTax,c:'var(--amber)'},{l:'Impostos',v:tImp,c:'var(--red)'},
       {l:'TOTAL GERAL',v:orc.valor||0,c:'var(--green)',b:true,big:true}
     ].filter(function(r){return r.v>0||r.b;});
     dsList.innerHTML=lns.map(function(r){
@@ -3783,8 +3793,9 @@ function renderDashboardGeral() {
     
     // CORREÇÃO: Calcular impostos e taxas reais por orçamento
     var oTaxas=resolverTaxas(o);
-    gImp+=oSub*oTaxas.pImp;
-    gTax+=oSub*oTaxas.pTax;
+    var _nucG=calcularOrcamentoSalvo(o,o);   // cálculo único
+    gImp+=_nucG.impGeral+_nucG.impFase;
+    gTax+=_nucG.bdi+_nucG.fv;
     
     gM+=oMat; gH+=oH; gHM+=oHM; gO+=oO; gC+=oC; gT+=oT;
   });
@@ -3794,12 +3805,12 @@ function renderDashboardGeral() {
     {label:'HM',val:gHM,color:'#14b8a6'},{label:'Outros',val:gO,color:'#f59e0b'},
     {label:'Consumiv.',val:gC,color:'#8b5cf6'},{label:'Terceiros',val:gT,color:'#f97316'},
     // CORREÇÃO: Usar valores reais de impostos e taxas calculados
-    {label:'Impostos',val:gImp,color:'#ef4444'},{label:'Taxas',val:gTax,color:'#a855f7'}
+    {label:'Impostos',val:gImp,color:'#ef4444'},{label:'BDI/Fator',val:gTax,color:'#a855f7'}
   ].filter(function(d){return d.val>0;});
   if(!bG.length&&totalFat>0) bG=[
     {label:'Materiais',val:totalFat*0.34,color:'#3d7ff5'},{label:'HH',val:totalFat*0.10,color:'#22c55e'},
     {label:'Outros',val:totalFat*0.12,color:'#f59e0b'},{label:'Consumiv.',val:totalFat*0.06,color:'#8b5cf6'},
-    {label:'Impostos',val:totalFat*0.28,color:'#ef4444'},{label:'Taxas',val:totalFat*0.05,color:'#f97316'}
+    {label:'Impostos',val:totalFat*0.28,color:'#ef4444'},{label:'BDI/Fator',val:totalFat*0.05,color:'#f97316'}
   ];
   var mxG=bG.length?Math.max.apply(null,bG.map(function(d){return d.val;})):1;
   var bGEl=document.getElementById('dg-bars');
@@ -7608,9 +7619,17 @@ function calcResumo() {
     if (impFaseTotalEl) impFaseTotalEl.textContent = fmt(tImpFase);
   } catch(e) { tImpFase = 0; console.warn('tImpFase:', e.message); }
 
+  // ── CÁLCULO ÚNICO: os valores finais vêm de calcularOrcamento(), a mesma função dos relatórios e dashboards ──
+  var _totLegado = subInnovaFat + imp + tImpFase + subDireto;
+  var _nuc = calcularOrcamento({ fasesOrc: fasesOrc, hhItens: dadosParaCalcular.hh, hmItens: dadosParaCalcular.hm, matItens: dadosParaCalcular.mat, outItens: dadosParaCalcular.out, consItens: dadosParaCalcular.cons, tercItens: dadosParaCalcular.terc, impostosFase: (typeof _impostosFase !== 'undefined') ? _impostosFase : [] },
+    { bdiPct: bdiCalc.pct, pImp: pImp, fv: fvCat, porDentro: _impPorDentroAtual() });
+  if (!_nuc.porDentro && Math.abs(_nuc.total - _totLegado) > 0.01) console.warn('calcResumo: diferença entre cálculo único e legado', _nuc.total, _totLegado);
+  valorBDI = _nuc.bdi; tFatores = _nuc.fv; subInnovaFat = _nuc.subInnovaFat; imp = _nuc.impGeral; tImpFase = _nuc.impFase;
+  var _impFaseTotEl2 = document.getElementById('imp-fase-total-calc'); if (_impFaseTotEl2) _impFaseTotEl2.textContent = fmt(tImpFase);
+  _syncImpPorDentroInput();
   // Total = Innova (com BDI + FV) + impostos (se sem BDI) + impostos por fase + Direto
   var subComFatores = subInnovaFat + subDireto;
-  var tot = subInnovaFat + imp + tImpFase + subDireto;
+  var tot = _nuc.total;
 
   function setEl(id,v){ var e=document.getElementById(id); if(e) e.textContent=fmt(v); }
   setEl('res-mat',tMat); setEl('res-cons',tCons); setEl('res-out',tOut);
@@ -7766,6 +7785,7 @@ function salvarOrcamento() {
     percTaxa: pTaxSave2/100,
     bdiProprio: _bdiProprioEdit,
     fvMO: _fvAtual().mo, fvOutros: _fvAtual().outros,
+    impPorDentro: _impPorDentroAtual(),
     // ── SNAPSHOT ORIGINAL IMUTÁVEL: sempre o estado inicial, nunca sobrescrito ──
     snapOriginal: {
       valor: totalNum,
@@ -7784,7 +7804,7 @@ function salvarOrcamento() {
   DB.save('orcamentos',list); renderOrcamentos(); renderDashboard();
   addAtividade('Orçamento '+cod+' salvo — '+fmt(totalNum),'#22c55e');
   showToast('✅ Orçamento salvo!','success');
-  _bdiProprioEdit = null; _syncBdiProprioInput(); _fvCatEdit = null; _syncFvInputs();
+  _bdiProprioEdit = null; _syncBdiProprioInput(); _fvCatEdit = null; _syncFvInputs(); _impPorDentroEdit = null; _syncImpPorDentroInput();
   fasesOrc=[]; hhItens=[]; hmItens=[]; matItens=[]; outItens=[]; consItens=[];
   if(typeof tercItens!=='undefined') tercItens=[];
   renderFasesList(); renderHHTable(); renderHMTable(); renderMatTable(); renderOutTable(); renderConsTable();
@@ -8082,6 +8102,7 @@ function gerarRelatorioFase() {
   function fmtPct(v) { return (v*100).toFixed(1)+'%'; }
 
   // Calcular por fase
+  var _nucF = calcularOrcamentoSalvo(orc, _dadosFase);   // cálculo único
   var fasesData = fases.map(function(f, fi){
     var tHH=0;
     var tHMinn=0, tHMdir=0;
@@ -8113,6 +8134,11 @@ function gerarRelatorioFase() {
     var imp = subFat * taxasRel.pImp;
     var tax = 0; // Taxa ADM removida - já compõe BDI
     var total = subFat + imp + subDir;
+    var _fdU = _nucF.fases[fi];
+    if (_fdU) {   // valores do cálculo único: BDI + fatores de venda; impostos da fase + rateio dos gerais
+      acrescimoFator = _fdU.bdi + _fdU.fvFase + _fdU.fvCat; subFat = subInn + acrescimoFator;
+      imp = _fdU.imp + _fdU.impGeral + _fdU.rateio; total = _fdU.totalRateado;
+    }
     return {f:f, fi:fi, tHH:tHH, tHM:tHM, tMat:tMat, tOut:tOut, tCons:tCons, tTerc:tTerc,
             sub:sub, bdi:acrescimoFator, subFat:subFat, imp:imp, tax:tax, total:total, fator:fator};
   });
@@ -8589,7 +8615,15 @@ function gerarRelatorio(orcId) {
   // Se BDI está ativo, impostos já estão embutidos na fórmula — não duplicar
   var tImp = (bdiRel.pct > 0) ? 0 : (subInnovaFat * pImp);
   var tTax = 0;
-  var totalGeral = subInnovaFat + tImp + subDireto_fat + tImpFaseRel;
+  // ── CÁLCULO ÚNICO (mesma função do editor) ──
+  var _nucRel = null;
+  if (subTotal !== 0) {
+    _nucRel = calcularOrcamento(Object.assign({}, _orcDados, { fasesOrc: _orcDados.fasesOrc || orc.fasesOrc || [], impostosFase: _orcDados.impostosFase || orc.impostosFase || [] }),
+      { bdiPct: bdiRel.pct, pImp: pImp, fv: _fvRel, porDentro: !!orc.impPorDentro });
+    valorBDIRel = _nucRel.bdi; tFatRel = _nucRel.fv; subInnovaFat = _nucRel.subInnovaFat; subTotal = subInnovaFat + subDireto_fat;
+    tImp = _nucRel.impGeral; tImpFaseRel = _nucRel.impFase;
+  }
+  var totalGeral = _nucRel ? _nucRel.total : (subInnovaFat + tImp + subDireto_fat + tImpFaseRel);
   var subDireto  = subTotal; // alias para HTML
 
 
@@ -8778,7 +8812,11 @@ function gerarRelatorio(orcId) {
         return (ei === null) ? (typeof x.etapaIdx !== 'number') : (x.etapaIdx === ei);
       });
     };
-    var _impVal = function(x, base){ return x.tipo === 'fixo' ? (parseFloat(x.valor)||0) : base * ((parseFloat(x.valor)||0)/100); };
+    var _impVal = function(x, base, fi){   // percentuais por fase vêm do cálculo único (respeita "por dentro")
+      if (x.tipo === 'fixo') return parseFloat(x.valor)||0;
+      if (_nucRel && typeof x.etapaIdx !== 'number' && typeof fi === 'number') { var ev = _nucRel.impEntradas[_impArr.indexOf(x)]; if (ev) return ev.fases[fi] || 0; }
+      return base * ((parseFloat(x.valor)||0)/100);
+    };
     var _bdiPct = bdiRel.pct || 0;
     var _fvR = _fvDoOrc(orc);
     var _TD = 'padding:6px 8px;border:1px solid var(--cBdr);';
@@ -8847,7 +8885,7 @@ function gerarRelatorio(orcId) {
       });
       // fechamento da fase
       var impsF = _impDe(fi, null), tribF = 0, ajF = bdiAjF, linhasF = '';
-      impsF.forEach(function(x){ var v = _impVal(x, custoF); if (x.ajusteBdi) ajF += v; else { tribF += v; linhasF += _linhaTot(x.nome, v, false); } });
+      impsF.forEach(function(x){ var v = _impVal(x, custoF, fi); if (x.ajusteBdi) ajF += v; else { tribF += v; linhasF += _linhaTot(x.nome, v, false); } });
       var bdiF = baseBdiF * _bdiPct + ajF;
       var fvF = baseFvF * ((f.fator||0)/100) + fvCatF;
       var totalF = custoF + bdiF + fvF + impEtapasF + tribF;
@@ -9296,11 +9334,12 @@ function gerarProposta(orcId) {
   // CORREÇÃO: Usar BDI técnico
   var taxasRelP = resolverTaxas(orc);
   var bdiRelP = calcularBDI(orc);
-  var pImpP = (bdiRelP.pct > 0) ? 0 : ((_orcDados.percImp !== undefined && _orcDados.percImp !== null) ? _orcDados.percImp : taxasRelP.pImp);
+  var pImpP = (bdiRelP.pct > 0) ? 0 : ((orc.percImp !== undefined && orc.percImp !== null) ? orc.percImp : taxasRelP.pImp);
+  var _nucP = calcularOrcamentoSalvo(orc, orc);   // cálculo único
   var pTaxP = 0;
   var sub  = tMat+tCons+tOut+tHH+tHM+tTerc || (orc.valor / (1 + bdiRelP.pct + pImpP));
-  var valorBDIProp = sub * bdiRelP.pct;
-  var imp  = sub * pImpP;
+  var valorBDIProp = (tMat+tCons+tOut+tHH+tHM+tTerc) ? (_nucP.bdi + _nucP.fv) : sub * bdiRelP.pct;
+  var imp  = (tMat+tCons+tOut+tHH+tHM+tTerc) ? (_nucP.impGeral + _nucP.impFase) : sub * pImpP;
   var tax  = 0;
   var lucro= orc.valor - (sub+imp+tax);
   var total= orc.valor;
@@ -9325,8 +9364,8 @@ function gerarProposta(orcId) {
     _ph.forEach(function(r) {
       var p = profs3.find(function(x){return x.id===r.profId;}) || {func:'Mão de Obra',valor:0};
       priceRows += tRow(itemIdx++, r.qtdH||1,
-        'Hora Homem — '+p.func+(r.horas?' ('+r.horas+'h)':''),
-        fmt(p.valor), fmt(r.total||0));
+        'Hora Homem — '+(r.func||p.func)+(r.horas?' ('+r.horas+'h)':''),
+        fmt((r.valorH !== undefined && r.valorH !== null) ? r.valorH : p.valor), fmt(r.total||0));
     });
   }
   if (tMat > 0) {
@@ -9372,7 +9411,7 @@ function gerarProposta(orcId) {
   }
 
   // Payment conditions
-  var fases = _orcDados.fasesOrc || orc.fasesOrc || [];
+  var fases = orc.fasesOrc || [];
   var pagRows = '';
   if (fases.length > 0) {
     fases.forEach(function(f,i) {
@@ -10680,6 +10719,7 @@ function editarOrcamento(id) {
   _bdiProprioEdit = (orc.bdiProprio !== undefined && orc.bdiProprio !== null && parseFloat(orc.bdiProprio) > 0) ? parseFloat(orc.bdiProprio) : null;
   _syncBdiProprioInput();
   _fvCatEdit = _fvDoOrc(orc); _syncFvInputs();
+  _impPorDentroEdit = !!orc.impPorDentro; _syncImpPorDentroInput();
   // Editor "normal": nunca deve herdar uma revisão legada deixada aberta por
   // uma visita anterior a abrirRevisaoOrcamento()/gerarRelatorio() na mesma
   // aba — sem isso, calcResumo()/gerarRelatorio() podem tentar ler
@@ -10842,6 +10882,7 @@ function atualizarOrcamento() {
   list[idx].percTaxa  = pTaxSave / 100;
   if (_bdiProprioEdit !== null) list[idx].bdiProprio = _bdiProprioEdit; else delete list[idx].bdiProprio;
   var _fvSave = _fvAtual(); list[idx].fvMO = _fvSave.mo; list[idx].fvOutros = _fvSave.outros;
+  list[idx].impPorDentro = _impPorDentroAtual();
 
   DB.save('orcamentos', list);
   renderOrcamentos(); renderDashboard();
@@ -10854,7 +10895,7 @@ function atualizarOrcamento() {
 function cancelarEdicaoOrc() {
   _editOrcId = null;
   _revisaoAberta = null; // limpa controle de revisão aberta
-  _bdiProprioEdit = null; _syncBdiProprioInput(); _fvCatEdit = null; _syncFvInputs();
+  _bdiProprioEdit = null; _syncBdiProprioInput(); _fvCatEdit = null; _syncFvInputs(); _impPorDentroEdit = null; _syncImpPorDentroInput();
   // Restaurar título
   document.getElementById('novo-page-title').textContent = 'Novo Orçamento';
   document.getElementById('novo-page-sub').textContent = 'Preencha as informações e monte a composição de custos';
@@ -11412,6 +11453,115 @@ function savePrefFinanceiras() {
 
 // ══ CÁLCULO BDI — Fórmula técnica auditável ══
 // BDI = ( (1 + (AC + AD + DF + R + L)) / (1 - I) ) - 1
+// ══════════════════════════════════════════════════════════════════════════════
+// CÁLCULO ÚNICO DO ORÇAMENTO
+// Toda tela que mostra total, BDI, fator de venda ou impostos (editor, Relatório de
+// Custos, Relatório por Fase, Proposta, Dashboards) usa esta função. Regras:
+//   custo        = soma dos totais dos itens (o item guarda o próprio total)
+//   BDI          = custo faturado pela empresa × BDI% (BDI próprio do orçamento ou das Preferências)
+//   fator venda  = por fase (% da fase sobre HH+HM+Outros+Consumíveis+Terceiros, sem materiais)
+//                  + por categoria (mão de obra % e demais custos %)
+//   imposto geral= só quando o BDI é zero: (custo + BDI + fatores) × imposto padrão
+//   impostos fase= valor fixo, ou percentual
+//        por fora   (padrão): % sobre o custo da fase (mesma base do fator por fase) ou sobre o custo total
+//        por dentro (opção) : % sobre o PREÇO da fase, P = B ÷ (1 − soma dos %), B = custo + BDI + fatores
+//   total        = custo + BDI + fatores + imposto geral + impostos por fase + faturamento direto
+// d = {fasesOrc, hhItens, hmItens, matItens, outItens, consItens, tercItens, impostosFase}
+// o = {bdiPct, pImp, fv:{mo,outros}, porDentro}
+// ══════════════════════════════════════════════════════════════════════════════
+function calcularOrcamento(d, o) {
+  d = d || {}; o = o || {};
+  var fases = d.fasesOrc || [], nF = fases.length;
+  var bdiPct = parseFloat(o.bdiPct) || 0, pImp = parseFloat(o.pImp) || 0;
+  var fv = o.fv || { mo: 0, outros: 0 }, porDentro = !!o.porDentro;
+  var T = function (r) { return (typeof r.total === 'number') ? r.total : (parseFloat(r.total) || 0); };
+  var dir = function (r) { return r.fat === 'direto'; };
+  var fIdx = function (r) { var f = parseInt(r.faseIdx); return isNaN(f) ? 0 : f; };   // mesma regra de getSubFase
+  var grupos = [['hh', d.hhItens || [], false], ['hm', d.hmItens || [], true], ['mat', d.matItens || [], true], ['out', d.outItens || [], false], ['cons', d.consItens || [], false], ['terc', d.tercItens || [], true]];
+  var R = { tHH: 0, tHM: 0, tMat: 0, tOut: 0, tCons: 0, tTerc: 0, subInnova: 0, subDireto: 0 };
+  var F = []; for (var i = 0; i <= nF; i++) F.push({ custo: 0, custoInn: 0, hhInn: 0, subFase: 0 });   // posição nF = itens sem fase válida
+  grupos.forEach(function (g) {
+    g[1].forEach(function (r) {
+      var v = T(r), ehDir = g[2] && dir(r), fi = fIdx(r), k = (fi >= 0 && fi < nF) ? fi : nF;
+      if (g[0] === 'hh') R.tHH += v; else if (g[0] === 'hm') R.tHM += v; else if (g[0] === 'mat') R.tMat += v; else if (g[0] === 'out') R.tOut += v; else if (g[0] === 'cons') R.tCons += v; else R.tTerc += v;
+      if (ehDir) R.subDireto += v; else R.subInnova += v;
+      F[k].custo += v; if (!ehDir) { F[k].custoInn += v; if (g[0] === 'hh') F[k].hhInn += v; }
+      if (g[0] !== 'mat' && k < nF) F[k].subFase += v;      // base histórica do fator por fase (inclui direto de HM/terceiros, exclui materiais)
+    });
+  });
+  var hhInnTot = R.tHH;
+  // fatores de venda
+  var fvFaseTot = 0, fvCatTot = hhInnTot * ((fv.mo || 0) / 100) + (R.subInnova - hhInnTot) * ((fv.outros || 0) / 100);
+  F.forEach(function (x, k) {
+    x.fator = (k < nF) ? (parseFloat(fases[k].fator) || 0) : 0;
+    x.fvFase = x.subFase * (x.fator / 100); fvFaseTot += x.fvFase;
+    x.fvCat = x.hhInn * ((fv.mo || 0) / 100) + (x.custoInn - x.hhInn) * ((fv.outros || 0) / 100);
+    x.bdi = x.custoInn * bdiPct;
+    x.base = x.custoInn + x.bdi + x.fvFase + x.fvCat;       // preço da fase antes dos impostos
+    x.imp = 0; x.impGeral = 0;
+  });
+  R.bdi = R.subInnova * bdiPct;
+  R.fvFase = fvFaseTot; R.fvCat = fvCatTot; R.fv = fvFaseTot + fvCatTot;
+  R.subInnovaFat = R.subInnova + R.bdi + R.fv;
+  var imps = d.impostosFase || [], pGeral = (bdiPct <= 0) ? pImp : 0;
+  var ehTodas = function (x) { return !!x.todasFases || !x.fases || !x.fases.length; };
+  var pct = function (x) { return (parseFloat(x.valor) || 0) / 100; };
+  R.impEntradas = imps.map(function () { return { total: 0, fases: {} }; });
+  R.impGeral = 0; R.impFase = 0;
+  var usarDentro = porDentro;
+  if (usarDentro) {
+    // soma dos percentuais que incidem em cada fase; se chegar a 99% volta para "por fora"
+    F.forEach(function (x, k) {
+      x.pSoma = pGeral;
+      imps.forEach(function (e) { if (!e || !e.valor || e.tipo === 'fixo') return; if (ehTodas(e) || (k < nF && e.fases.indexOf(k) >= 0)) x.pSoma += pct(e); });
+      if (x.pSoma >= 0.99) usarDentro = false;
+    });
+  }
+  imps.forEach(function (e, idx) {
+    if (!e || !e.valor) return;
+    var ev = R.impEntradas[idx];
+    if (e.tipo === 'fixo') {
+      var v = parseFloat(e.valor) || 0; ev.total = v;
+      var f0 = (!ehTodas(e)) ? e.fases[0] : -1;
+      if (f0 >= 0 && f0 < nF) { ev.fases[f0] = v; F[f0].imp += v; } else { ev.geral = v; }
+    } else if (usarDentro) {
+      F.forEach(function (x, k) {
+        if (!(ehTodas(e) || (k < nF && e.fases.indexOf(k) >= 0))) return;
+        var v = pct(e) * x.base / (1 - x.pSoma); if (!v) return;
+        ev.total += v; ev.fases[k] = v; x.imp += v;
+      });
+    } else if (ehTodas(e)) {
+      ev.total = R.subInnova * pct(e); ev.geral = ev.total;
+    } else {
+      e.fases.forEach(function (k) { if (k >= 0 && k < nF) { var v = F[k].subFase * pct(e); ev.total += v; ev.fases[k] = v; F[k].imp += v; } });
+    }
+    R.impFase += ev.total;
+  });
+  if (usarDentro) { F.forEach(function (x) { x.impGeral = pGeral * x.base / (1 - x.pSoma); R.impGeral += x.impGeral; }); }
+  else R.impGeral = R.subInnovaFat * pGeral;
+  R.porDentro = usarDentro;
+  R.total = R.subInnovaFat + R.impGeral + R.impFase + R.subDireto;
+  // fechamento por fase; o que não é de uma fase específica (impostos gerais etc.) é rateado pelo custo
+  var somaF = 0;
+  F.forEach(function (x) { x.total = x.custo + x.bdi + x.fvFase + x.fvCat + x.imp + x.impGeral; somaF += x.total; });
+  var resto = R.total - somaF, custoTot = R.subInnova + R.subDireto;
+  F.forEach(function (x) { x.rateio = custoTot > 0 ? resto * (x.custo / custoTot) : 0; x.totalRateado = x.total + x.rateio; });
+  R.fases = F.slice(0, nF); R.semFase = F[nF];
+  return R;
+}
+// Mesmo cálculo para um orçamento salvo (relatórios e dashboards). dados = itens a usar (o próprio orçamento ou uma revisão)
+function calcularOrcamentoSalvo(orc, dados) {
+  dados = dados || orc || {};
+  var d = { fasesOrc: dados.fasesOrc || orc.fasesOrc || [], hhItens: dados.hhItens || [], hmItens: dados.hmItens || [], matItens: dados.matItens || [], outItens: dados.outItens || [], consItens: dados.consItens || [], tercItens: dados.tercItens || [], impostosFase: dados.impostosFase || orc.impostosFase || [] };
+  var pImp = (dados.percImp !== undefined && dados.percImp !== null) ? dados.percImp : resolverTaxas(orc).pImp;
+  return calcularOrcamento(d, { bdiPct: calcularBDI(orc).pct, pImp: pImp, fv: _fvDoOrc(orc), porDentro: !!orc.impPorDentro });
+}
+// Impostos percentuais "por dentro" no orçamento em edição (null = novo, começa desligado)
+var _impPorDentroEdit = null;
+function _impPorDentroAtual() { return !!_impPorDentroEdit; }
+function definirImpPorDentro(v) { _impPorDentroEdit = !!v; try { calcResumo(); } catch (e) {} }
+function _syncImpPorDentroInput() { var e = document.getElementById('imp-por-dentro-orc'); if (e) e.checked = _impPorDentroAtual(); }
+
 // Fator de venda por categoria do orçamento em edição/criação: {mo, outros} em %.
 // null = orçamento novo ainda sem ajuste (usa o padrão das Preferências) ou, ao editar, 0%.
 var _fvCatEdit = null;
@@ -11784,7 +11934,8 @@ function imprimirDashboardOrcamento() {
   var subT=tHH+tHM+tMat+tOut+tCon+tTer;
 
   var taxasOrc=resolverTaxas(dadosParaDashboard);
-  var tImp=subT*taxasOrc.pImp, tTax=subT*taxasOrc.pTax;
+  var _nucDP = calcularOrcamentoSalvo(orc, dadosParaDashboard);   // cálculo único
+  var tImp=_nucDP.impGeral+_nucDP.impFase, tTax=_nucDP.bdi+_nucDP.fv;
 
   var fatDir=0;
   ['matItens','hmItens','tercItens'].forEach(function(k){
@@ -11795,12 +11946,12 @@ function imprimirDashboardOrcamento() {
   var bD=[
     {l:'Materiais',v:tMat,c:'#1a3c7a'},{l:'HH',v:tHH,c:'#22c55e'},{l:'HM',v:tHM,c:'#14b8a6'},
     {l:'Outros',v:tOut,c:'#f59e0b'},{l:'Consumív.',v:tCon,c:'#8b5cf6'},{l:'Terceiros',v:tTer,c:'#f97316'},
-    {l:'Impostos',v:tImp,c:'#ef4444'},{l:'Taxas',v:tTax,c:'#a855f7'}
+    {l:'Impostos',v:tImp,c:'#ef4444'},{l:'BDI/Fator',v:tTax,c:'#a855f7'}
   ].filter(function(d){return d.v>0;});
   if(!bD.length && valorFinal>0) bD=[
     {l:'Materiais',v:valorFinal*0.34,c:'#1a3c7a'},{l:'HH',v:valorFinal*0.10,c:'#22c55e'},
     {l:'Outros',v:valorFinal*0.12,c:'#f59e0b'},{l:'Consumív.',v:valorFinal*0.06,c:'#8b5cf6'},
-    {l:'Impostos',v:valorFinal*0.28,c:'#ef4444'},{l:'Taxas',v:valorFinal*0.05,c:'#f97316'}
+    {l:'Impostos',v:valorFinal*0.28,c:'#ef4444'},{l:'BDI/Fator',v:valorFinal*0.05,c:'#f97316'}
   ];
   var maxB=bD.length?Math.max.apply(null,bD.map(function(d){return d.v;})):1;
   var BAR_H=100;
@@ -11976,8 +12127,8 @@ function imprimirDashboardOrcamento() {
         {l:'Hora Máquina (HM)',v:tHM,c:'#14b8a6'},{l:'Outros Custos',v:tOut,c:'#b45309'},
         {l:'Consumíveis',v:tCon,c:'#5b21b6'},{l:'Terceiros',v:tTer,c:'#c2410c'},
         {l:'Subtotal Custos',v:subT,c:'#1a3c7a',bold:true},
-        {l:'Impostos NF ('+(taxasOrc.pImp*100).toFixed(1)+'%)',v:tImp,c:'#dc2626'},
-        {l:'Taxas ADM ('+(taxasOrc.pTax*100).toFixed(1)+'%)',v:tTax,c:'#7c3aed'},
+        {l:'Impostos',v:tImp,c:'#dc2626'},
+        {l:'BDI e fator de venda',v:tTax,c:'#7c3aed'},
         {l:'TOTAL FATURADO',v:valorFinal,c:'#1a3c7a',big:true}
       ].filter(function(r){return r.v>0;}).map(function(r){
         return '<div class="res-row" style="background:'+(r.big?'#1a3c7a':r.bold?'#eef4fb':'transparent')+';'+(r.big?'color:#fff;':'')+'">' +
@@ -12054,8 +12205,9 @@ function imprimirDashboard() {
     var oT=(o.tercItens||[]).reduce(function(s,r){return s+(r.total||r.valorUnit*r.qtd||0);},0);
     var oSub=oMat+oH+oHM+oO+oC+oT;
     var oTaxas=resolverTaxas(o);
-    gImp+=oSub*oTaxas.pImp;
-    gTax+=oSub*oTaxas.pTax;
+    var _nucG=calcularOrcamentoSalvo(o,o);   // cálculo único
+    gImp+=_nucG.impGeral+_nucG.impFase;
+    gTax+=_nucG.bdi+_nucG.fv;
     gM+=oMat; gH+=oH; gHM+=oHM; gO+=oO; gC+=oC; gT+=oT;
   });
   var subT=gM+gH+gHM+gO+gC+gT;
@@ -12069,12 +12221,12 @@ function imprimirDashboard() {
     {l:'Consumív.',v:gC,c:'#8b5cf6'},
     {l:'Terceiros',v:gT,c:'#f97316'},
     {l:'Impostos',v:gImp,c:'#ef4444'},
-    {l:'Taxas',v:gTax,c:'#a855f7'}
+    {l:'BDI/Fator',v:gTax,c:'#a855f7'}
   ].filter(function(d){return d.v>0;});
   if(!bD.length && totalFat>0) bD=[
     {l:'Materiais',v:totalFat*0.34,c:'#3d7ff5'},{l:'HH',v:totalFat*0.10,c:'#22c55e'},
     {l:'Outros',v:totalFat*0.12,c:'#f59e0b'},{l:'Consumív.',v:totalFat*0.06,c:'#8b5cf6'},
-    {l:'Impostos',v:totalFat*0.28,c:'#ef4444'},{l:'Taxas',v:totalFat*0.05,c:'#f97316'}
+    {l:'Impostos',v:totalFat*0.28,c:'#ef4444'},{l:'BDI/Fator',v:totalFat*0.05,c:'#f97316'}
   ];
   var maxB=bD.length?Math.max.apply(null,bD.map(function(d){return d.v;})):1;
   var BAR_H=100; // altura máxima px das barras
@@ -12662,7 +12814,7 @@ function aplicarDescontoRevisao() {
     percImp: pImp,
     percTaxa: pTax,
     bdiProprio: orc.bdiProprio,
-    fvMO: orc.fvMO, fvOutros: orc.fvOutros,
+    fvMO: orc.fvMO, fvOutros: orc.fvOutros, impPorDentro: orc.impPorDentro,
 
     // Vínculo com a raiz da família de revisões (não com o pai imediato,
     // para que "quantas revisões esse orçamento já tem" seja sempre correto
