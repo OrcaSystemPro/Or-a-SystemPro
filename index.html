@@ -8647,6 +8647,151 @@ function gerarRelatorio(orcId) {
       '<tbody>'+rows+'</tbody></table>';
   }
 
+
+  // ── DETALHAMENTO POR FASE E ETAPA (quando o orçamento tem fases) ──
+  // Cada etapa mostra os itens agrupados por categoria (Qtd × Dias × h/dia × valor unitário),
+  // a memória de cálculo do item (campo obs) e, se houver impostos vinculados à etapa, o preço da etapa.
+  var detPorFase = '';
+  if (fases.length > 0) {
+    var _CATS = [['hh','Mão de obra'],['hm','Máquinas e equipamentos'],['mat','Materiais'],['cons','Consumíveis'],['out','Outros custos'],['terc','Terceiros / subcontratados']];
+    var _itRel = [];
+    var _nq = function(v){ return (typeof v === 'number') ? (Math.round(v*100)/100).toLocaleString('pt-BR') : v; };
+    var _add = function(cat, r, desc, qtd, dias, hd, und, vUnit, tot){
+      _itRel.push({cat:cat, f:(typeof r.faseIdx==='number'?r.faseIdx:-1), e:(typeof r.etapaIdx==='number'?r.etapaIdx:-1),
+        desc:desc, memo:(r.obs||''), qtd:qtd, dias:dias, hd:hd, und:und, vUnit:vUnit, tot:tot, dir:(r.fat==='direto')});
+    };
+    _hhI.forEach(function(r){
+      var p = profs3.find(function(x){return x.id===r.profId;}) || {};
+      var vH = (r.valorH !== undefined && r.valorH !== null) ? r.valorH : (p.valor || 0);
+      var hNor=r.hNor||r.horas||0, h50=r.h50||0, h75=r.h75||0, h100=r.h100||0, qtdH=r.qtdH||1, qtdDias=r.qtdDias||1;
+      var tot = (typeof r.total === 'number') ? r.total : (hNor*vH + h50*vH*1.5 + h75*vH*1.75 + h100*vH*2) * qtdH * qtdDias;
+      var d = (r.func || p.func || '—');
+      if (h50) d += ' + ' + h50 + 'h a 50%'; if (h75) d += ' + ' + h75 + 'h a 75%'; if (h100) d += ' + ' + h100 + 'h a 100%';
+      if (r.descontoAplicado) d += '  [−' + r.descontoAplicado + '%]';
+      _add('hh', r, d, qtdH, qtdDias, hNor, 'h', fmt(vH)+'/h', tot);
+    });
+    _hmI.forEach(function(r){
+      var m = mqs3.find(function(x){return x.id===r.maqId;}) || {};
+      var vH = (r.valorH !== undefined && r.valorH !== null) ? r.valorH : (m.valor || 0);
+      var qtd=r.qtd||1, horas=r.horas||0, fator=r.fatorMult||1, qtdDias=r.qtdDias||1;
+      var d = (r.nome || m.nome || '—');
+      if (fator > 1) d += ' (' + (fator === 1.5 ? '50%' : fator === 1.75 ? '75%' : '100%') + ')';
+      if (r.descontoAplicado) d += '  [−' + r.descontoAplicado + '%]';
+      _add('hm', r, d, qtd, qtdDias, horas, 'h', fmt(vH)+'/h', (typeof r.total === 'number') ? r.total : vH*fator*qtd*horas*qtdDias);
+    });
+    _matI.forEach(function(r){ if (!(r.desc||r.valorUnit)) return; var q=r.qtd||0, v=r.valorUnit||0;
+      _add('mat', r, (r.desc||'—')+(r.descontoAplicado?'  [−'+r.descontoAplicado+'%]':''), q, '—', '—', r.unidade||'Und', fmt(v), (r.total!==undefined?r.total:v*q)); });
+    _consI.forEach(function(r){ if (!(r.desc||r.valorUnit)) return; var q=r.qtd||0, v=r.valorUnit||0;
+      _add('cons', r, (r.desc||'—')+(r.descontoAplicado?'  [−'+r.descontoAplicado+'%]':''), q, '—', '—', r.unidade||'Verba', fmt(v), (r.total!==undefined?r.total:v*q)); });
+    _outI.forEach(function(r){ if (!(r.desc||r.valorUnit)) return; var v=r.valorUnit||0, q=(r.qtdItens||1)*(r.qtdPessoas||1)*(r.qtdDias||1);
+      _add('out', r, (r.desc||'—')+(r.descontoAplicado?'  [−'+r.descontoAplicado+'%]':''), q, '—', '—', r.unidade||'DIARIA', fmt(v), (r.total!==undefined?r.total:v*q)); });
+    _terc3.forEach(function(r){
+      _add('terc', r, (r.empresa?r.empresa+' — ':'')+(r.servico||''), r.qtd||0, '—', '—', r.unidade||'Verba', fmt(r.valorUnit||0), (r.valorUnit||0)*(r.qtd||0)); });
+
+    var _impArr = _orcDados.impostosFase || orc.impostosFase || [];
+    var _impDe = function(fi, ei){  // impostos vinculados a uma fase (ei = null → sem etapa definida) ou a uma etapa
+      return _impArr.filter(function(x){
+        if (!x || !x.valor || x.todasFases || !x.fases || !x.fases.length) return false;
+        var naFase = (x.tipo === 'fixo') ? (x.fases[0] === fi) : (x.fases.indexOf(fi) >= 0);
+        if (!naFase) return false;
+        return (ei === null) ? (typeof x.etapaIdx !== 'number') : (x.etapaIdx === ei);
+      });
+    };
+    var _impVal = function(x, base){ return x.tipo === 'fixo' ? (parseFloat(x.valor)||0) : base * ((parseFloat(x.valor)||0)/100); };
+    var _bdiPct = bdiRel.pct || 0;
+    var _TD = 'padding:6px 8px;border:1px solid var(--cBdr);';
+    var _linhaTot = function(label, val, forte){
+      return '<tr style="'+(forte?'background:var(--c1);color:#fff;font-weight:700':'background:var(--cRow);font-weight:600')+'">'+
+        '<td colspan="7" style="'+_TD+'text-align:right">'+label+'</td>'+
+        '<td style="'+_TD+'text-align:right;white-space:nowrap">'+fmt(val)+'</td></tr>';
+    };
+    var _tabelaItens = function(itens, nRef){
+      var h = '';
+      _CATS.forEach(function(c){
+        var li = itens.filter(function(x){return x.cat===c[0];}); if (!li.length) return;
+        var sub = li.reduce(function(a,x){return a+x.tot;},0);
+        h += '<tr style="background:var(--cBg)"><td colspan="7" style="'+_TD+'font-weight:700;color:var(--c1);font-size:10.5px;text-transform:uppercase">'+c[1]+'</td>'+
+             '<td style="'+_TD+'text-align:right;font-weight:700;color:var(--c1)">'+fmt(sub)+'</td></tr>';
+        li.forEach(function(x){
+          h += '<tr><td style="'+_TD+'text-align:center;color:#778">'+(nRef.n++)+'</td>'+
+            '<td style="'+_TD+'">'+x.desc+(x.memo?'<div style="font-size:9.5px;color:#667;margin-top:2px;line-height:1.35">'+x.memo+'</div>':'')+'</td>'+
+            '<td style="'+_TD+'text-align:center">'+_nq(x.qtd)+'</td>'+
+            '<td style="'+_TD+'text-align:center">'+_nq(x.dias)+'</td>'+
+            '<td style="'+_TD+'text-align:center">'+_nq(x.hd)+'</td>'+
+            '<td style="'+_TD+'text-align:center">'+x.und+'</td>'+
+            '<td style="'+_TD+'text-align:right;white-space:nowrap">'+x.vUnit+'</td>'+
+            '<td style="'+_TD+'text-align:right;font-weight:600;color:var(--c1);white-space:nowrap">'+fmt(x.tot)+'</td></tr>';
+        });
+      });
+      return h;
+    };
+    var _thead = '<thead><tr><th '+TH+' style="width:28px">#</th><th '+TH+'>Descrição</th>'+
+      '<th '+THC+' style="width:48px">Qtd.</th><th '+THC+' style="width:44px">Dias</th><th '+THC+' style="width:44px">h/dia</th><th '+THC+' style="width:46px">Unid.</th>'+
+      '<th '+THR+' style="width:96px">Valor Unit.</th><th '+THR+' style="width:112px">Total</th></tr></thead>';
+    var _nRef = {n:1}, _somaFases = 0;
+    detPorFase = secTitle('Detalhamento de Custos por Fase e Etapa') +
+      '<div style="font-size:10.5px;color:#556;margin:-4px 0 10px;line-height:1.5">Como ler: mão de obra e máquinas = Qtd × Dias × h/dia × valor por hora. Demais itens = Qtd × valor unitário. A linha cinza abaixo de cada item é a memória de cálculo.</div>';
+    fases.forEach(function(f, fi){
+      var itF = _itRel.filter(function(x){return x.f===fi;});
+      var etapas = (f.etapas||[]);
+      var corpo = '', custoF = 0, baseBdiF = 0, impEtapasF = 0, bdiAjF = 0;
+      var grupos = [];
+      if (etapas.length) {
+        etapas.forEach(function(e, ei){ grupos.push({titulo:e.titulo, ei:ei, itens:itF.filter(function(x){return x.e===ei;})}); });
+        var semEt = itF.filter(function(x){return x.e < 0 || x.e >= etapas.length;});
+        if (semEt.length) grupos.push({titulo:'Itens sem etapa definida', ei:-1, itens:semEt});
+      } else grupos.push({titulo:'', ei:-1, itens:itF});
+      grupos.forEach(function(g){
+        var custo = g.itens.reduce(function(a,x){return a+x.tot;},0);
+        var baseBdi = g.itens.reduce(function(a,x){return a+(x.dir?0:x.tot);},0);
+        custoF += custo; baseBdiF += baseBdi;
+        var imps = (g.ei >= 0) ? _impDe(fi, g.ei) : [];
+        if (!g.itens.length && !imps.length) return;
+        if (g.titulo) corpo += '<div style="font-size:11.5px;font-weight:700;color:var(--c1d);margin:12px 0 5px;padding:5px 8px;border-left:4px solid var(--c1l);background:var(--cBg)">'+g.titulo+'</div>';
+        var rod = '';
+        if (g.titulo || imps.length) rod += _linhaTot('Custo direto' + (g.titulo ? ' da etapa' : ''), custo, false);
+        if (imps.length) {
+          var aj = 0, trib = 0, linhasImp = '';
+          imps.forEach(function(x){ var v = _impVal(x, custo); if (x.ajusteBdi) aj += v; else { trib += v; linhasImp += _linhaTot(x.nome, v, false); } });
+          var bdiE = baseBdi * _bdiPct + aj;
+          if (_bdiPct > 0 || aj) rod += _linhaTot('BDI da etapa' + (baseBdi > 0 ? ' (' + (bdiE / baseBdi * 100).toFixed(2).replace('.', ',') + '% do custo)' : ''), bdiE, false);
+          rod += linhasImp + _linhaTot('PREÇO DA ETAPA', custo + bdiE + trib, true);
+          impEtapasF += trib; bdiAjF += aj;
+        }
+        corpo += '<table>'+_thead+'<tbody>'+_tabelaItens(g.itens, _nRef)+rod+'</tbody></table>';
+      });
+      // fechamento da fase
+      var impsF = _impDe(fi, null), tribF = 0, ajF = bdiAjF, linhasF = '';
+      impsF.forEach(function(x){ var v = _impVal(x, custoF); if (x.ajusteBdi) ajF += v; else { tribF += v; linhasF += _linhaTot(x.nome, v, false); } });
+      var bdiF = baseBdiF * _bdiPct + ajF;
+      var fvF = baseBdiF * ((f.fator||0)/100);
+      var totalF = custoF + bdiF + fvF + impEtapasF + tribF;
+      _somaFases += totalF;
+      var fecho = '<table style="margin-top:8px"><tbody>'+
+        _linhaTot('Custo direto da fase', custoF, false)+
+        ((_bdiPct > 0 || ajF) ? _linhaTot('BDI da fase' + (baseBdiF > 0 ? ' (' + (bdiF / baseBdiF * 100).toFixed(2).replace('.', ',') + '% do custo)' : ''), bdiF, false) : '')+
+        (fvF ? _linhaTot('Fator de venda (' + (f.fator||0) + '%)', fvF, false) : '')+
+        (impEtapasF ? _linhaTot('Impostos e taxas das etapas', impEtapasF, false) : '')+
+        linhasF+
+        _linhaTot('TOTAL DA FASE ' + f.id, totalF, true)+
+        '</tbody></table>';
+      detPorFase += '<div style="margin:18px 0 6px;padding:9px 12px;background:var(--c1);color:#fff;border-radius:6px;display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:12.5px;page-break-after:avoid">'+
+        '<span>'+f.id+'ª FASE — '+f.titulo+'</span><span style="white-space:nowrap;margin-left:12px">'+fmt(totalF)+'</span></div>'+ corpo + fecho;
+    });
+    var _orf = _itRel.filter(function(x){return x.f < 0 || x.f >= fases.length;});
+    if (_orf.length) {
+      var _custoOrf = _orf.reduce(function(a,x){return a+x.tot;},0); _somaFases += _custoOrf * (1 + _bdiPct);
+      detPorFase += '<div style="font-size:11.5px;font-weight:700;color:var(--c1d);margin:14px 0 5px">Itens sem fase definida</div><table>'+_thead+'<tbody>'+_tabelaItens(_orf, _nRef)+_linhaTot('Custo direto', _custoOrf, false)+'</tbody></table>';
+    }
+    var _gerais = _impArr.filter(function(x){return x && x.valor && (x.todasFases || !x.fases || !x.fases.length);});
+    if (_gerais.length) {
+      detPorFase += '<div style="font-size:11px;color:#556;margin-top:10px">Impostos e taxas gerais (todas as fases): '+_gerais.map(function(x){return x.nome+' — '+(x.tipo==='fixo'?fmt(parseFloat(x.valor)||0):(x.valor+'%'));}).join('; ')+'. Valores no quadro "Impostos e Totais".</div>';
+    }
+    if (Math.abs(_somaFases - totalGeral) < 0.05) {
+      detPorFase += '<table style="margin-top:12px"><tbody>'+_linhaTot('SOMA DAS FASES = TOTAL GERAL', _somaFases, true)+'</tbody></table>';
+    }
+  }
+
   var doc = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">'+
     '<title>Relatório — '+orc.cod+'</title>'+
     '<style>'+
@@ -8989,7 +9134,7 @@ function gerarRelatorio(orcId) {
     : '') +
 
     // ── DETALHAMENTO ──
-    secTitle('Detalhamento de Custos')+
+    (detPorFase ? detPorFase : secTitle('Detalhamento de Custos')+
 
     (rowsMat   ? '<div style="font-size:11px;font-weight:700;color:var(--c1);margin:10px 0 5px;text-transform:uppercase">Materiais</div>'+detTable(rowsMat,true)   : '')+
     (rowsCons  ? '<div style="font-size:11px;font-weight:700;color:var(--c1);margin:10px 0 5px;text-transform:uppercase">Consumíveis</div>'+detTable(rowsCons,true)  : '')+
@@ -9002,7 +9147,7 @@ function gerarRelatorio(orcId) {
       '<div style="padding:14px;background:var(--cBg);border:1px solid var(--cBdr);border-radius:6px;font-size:12px;color:#555;text-align:center">'+
         'Este orçamento não possui itens detalhados nas abas. O valor total ('+fmt(totalGeral)+') foi registrado de forma global.'+
       '</div>'
-    : '')+
+    : ''))+
 
     // ── RODAPÉ ──
     '<div class="ft">'+
