@@ -1637,6 +1637,18 @@ tr:hover td { background: rgba(79,110,247,0.05); }
                     <input id="bdi-proprio-orc" type="number" step="0.01" min="0" placeholder="Preferências" onchange="definirBdiProprio(this.value)" style="width:120px;background:var(--bg2);border:1px solid var(--border2);border-radius:8px;color:var(--text);padding:8px 10px;font-size:13px;text-align:right;">
                   </label>
                 </div>
+                <div style="padding:10px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;margin-bottom:10px;font-size:12px;">
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+                    <span>
+                      <strong style="color:var(--text);">⚡ Fator de venda por categoria (%)</strong><br>
+                      <span style="color:var(--text3);font-size:11px;line-height:1.5;">Acréscimo sobre o custo dos itens faturados pela empresa. Orçamentos novos começam com o padrão das Preferências.</span>
+                    </span>
+                    <span style="display:flex;gap:8px;align-items:flex-end;">
+                      <label style="font-size:10px;color:var(--text3);">Mão de obra<br><input id="fv-mo-orc" type="number" step="0.5" min="0" onchange="definirFvCategoria()" style="width:78px;background:var(--bg2);border:1px solid var(--border2);border-radius:8px;color:var(--text);padding:7px 8px;font-size:13px;text-align:right;"></label>
+                      <label style="font-size:10px;color:var(--text3);">Demais custos<br><input id="fv-outros-orc" type="number" step="0.5" min="0" onchange="definirFvCategoria()" style="width:78px;background:var(--bg2);border:1px solid var(--border2);border-radius:8px;color:var(--text);padding:7px 8px;font-size:13px;text-align:right;"></label>
+                    </span>
+                  </div>
+                </div>
                 <div id="imp-bdi-card" style="border-radius:10px;overflow:hidden;">
 
                   <!-- Linha: BDI ativo -->
@@ -1763,7 +1775,7 @@ tr:hover td { background: rgba(79,110,247,0.05); }
                   <div class="total-row"><span class="tr-label">Hora Máquina (HM)</span><span class="tr-val" id="res-hm">R$ 0,00</span></div>
                   <hr class="section-divider">
                   <div class="total-row" id="res-bdi-row"><span class="tr-label" style="color:var(--teal);">📐 BDI/C Encargos — Lucro Desejado</span><span class="tr-val" style="color:var(--teal);" id="res-bdi">R$ 0,00</span></div>
-                  <div class="total-row" id="res-fv-row"><span class="tr-label" style="color:var(--purple);">⚡ Fator de Venda (Fases)</span><span class="tr-val" style="color:var(--purple);" id="res-fv">R$ 0,00</span></div>
+                  <div class="total-row" id="res-fv-row"><span class="tr-label" style="color:var(--purple);">⚡ Fator de Venda</span><span class="tr-val" style="color:var(--purple);" id="res-fv">R$ 0,00</span></div>
                   <div class="total-row"><span class="tr-label">Subtotal c/ Ajustes</span><span class="tr-val" id="res-sub">R$ 0,00</span></div>
                   <div class="total-row"><span class="tr-label" style="color:var(--red);">Impostos (NF)</span><span class="tr-val" style="color:var(--red);" id="res-imp">R$ 0,00</span></div>
                   <div class="total-row" id="res-imp-fase-row" style="display:none"><span class="tr-label" style="color:var(--red)">🧾 Impostos p/ Fase/Etapa</span><span class="tr-val" style="color:var(--red)" id="res-imp-fase">R$ 0,00</span></div>
@@ -2552,6 +2564,11 @@ tr:hover td { background: rgba(79,110,247,0.05); }
                 <div class="field" style="margin-bottom:0"><label>Riscos — R (%)</label><input id="cfg-bdi-r" type="number" value="0" step="0.1" min="0"></div>
               </div>
               <div class="field" style="margin-top:10px;margin-bottom:10px"><label>Lucro Desejado — L (%)</label><input id="cfg-lucro" type="number" value="5.7" step="0.1"></div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+                <div class="field" style="margin-bottom:0"><label>Fator de venda padrão — Mão de obra (%)</label><input id="cfg-fv-mo" type="number" value="20" step="0.5" min="0"></div>
+                <div class="field" style="margin-bottom:0"><label>Fator de venda padrão — Demais custos (%)</label><input id="cfg-fv-outros" type="number" value="10" step="0.5" min="0"></div>
+              </div>
+              <div style="font-size:11px;color:var(--text3);margin:-4px 0 10px;line-height:1.5;">O fator de venda padrão entra nos orçamentos novos; em cada orçamento ele pode ser alterado na aba Impostos & Taxas. Orçamentos já existentes não são alterados.</div>
               <div id="bdi-preview" style="padding:10px 14px;background:rgba(20,184,166,0.08);border:1px solid rgba(20,184,166,0.2);border-radius:8px;font-size:12px;color:var(--text2);margin-bottom:10px;display:none;"></div>
               <div style="display:flex;gap:8px;">
                 <button class="btn-sm" style="margin-top:4px;" onclick="savePrefFinanceiras()">Salvar</button>
@@ -7517,6 +7534,11 @@ function calcResumo() {
     tFatores += acrescimo;
     faseDetalhe.push({f:f, i:i, subFase:subFase, acrescimo:acrescimo, fator:fator});
   });
+  // Fator de venda por categoria: mão de obra e demais custos (somente itens faturados pela empresa)
+  var fvCat = _fvAtual();
+  var tFvCat = tHH * (fvCat.mo/100) + (subInnova - tHH) * (fvCat.outros/100);
+  tFatores += tFvCat;
+  _syncFvInputs();
 
   // ── BDI Técnico — calculado a partir das Preferências Financeiras ──
   var bdiCalc = calcularBDI();
@@ -7743,6 +7765,7 @@ function salvarOrcamento() {
     percImp: pImpSave2/100,
     percTaxa: pTaxSave2/100,
     bdiProprio: _bdiProprioEdit,
+    fvMO: _fvAtual().mo, fvOutros: _fvAtual().outros,
     // ── SNAPSHOT ORIGINAL IMUTÁVEL: sempre o estado inicial, nunca sobrescrito ──
     snapOriginal: {
       valor: totalNum,
@@ -7761,7 +7784,7 @@ function salvarOrcamento() {
   DB.save('orcamentos',list); renderOrcamentos(); renderDashboard();
   addAtividade('Orçamento '+cod+' salvo — '+fmt(totalNum),'#22c55e');
   showToast('✅ Orçamento salvo!','success');
-  _bdiProprioEdit = null; _syncBdiProprioInput();
+  _bdiProprioEdit = null; _syncBdiProprioInput(); _fvCatEdit = null; _syncFvInputs();
   fasesOrc=[]; hhItens=[]; hmItens=[]; matItens=[]; outItens=[]; consItens=[];
   if(typeof tercItens!=='undefined') tercItens=[];
   renderFasesList(); renderHHTable(); renderHMTable(); renderMatTable(); renderOutTable(); renderConsTable();
@@ -8082,7 +8105,8 @@ function gerarRelatorioFase() {
     var sub = subInn + subDir;
     var fator = f.fator || 0;
     // CORREÇÃO: O fator de venda da fase é um acréscimo percentual sobre o subtotal da fase
-    var acrescimoFator = subInn * (fator/100);
+    var _fvFs = _fvDoOrc(orc);
+    var acrescimoFator = subInn * (fator/100) + tHH * (_fvFs.mo/100) + (subInn - tHH) * (_fvFs.outros/100);
     var subFat = subInn + acrescimoFator;
     // Usar taxas resolvidas do orçamento
     var taxasRel = resolverTaxas(orc);
@@ -8505,6 +8529,9 @@ function gerarRelatorio(orcId) {
     tFatRel += acrescimo;
     faseDetRel.push({f:f, fi:fi, subFase:subFaseRel, acrescimo:acrescimo, fator:fator});
   });
+  // Fator de venda por categoria gravado no orçamento
+  var _fvRel = _fvDoOrc(orc);
+  tFatRel += tHH * (_fvRel.mo/100) + (subInnova - tHH) * (_fvRel.outros/100);
 
   // CORREÇÃO: Usar taxas da revisão se disponíveis, senão resolverTaxas()
   var taxasRel2 = resolverTaxas(orc);
@@ -8753,6 +8780,7 @@ function gerarRelatorio(orcId) {
     };
     var _impVal = function(x, base){ return x.tipo === 'fixo' ? (parseFloat(x.valor)||0) : base * ((parseFloat(x.valor)||0)/100); };
     var _bdiPct = bdiRel.pct || 0;
+    var _fvR = _fvDoOrc(orc);
     var _TD = 'padding:6px 8px;border:1px solid var(--cBdr);';
     var _linhaTot = function(label, val, forte){
       return '<tr style="'+(forte?'background:var(--c1);color:#fff;font-weight:700':'background:var(--cRow);font-weight:600')+'">'+
@@ -8788,7 +8816,7 @@ function gerarRelatorio(orcId) {
     fases.forEach(function(f, fi){
       var itF = _itRel.filter(function(x){return x.f===fi;});
       var etapas = (f.etapas||[]);
-      var corpo = '', custoF = 0, baseBdiF = 0, impEtapasF = 0, bdiAjF = 0;
+      var corpo = '', custoF = 0, baseBdiF = 0, impEtapasF = 0, bdiAjF = 0, fvCatF = 0, baseFvF = 0;
       var grupos = [];
       if (etapas.length) {
         etapas.forEach(function(e, ei){ grupos.push({titulo:e.titulo, ei:ei, itens:itF.filter(function(x){return x.e===ei;})}); });
@@ -8798,7 +8826,9 @@ function gerarRelatorio(orcId) {
       grupos.forEach(function(g){
         var custo = g.itens.reduce(function(a,x){return a+x.tot;},0);
         var baseBdi = g.itens.reduce(function(a,x){return a+(x.dir?0:x.tot);},0);
-        custoF += custo; baseBdiF += baseBdi;
+        var fvE = g.itens.reduce(function(a,x){return a+(x.dir?0:x.tot*((x.cat==='hh'?_fvR.mo:_fvR.outros)/100));},0);
+        custoF += custo; baseBdiF += baseBdi; fvCatF += fvE;
+        baseFvF += g.itens.reduce(function(a,x){return a+((x.dir||x.cat==='mat')?0:x.tot);},0);
         var imps = (g.ei >= 0) ? _impDe(fi, g.ei) : [];
         if (!g.itens.length && !imps.length) return;
         if (g.titulo) corpo += '<div style="font-size:11.5px;font-weight:700;color:var(--c1d);margin:12px 0 5px;padding:5px 8px;border-left:4px solid var(--c1l);background:var(--cBg)">'+g.titulo+'</div>';
@@ -8809,7 +8839,8 @@ function gerarRelatorio(orcId) {
           imps.forEach(function(x){ var v = _impVal(x, custo); if (x.ajusteBdi) aj += v; else { trib += v; linhasImp += _linhaTot(x.nome, v, false); } });
           var bdiE = baseBdi * _bdiPct + aj;
           if (_bdiPct > 0 || aj) rod += _linhaTot('BDI da etapa' + (baseBdi > 0 ? ' (' + (bdiE / baseBdi * 100).toFixed(2).replace('.', ',') + '% do custo)' : ''), bdiE, false);
-          rod += linhasImp + _linhaTot('PREÇO DA ETAPA', custo + bdiE + trib, true);
+          if (fvE) rod += _linhaTot('Fator de venda da etapa (mão de obra ' + _fvR.mo + '% · demais ' + _fvR.outros + '%)', fvE, false);
+          rod += linhasImp + _linhaTot('PREÇO DA ETAPA', custo + bdiE + fvE + trib, true);
           impEtapasF += trib; bdiAjF += aj;
         }
         corpo += '<table>'+_thead+'<tbody>'+_tabelaItens(g.itens, _nRef)+rod+'</tbody></table>';
@@ -8818,13 +8849,13 @@ function gerarRelatorio(orcId) {
       var impsF = _impDe(fi, null), tribF = 0, ajF = bdiAjF, linhasF = '';
       impsF.forEach(function(x){ var v = _impVal(x, custoF); if (x.ajusteBdi) ajF += v; else { tribF += v; linhasF += _linhaTot(x.nome, v, false); } });
       var bdiF = baseBdiF * _bdiPct + ajF;
-      var fvF = baseBdiF * ((f.fator||0)/100);
+      var fvF = baseFvF * ((f.fator||0)/100) + fvCatF;
       var totalF = custoF + bdiF + fvF + impEtapasF + tribF;
       _somaFases += totalF;
       var fecho = '<table style="margin-top:8px"><tbody>'+
         _linhaTot('Custo direto da fase', custoF, false)+
         ((_bdiPct > 0 || ajF) ? _linhaTot('BDI da fase' + (baseBdiF > 0 ? ' (' + (bdiF / baseBdiF * 100).toFixed(2).replace('.', ',') + '% do custo)' : ''), bdiF, false) : '')+
-        (fvF ? _linhaTot('Fator de venda (' + (f.fator||0) + '%)', fvF, false) : '')+
+        (fvF ? _linhaTot('Fator de venda' + (f.fator ? ' (fase ' + f.fator + '%' + (fvCatF ? ' + categoria' : '') + ')' : ' (mão de obra ' + _fvR.mo + '% · demais ' + _fvR.outros + '%)'), fvF, false) : '')+
         (impEtapasF ? _linhaTot('Impostos e taxas das etapas', impEtapasF, false) : '')+
         linhasF+
         _linhaTot('TOTAL DA FASE ' + f.id, totalF, true)+
@@ -10648,6 +10679,7 @@ function editarOrcamento(id) {
   _editOrcId = id;
   _bdiProprioEdit = (orc.bdiProprio !== undefined && orc.bdiProprio !== null && parseFloat(orc.bdiProprio) > 0) ? parseFloat(orc.bdiProprio) : null;
   _syncBdiProprioInput();
+  _fvCatEdit = _fvDoOrc(orc); _syncFvInputs();
   // Editor "normal": nunca deve herdar uma revisão legada deixada aberta por
   // uma visita anterior a abrirRevisaoOrcamento()/gerarRelatorio() na mesma
   // aba — sem isso, calcResumo()/gerarRelatorio() podem tentar ler
@@ -10809,6 +10841,7 @@ function atualizarOrcamento() {
   list[idx].percImp   = pImpSave / 100;
   list[idx].percTaxa  = pTaxSave / 100;
   if (_bdiProprioEdit !== null) list[idx].bdiProprio = _bdiProprioEdit; else delete list[idx].bdiProprio;
+  var _fvSave = _fvAtual(); list[idx].fvMO = _fvSave.mo; list[idx].fvOutros = _fvSave.outros;
 
   DB.save('orcamentos', list);
   renderOrcamentos(); renderDashboard();
@@ -10821,7 +10854,7 @@ function atualizarOrcamento() {
 function cancelarEdicaoOrc() {
   _editOrcId = null;
   _revisaoAberta = null; // limpa controle de revisão aberta
-  _bdiProprioEdit = null; _syncBdiProprioInput();
+  _bdiProprioEdit = null; _syncBdiProprioInput(); _fvCatEdit = null; _syncFvInputs();
   // Restaurar título
   document.getElementById('novo-page-title').textContent = 'Novo Orçamento';
   document.getElementById('novo-page-sub').textContent = 'Preencha as informações e monte a composição de custos';
@@ -11253,6 +11286,9 @@ function loadConfig() {
   if (dfEl) dfEl.value = cfg.bdi_df || '0';
   var rEl = document.getElementById('cfg-bdi-r');
   if (rEl) rEl.value = cfg.bdi_r || '0';
+  var fvP = _fvPadrao();
+  var fvMoEl = document.getElementById('cfg-fv-mo'); if (fvMoEl) fvMoEl.value = fvP.mo;
+  var fvOuEl = document.getElementById('cfg-fv-outros'); if (fvOuEl) fvOuEl.value = fvP.outros;
 }
 
 function saveConfig() {
@@ -11276,6 +11312,8 @@ function saveConfig() {
   if (dfEl) data.bdi_df = dfEl.value;
   var rEl = document.getElementById('cfg-bdi-r');
   if (rEl) data.bdi_r = rEl.value;
+  var fvMoEl = document.getElementById('cfg-fv-mo'); if (fvMoEl) data.fv_mo = fvMoEl.value;
+  var fvOuEl = document.getElementById('cfg-fv-outros'); if (fvOuEl) data.fv_outros = fvOuEl.value;
   DB.save('empresa_cfg', data);
   var st = document.getElementById('cfg-save-status');
   if (st) { st.style.display='inline'; setTimeout(function(){st.style.display='none';},3000); }
@@ -11374,6 +11412,30 @@ function savePrefFinanceiras() {
 
 // ══ CÁLCULO BDI — Fórmula técnica auditável ══
 // BDI = ( (1 + (AC + AD + DF + R + L)) / (1 - I) ) - 1
+// Fator de venda por categoria do orçamento em edição/criação: {mo, outros} em %.
+// null = orçamento novo ainda sem ajuste (usa o padrão das Preferências) ou, ao editar, 0%.
+var _fvCatEdit = null;
+function _fvPadrao() {
+  var c = DB.load('empresa_cfg') || {}; var a = parseFloat(c.fv_mo), b = parseFloat(c.fv_outros);
+  return { mo: isNaN(a) ? 20 : a, outros: isNaN(b) ? 10 : b };
+}
+function _fvDoOrc(orc) { return { mo: parseFloat(orc && orc.fvMO) || 0, outros: parseFloat(orc && orc.fvOutros) || 0 }; }
+function _fvAtual() {
+  if (_fvCatEdit) return _fvCatEdit;
+  if (typeof _editOrcId !== 'undefined' && _editOrcId) return { mo: 0, outros: 0 };
+  return _fvPadrao();
+}
+function definirFvCategoria() {
+  var a = parseFloat(String((document.getElementById('fv-mo-orc')||{}).value || '').replace(',', '.'));
+  var b = parseFloat(String((document.getElementById('fv-outros-orc')||{}).value || '').replace(',', '.'));
+  _fvCatEdit = { mo: (isNaN(a) || a < 0) ? 0 : a, outros: (isNaN(b) || b < 0) ? 0 : b };
+  try { calcResumo(); } catch (e) {}
+}
+function _syncFvInputs() {
+  var f = _fvAtual(), a = document.getElementById('fv-mo-orc'), b = document.getElementById('fv-outros-orc');
+  if (a && document.activeElement !== a) a.value = f.mo; if (b && document.activeElement !== b) b.value = f.outros;
+}
+
 // BDI próprio do orçamento em edição/criação (null = usa o BDI das Preferências Financeiras)
 var _bdiProprioEdit = null;
 
@@ -12600,6 +12662,7 @@ function aplicarDescontoRevisao() {
     percImp: pImp,
     percTaxa: pTax,
     bdiProprio: orc.bdiProprio,
+    fvMO: orc.fvMO, fvOutros: orc.fvOutros,
 
     // Vínculo com a raiz da família de revisões (não com o pai imediato,
     // para que "quantas revisões esse orçamento já tem" seja sempre correto
