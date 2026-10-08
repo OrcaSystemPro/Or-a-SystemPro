@@ -8866,7 +8866,7 @@ function gerarRelatorio(orcId) {
         var baseBdi = g.itens.reduce(function(a,x){return a+(x.dir?0:x.tot);},0);
         var fvE = g.itens.reduce(function(a,x){return a+(x.dir?0:x.tot*((x.cat==='hh'?_fvR.mo:_fvR.outros)/100));},0);
         custoF += custo; baseBdiF += baseBdi; fvCatF += fvE;
-        baseFvF += g.itens.reduce(function(a,x){return a+((x.dir||x.cat==='mat')?0:x.tot);},0);
+        baseFvF += g.itens.reduce(function(a,x){return a+((x.cat==='mat')?0:x.tot);},0);   // mesma base de calcularOrcamento: inclui HM/terceiros em faturamento direto, exclui materiais
         var imps = (g.ei >= 0) ? _impDe(fi, g.ei) : [];
         if (!g.itens.length && !imps.length) return;
         if (g.titulo) corpo += '<div style="font-size:11.5px;font-weight:700;color:var(--c1d);margin:12px 0 5px;padding:5px 8px;border-left:4px solid var(--c1l);background:var(--cBg)">'+g.titulo+'</div>';
