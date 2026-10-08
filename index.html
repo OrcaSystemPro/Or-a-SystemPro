@@ -8821,9 +8821,10 @@ function gerarRelatorio(orcId) {
     var _fvR = _fvDoOrc(orc);
     var _TD = 'padding:6px 8px;border:1px solid var(--cBdr);';
     var _linhaTot = function(label, val, forte){
+      var _cf = forte ? ';background:var(--c1);color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact' : '';   // a regra geral de td (cor escura / zebra) venceria a cor da linha
       return '<tr style="'+(forte?'background:var(--c1);color:#fff;font-weight:700':'background:var(--cRow);font-weight:600')+'">'+
-        '<td colspan="7" style="'+_TD+'text-align:right">'+label+'</td>'+
-        '<td style="'+_TD+'text-align:right;white-space:nowrap">'+fmt(val)+'</td></tr>';
+        '<td colspan="7" style="'+_TD+'text-align:right'+_cf+'">'+label+'</td>'+
+        '<td style="'+_TD+'text-align:right;white-space:nowrap'+_cf+'">'+fmt(val)+'</td></tr>';
     };
     var _tabelaItens = function(itens, nRef){
       var h = '';
