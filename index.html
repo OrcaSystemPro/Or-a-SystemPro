@@ -8866,7 +8866,8 @@ function gerarRelatorio(orcId) {
         var baseBdi = g.itens.reduce(function(a,x){return a+(x.dir?0:x.tot);},0);
         var fvE = g.itens.reduce(function(a,x){return a+(x.dir?0:x.tot*((x.cat==='hh'?_fvR.mo:_fvR.outros)/100));},0);
         custoF += custo; baseBdiF += baseBdi; fvCatF += fvE;
-        baseFvF += g.itens.reduce(function(a,x){return a+((x.cat==='mat')?0:x.tot);},0);   // mesma base de calcularOrcamento: inclui HM/terceiros em faturamento direto, exclui materiais
+        var baseFvE = g.itens.reduce(function(a,x){return a+((x.cat==='mat')?0:x.tot);},0), fvFaseE = baseFvE * ((f.fator||0)/100);
+        baseFvF += baseFvE;   // mesma base de calcularOrcamento: inclui HM/terceiros em faturamento direto, exclui materiais
         var imps = (g.ei >= 0) ? _impDe(fi, g.ei) : [];
         if (!g.itens.length && !imps.length) return;
         if (g.titulo) corpo += '<div style="font-size:11.5px;font-weight:700;color:var(--c1d);margin:12px 0 5px;padding:5px 8px;border-left:4px solid var(--c1l);background:var(--cBg)">'+g.titulo+'</div>';
@@ -8878,7 +8879,8 @@ function gerarRelatorio(orcId) {
           var bdiE = baseBdi * _bdiPct + aj;
           if (_bdiPct > 0 || aj) rod += _linhaTot('BDI da etapa' + (baseBdi > 0 ? ' (' + (bdiE / baseBdi * 100).toFixed(2).replace('.', ',') + '% do custo)' : ''), bdiE, false);
           if (fvE) rod += _linhaTot('Fator de venda da etapa (mão de obra ' + _fvR.mo + '% · demais ' + _fvR.outros + '%)', fvE, false);
-          rod += linhasImp + _linhaTot('PREÇO DA ETAPA', custo + bdiE + fvE + trib, true);
+          if (fvFaseE) rod += _linhaTot('Fator de venda da etapa (' + f.fator + '% do custo sem materiais)', fvFaseE, false);
+          rod += linhasImp + _linhaTot('PREÇO DA ETAPA', custo + bdiE + fvE + fvFaseE + trib, true);
           impEtapasF += trib; bdiAjF += aj;
         }
         corpo += '<table>'+_thead+'<tbody>'+_tabelaItens(g.itens, _nRef)+rod+'</tbody></table>';
