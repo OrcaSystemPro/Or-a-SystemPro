@@ -1449,6 +1449,7 @@ tr:hover td { background: rgba(79,110,247,0.05); }
     <th rowspan="2">Profissional</th>
     <th rowspan="2">Fase</th>
     <th rowspan="2">Etapa</th>
+    <th rowspan="2">Observações</th>
     <th rowspan="2" style="text-align:center">Qtd.<br>Homens</th>
     <th rowspan="2" style="text-align:center">Qtd.<br>Dias</th>
     <th colspan="4" style="text-align:center;background:#0f2952;border-bottom:1px solid rgba(255,255,255,0.2)">Horas por Tipo</th>
@@ -1468,7 +1469,7 @@ tr:hover td { background: rgba(79,110,247,0.05); }
   </tr>
 </thead>
               <tbody id="hh-tbody">
-                <tr><td colspan="15" style="text-align:center;color:var(--text3);padding:30px;">Nenhum item adicionado. Clique em "+ Adicionar HH"</td></tr>
+                <tr><td colspan="16" style="text-align:center;color:var(--text3);padding:30px;">Nenhum item adicionado. Clique em "+ Adicionar HH"</td></tr>
               </tbody>
             </table>
           </div>
@@ -1486,9 +1487,9 @@ tr:hover td { background: rgba(79,110,247,0.05); }
           </div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Máquina/Equip.</th><th>Fase</th><th>Etapa</th><th>Qtd.</th><th>Dias</th><th>Horas</th><th>Tipo</th><th>Valor/h</th><th>Total</th><th></th></tr></thead>
+              <thead><tr><th>Máquina/Equip.</th><th>Fase</th><th>Etapa</th><th>Observações</th><th>Qtd.</th><th>Dias</th><th>Horas</th><th>Tipo</th><th>Valor/h</th><th>Total</th><th>Fat.</th><th></th></tr></thead>
               <tbody id="hm-tbody">
-                <tr><td colspan="10" style="text-align:center;color:var(--text3);padding:30px;">Nenhum item adicionado.</td></tr>
+                <tr><td colspan="12" style="text-align:center;color:var(--text3);padding:30px;">Nenhum item adicionado.</td></tr>
               </tbody>
             </table>
           </div>
@@ -1513,7 +1514,7 @@ tr:hover td { background: rgba(79,110,247,0.05); }
           </div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Descrição</th><th>Fase</th><th>Etapa</th><th>Fornecedor</th><th>Unidade</th><th>Valor Unit.</th><th>Qtd.</th><th>Total</th><th>Fat.</th><th></th></tr></thead>
+              <thead><tr><th>Descrição</th><th>Fase</th><th>Etapa</th><th>Fornecedor</th><th>Observações</th><th>Unidade</th><th>Valor Unit.</th><th>Qtd.</th><th>Total</th><th>Fat.</th><th></th></tr></thead>
               <tbody id="mat-tbody">
                 <tr><td colspan="9" style="text-align:center;color:var(--text3);padding:30px;">Nenhum material adicionado.</td></tr>
               </tbody>
@@ -1579,10 +1580,12 @@ tr:hover td { background: rgba(79,110,247,0.05); }
                 <th>Fase</th><th>Etapa</th>
                 <th>Serviço / Descrição</th>
                 <th>Fornecedor</th>
+                <th>Observações</th>
                 <th>Unidade</th>
                 <th>Valor Unit.</th>
                 <th>Qtd.</th>
                 <th>Total</th>
+                <th>Fat.</th>
                 <th></th>
               </tr></thead>
               <tbody id="terc-tbody">
@@ -7020,7 +7023,7 @@ function renderHHTable() {
   var profs = DB.load('profissionais')||[];
   var tbody = document.getElementById('hh-tbody'); if(!tbody) return;
   if (!hhItens.length) {
-    tbody.innerHTML='<tr><td colspan="15" style="text-align:center;color:var(--text3);padding:30px">Clique em + Adicionar HH</td></tr>';
+    tbody.innerHTML='<tr><td colspan="16" style="text-align:center;color:var(--text3);padding:30px">Clique em + Adicionar HH</td></tr>';
     document.getElementById('total-hh-display').textContent='R$ 0,00';
     return;
   }
@@ -7064,6 +7067,7 @@ function renderHHTable() {
       '<td><select onchange="hhChangeProf('+i+',this)" style="'+inpStyle()+'font-size:12px;width:170px">'+profOpts+'</select>'+descBadge+'</td>'+
       '<td><select onchange="hhItens['+i+'].faseIdx=parseInt(this.value);hhItens['+i+'].etapaIdx=0;renderHHTable()" style="'+inpStyle()+'font-size:12px;width:100px">'+(getFaseOptsSelected(row.faseIdx)||'<option value="">— Fase —</option>')+'</select></td>'+
       '<td><select onchange="hhItens['+i+'].etapaIdx=parseInt(this.value)" style="'+inpStyle()+'font-size:12px;width:100px">'+getEtapaOptsSelected(row.faseIdx,row.etapaIdx)+'</select></td>'+
+      '<td><input value="'+escHtml(row.obs||'')+'" placeholder="Obs..." title="'+escHtml(row.obs||'')+'" style="'+inpStyle()+'font-size:12px;width:200px" onchange="hhItens['+i+'].obs=this.value"></td>'+
       '<td style="text-align:center"><input type="number" value="'+qtdH+'" min="1" style="'+IS2+'" onchange="hhItens['+i+'].qtdH=+this.value;renderHHTable()"></td>'+
       '<td style="text-align:center"><input type="number" value="'+qtdDias+'" min="1" style="'+IS2+'background:#1a2940;" onchange="hhItens['+i+'].qtdDias=+this.value;renderHHTable()"></td>'+
       '<td style="text-align:center"><input type="number" value="'+hNor+'" min="0" style="'+IS2+'background:#0f2d1a;" onchange="hhItens['+i+'].hNor=+this.value;renderHHTable()"></td>'+
@@ -7100,7 +7104,7 @@ function renderHMTable() {
   var mqs=DB.load('maquinas')||[];
   var tbody=document.getElementById('hm-tbody'); if(!tbody) return;
   if (!hmItens.length) {
-    tbody.innerHTML='<tr><td colspan="10" style="text-align:center;color:var(--text3);padding:30px">Nenhum item adicionado.</td></tr>';
+    tbody.innerHTML='<tr><td colspan="12" style="text-align:center;color:var(--text3);padding:30px">Nenhum item adicionado.</td></tr>';
     var elHM=document.getElementById('total-hm-display'); if(elHM) elHM.textContent='R$ 0,00'; return;
   }
   var totalHMVal=0;
@@ -7123,6 +7127,7 @@ function renderHMTable() {
       '<td><select onchange="hmChangeMaq('+i+',this)" style="'+IS+'width:160px">'+mOpts+'</select>'+descBadge+'</td>'+
       '<td><select onchange="hmItens['+i+'].faseIdx=parseInt(this.value);hmItens['+i+'].etapaIdx=0;renderHMTable()" style="'+IS+'width:100px">'+(getFaseOptsSelected(row.faseIdx)||'<option value="0">-- Fase --</option>')+'</select></td>'+
       '<td><select onchange="hmItens['+i+'].etapaIdx=parseInt(this.value)" style="'+IS+'width:100px">'+getEtapaOptsSelected(row.faseIdx,row.etapaIdx)+'</select></td>'+
+      '<td><input value="'+escHtml(row.obs||'')+'" placeholder="Obs..." title="'+escHtml(row.obs||'')+'" style="'+IS+'width:220px" onchange="hmItens['+i+'].obs=this.value"></td>'+
       '<td><input type="number" value="'+qtd+'" min="1" style="'+IS+'width:55px;text-align:center" onchange="hmItens['+i+'].qtd=+this.value;renderHMTable()"></td>'+
       '<td><input type="number" value="'+dias+'" min="1" style="'+IS+'width:55px;text-align:center;background:#1a2940;" onchange="hmItens['+i+'].qtdDias=+this.value;renderHMTable()"></td>'+
       '<td><input type="number" value="'+horas+'" min="1" style="'+IS+'width:60px;text-align:center" onchange="hmItens['+i+'].horas=+this.value;renderHMTable()"></td>'+
@@ -7165,17 +7170,18 @@ function addMaterial() {
 function renderMatTable() {
   var forns=DB.load('fornecedores')||[]; var unids=['Und','Pç','m','m²','m³','kg','l','Verba','DIARIA'];
   var tbody=document.getElementById('mat-tbody'); if(!tbody) return;
-  if (!matItens.length) { tbody.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:30px">Nenhum material</td></tr>'; document.getElementById('total-mat-display').textContent='R$ 0,00'; return; }
+  if (!matItens.length) { tbody.innerHTML='<tr><td colspan="11" style="text-align:center;color:var(--text3);padding:30px">Nenhum material</td></tr>'; document.getElementById('total-mat-display').textContent='R$ 0,00'; return; }
   var totalMatVal=0;
   tbody.innerHTML=matItens.map(function(row,i){
     var tot=row.valorUnit*row.qtd; matItens[i].total=tot; totalMatVal+=tot;
     var fOpts=forns.map(function(f){return '<option'+(f.nome===row.fornecedor?' selected':'')+'>'+f.nome+'</option>';}).join('');
     var uOpts=unids.map(function(u){return '<option'+(u===row.unidade?' selected':'')+'>'+u+'</option>';}).join('');
     return '<tr>'+
-      '<td><input value="'+row.desc+'" placeholder="Descrição..." style="'+inpStyle()+'font-size:12px;width:180px" onchange="matItens['+i+'].desc=this.value"></td>'+
+      '<td><input value="'+escHtml(row.desc||'')+'" placeholder="Descrição..." style="'+inpStyle()+'font-size:12px;width:180px" onchange="matItens['+i+'].desc=this.value"></td>'+
       '<td><select onchange="matItens['+i+'].faseIdx=parseInt(this.value);matItens['+i+'].etapaIdx=0;renderMatTable()" style="'+inpStyle()+'font-size:12px;width:100px">'+(getFaseOptsSelected(row.faseIdx)||'<option value="">— Fase —</option>')+'</select></td>'+
       '<td><select onchange="matItens['+i+'].etapaIdx=parseInt(this.value)" style="'+inpStyle()+'font-size:12px;width:100px">'+getEtapaOptsSelected(row.faseIdx,row.etapaIdx)+'</select></td>'+
       '<td><select onchange="matItens['+i+'].fornecedor=this.value" style="'+inpStyle()+'font-size:12px;width:130px">'+fOpts+'</select></td>'+
+      '<td><input value="'+escHtml(row.obs||'')+'" placeholder="Obs..." title="'+escHtml(row.obs||'')+'" style="'+inpStyle()+'font-size:12px;width:200px" onchange="matItens['+i+'].obs=this.value"></td>'+
       '<td><select onchange="matItens['+i+'].unidade=this.value" style="'+inpStyle()+'font-size:12px">'+uOpts+'</select></td>'+
       '<td><input type="number" value="'+row.valorUnit+'" min="0" step="0.01" style="'+inpStyle()+'width:80px;text-align:right" onchange="matItens['+i+'].valorUnit=+this.value;renderMatTable()"></td>'+
       '<td><input type="number" value="'+row.qtd+'" min="1" style="'+inpStyle()+'width:60px;text-align:center" onchange="matItens['+i+'].qtd=+this.value;renderMatTable()"></td>'+
@@ -7211,12 +7217,12 @@ function renderOutTable() {
     totalOutVal += tot;
     return '<tr>'+
       '<td><div style="display:flex;gap:4px;align-items:center;">'+
-        '<input value="'+(row.desc||'')+'" placeholder="Ex: Alimentação..." style="'+inpStyle()+'font-size:12px;width:140px" onchange="outItens['+i+'].desc=this.value">'+
+        '<input value="'+escHtml(row.desc||'')+'" placeholder="Ex: Alimentação..." style="'+inpStyle()+'font-size:12px;width:140px" onchange="outItens['+i+'].desc=this.value">'+
         '<button class="icon-btn" onclick="salvarCustoNoBD('+i+')" title="Salvar no Banco de Custos" style="color:var(--accent);font-size:14px">💾</button>'+
       '</div></td>'+
       '<td><select onchange="outItens['+i+'].faseIdx=parseInt(this.value);outItens['+i+'].etapaIdx=0;renderOutTable()" style="'+inpStyle()+'font-size:12px;width:100px">'+(getFaseOptsSelected(row.faseIdx)||'<option value="">— Fase —</option>')+'</select></td>'+
       '<td><select onchange="outItens['+i+'].etapaIdx=parseInt(this.value)" style="'+inpStyle()+'font-size:12px;width:100px">'+getEtapaOptsSelected(row.faseIdx,row.etapaIdx)+'</select></td>'+
-      '<td><input value="'+(row.obs||'')+'" placeholder="Obs..." style="'+inpStyle()+'font-size:12px;width:100px" onchange="outItens['+i+'].obs=this.value"></td>'+
+      '<td><input value="'+escHtml(row.obs||'')+'" placeholder="Obs..." title="'+escHtml(row.obs||'')+'" style="'+inpStyle()+'font-size:12px;width:200px" onchange="outItens['+i+'].obs=this.value"></td>'+
       '<td><select onchange="outItens['+i+'].unidade=this.value" style="'+inpStyle()+'font-size:12px">'+
         ['DIARIA','Und','Verba','m','m²','kg','l','Hora'].map(function(u){return '<option'+(u===row.unidade?' selected':'')+'>'+u+'</option>';}).join('')+
       '</select></td>'+
@@ -7450,11 +7456,11 @@ function renderConsTable() {
     var fOpts=forns.map(function(f){return '<option'+(f.nome===row.fornecedor?' selected':'')+'>'+f.nome+'</option>';}).join('');
     var uOpts=unids.map(function(u){return '<option'+(u===row.unidade?' selected':'')+'>'+u+'</option>';}).join('');
     return '<tr>'+
-      '<td><input value="'+row.desc+'" placeholder="Ex: Consumíveis Elétrica..." style="'+inpStyle()+'font-size:12px;width:160px" onchange="consItens['+i+'].desc=this.value"></td>'+
+      '<td><input value="'+escHtml(row.desc||'')+'" placeholder="Ex: Consumíveis Elétrica..." style="'+inpStyle()+'font-size:12px;width:160px" onchange="consItens['+i+'].desc=this.value"></td>'+
       '<td><select onchange="consItens['+i+'].faseIdx=parseInt(this.value);consItens['+i+'].etapaIdx=0;renderConsTable()" style="'+inpStyle()+'font-size:12px;width:100px">'+(getFaseOptsSelected(row.faseIdx)||'<option value="">— Fase —</option>')+'</select></td>'+
       '<td><select onchange="consItens['+i+'].etapaIdx=parseInt(this.value)" style="'+inpStyle()+'font-size:12px;width:100px">'+getEtapaOptsSelected(row.faseIdx,row.etapaIdx)+'</select></td>'+
       '<td><select onchange="consItens['+i+'].fornecedor=this.value" style="'+inpStyle()+'font-size:12px;width:120px">'+fOpts+'</select></td>'+
-      '<td><input value="'+row.obs+'" placeholder="Obs..." style="'+inpStyle()+'font-size:12px;width:100px" onchange="consItens['+i+'].obs=this.value"></td>'+
+      '<td><input value="'+escHtml(row.obs||'')+'" placeholder="Obs..." title="'+escHtml(row.obs||'')+'" style="'+inpStyle()+'font-size:12px;width:200px" onchange="consItens['+i+'].obs=this.value"></td>'+
       '<td><select onchange="consItens['+i+'].unidade=this.value" style="'+inpStyle()+'font-size:12px">'+uOpts+'</select></td>'+
       '<td><input type="number" value="'+row.valorUnit+'" min="0" step="0.01" style="'+inpStyle()+'width:80px;text-align:right" onchange="consItens['+i+'].valorUnit=+this.value;renderConsTable()"></td>'+
       '<td><input type="number" value="'+row.qtd+'" min="1" style="'+inpStyle()+'width:60px;text-align:center" onchange="consItens['+i+'].qtd=+this.value;renderConsTable()"></td>'+
@@ -11207,7 +11213,7 @@ function renderTercTable() {
   var tbody = document.getElementById('terc-tbody');
   if (!tbody) return;
   if (!tercItens.length) {
-    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--text3);padding:30px">Nenhum terceiro. Clique em "+ Adicionar Terceiro"</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;color:var(--text3);padding:30px">Nenhum terceiro. Clique em "+ Adicionar Terceiro"</td></tr>';
     var el = document.getElementById('total-terc-display');
     if (el) el.textContent = 'R$ 0,00';
     return;
@@ -11221,11 +11227,12 @@ function renderTercTable() {
     var fOpts = forns.map(function(f){ return '<option'+(f.nome===row.fornecedor?' selected':'')+'>'+f.nome+'</option>'; }).join('');
     var uOpts = unids.map(function(u){ return '<option'+(u===row.unidade?' selected':'')+'>'+u+'</option>'; }).join('');
     return '<tr>'+
-      '<td><input value="'+row.empresa+'" placeholder="Empresa ou profissional..." style="'+IS+'width:160px" onchange="tercItens['+i+'].empresa=this.value"></td>'+
+      '<td><input value="'+escHtml(row.empresa||'')+'" placeholder="Empresa ou profissional..." style="'+IS+'width:160px" onchange="tercItens['+i+'].empresa=this.value"></td>'+
       '<td><select onchange="tercItens['+i+'].faseIdx=parseInt(this.value);tercItens['+i+'].etapaIdx=0;renderTercTable()" style="'+IS+'width:100px">'+(getFaseOptsSelected(row.faseIdx)||'<option value="">— Fase —</option>')+'</select></td>'+
       '<td><select onchange="tercItens['+i+'].etapaIdx=parseInt(this.value)" style="'+IS+'width:100px">'+getEtapaOptsSelected(row.faseIdx,row.etapaIdx)+'</select></td>'+
-      '<td><input value="'+row.servico+'" placeholder="Descrição do serviço..." style="'+IS+'width:160px" onchange="tercItens['+i+'].servico=this.value"></td>'+
+      '<td><input value="'+escHtml(row.servico||'')+'" placeholder="Descrição do serviço..." style="'+IS+'width:160px" onchange="tercItens['+i+'].servico=this.value"></td>'+
       '<td><select onchange="tercItens['+i+'].fornecedor=this.value" style="'+IS+'width:120px">'+fOpts+'</select></td>'+
+      '<td><input value="'+escHtml(row.obs||'')+'" placeholder="Obs..." title="'+escHtml(row.obs||'')+'" style="'+IS+'width:200px" onchange="tercItens['+i+'].obs=this.value"></td>'+
       '<td><select onchange="tercItens['+i+'].unidade=this.value" style="'+IS+'">'+uOpts+'</select></td>'+
       '<td><input type="number" value="'+row.valorUnit+'" min="0" step="0.01" style="'+IS+'width:85px;text-align:right" onchange="tercItens['+i+'].valorUnit=+this.value;renderTercTable()"></td>'+
       '<td><input type="number" value="'+row.qtd+'" min="1" style="'+IS+'width:55px;text-align:center" onchange="tercItens['+i+'].qtd=+this.value;renderTercTable()"></td>'+
