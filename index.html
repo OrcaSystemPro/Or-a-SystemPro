@@ -2450,8 +2450,8 @@ tr:hover td { background: rgba(79,110,247,0.05); }
             <div class="builder-panel-head">☁️ Supabase — Banco de Dados</div>
             <div class="builder-panel-body">
               <p style="font-size:12px;color:var(--text2);margin-bottom:12px;">O sistema usa Supabase (Postgres) como banco de dados. Informe o projeto e faça login para ativar a sincronização automática.</p>
-              <div class="field" style="margin-bottom:10px"><label>Project URL</label><input id="cfg-supabase-url" placeholder="ex.: https://xxxxxxxx.supabase.co"></div>
-              <div class="field" style="margin-bottom:10px"><label>Anon Public Key</label><input id="cfg-supabase-anon-key" placeholder="Cole a anon public key do Supabase..."></div>
+              <div class="field" style="margin-bottom:10px"><label>Project URL</label><input id="cfg-supabase-url" autocomplete="off" placeholder="ex.: https://xxxxxxxx.supabase.co"></div>
+              <div class="field" style="margin-bottom:10px"><label>Anon Public Key</label><input id="cfg-supabase-anon-key" autocomplete="off" placeholder="Cole a anon public key do Supabase..."></div>
               <div class="field" style="margin-bottom:10px"><label>E-mail</label><input id="cfg-supabase-email" placeholder="seu@email.com"></div>
               <div class="field" style="margin-bottom:10px"><label>Senha</label><input id="cfg-supabase-senha" type="password" placeholder="Senha do usuário Supabase"></div>
               <div style="font-size:10px;color:var(--text3);margin:-2px 0 10px 0;line-height:1.5;">Crie o projeto em supabase.com, rode o <b>supabase_schema.sql</b> no SQL Editor e crie seu usuário em Authentication → Users.</div>
@@ -10041,11 +10041,15 @@ var SB_LOG_TABLES = {
    do login local (ver sbEmailForUser em doLogin). */
 var SB_DEFAULT_URL = 'https://pjqpbugzboqxtsjuwhbt.supabase.co';
 var SB_DEFAULT_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBqcXBidWd6Ym9xeHRzanV3aGJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5NTUyNjYsImV4cCI6MjEwMTUzMTI2Nn0.2LUYB-AOcefQhMi-Z6mG1kbBRS07eQkbxySHGZS_D8o';
+/* O preenchimento automático do navegador às vezes joga endereço/cidade nesses
+   dois campos; valor que não tem cara de URL/chave do Supabase é ignorado e
+   cai no próximo (salvo → padrão), em vez de derrubar a conexão. */
+function sbUrlValida(u){ return /^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/i.test(String(u||'').trim()); }
+function sbKeyValida(k){ return /^[\w-]{20,}\.[\w-]{20,}\.[\w-]{20,}$/.test(String(k||'').trim()); }
 function sbCfg(){
-  return {
-    url: ((document.getElementById('cfg-supabase-url')||{}).value || DB.load('sb_url') || SB_DEFAULT_URL).trim(),
-    anonKey: ((document.getElementById('cfg-supabase-anon-key')||{}).value || DB.load('sb_anon_key') || SB_DEFAULT_ANON_KEY).trim()
-  };
+  var url=[(document.getElementById('cfg-supabase-url')||{}).value, DB.load('sb_url'), SB_DEFAULT_URL].filter(sbUrlValida)[0];
+  var key=[(document.getElementById('cfg-supabase-anon-key')||{}).value, DB.load('sb_anon_key'), SB_DEFAULT_ANON_KEY].filter(sbKeyValida)[0];
+  return { url:String(url||'').trim(), anonKey:String(key||'').trim() };
 }
 function sbSetStatus(text,color){
   var el=document.getElementById('sheets-status');
@@ -10058,11 +10062,10 @@ function sbPersistCfg(){
   return c;
 }
 function sbLoadCfgUI(){
-  var url=DB.load('sb_url')||'';
-  var key=DB.load('sb_anon_key')||'';
+  var cfg=sbCfg();
   var email=DB.load('sb_email')||'';
-  var a=document.getElementById('cfg-supabase-url'); if(a && !a.value) a.value=url;
-  var b=document.getElementById('cfg-supabase-anon-key'); if(b && !b.value) b.value=key;
+  var a=document.getElementById('cfg-supabase-url'); if(a && !sbUrlValida(a.value)) a.value=cfg.url;
+  var b=document.getElementById('cfg-supabase-anon-key'); if(b && !sbKeyValida(b.value)) b.value=cfg.anonKey;
   var c=document.getElementById('cfg-supabase-email'); if(c && !c.value) c.value=email;
 }
 function sbClient(){
