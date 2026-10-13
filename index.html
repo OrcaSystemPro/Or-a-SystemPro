@@ -10018,6 +10018,12 @@ function exportCSV() {
    do sistema para não pedir configuração novamente.
    ══════════════════════════════════════════════════════════════════ */
 var SB = window.SB || { client:null, busy:false, timer:null, _url:null, _key:null, dirty:{} };
+/* As tabelas com alteração local ainda não enviada ficam gravadas no navegador
+   (sb_dirty), não só na memória: se a página for fechada/recarregada antes do
+   envio (ou a nuvem estiver fora do ar), o próximo sync completo ENVIA essas
+   tabelas em vez de baixar por cima delas a versão antiga da nuvem. */
+try{ var _sbDirtySalvo=JSON.parse(localStorage.getItem('orca_sb_dirty')||'{}'); if(_sbDirtySalvo && typeof _sbDirtySalvo==='object') SB.dirty=_sbDirtySalvo; }catch(e){}
+function sbPersistDirty(){ try{ localStorage.setItem('orca_sb_dirty', JSON.stringify(SB.dirty||{})); }catch(e){} }
 window.SB = SB;
 
 var SB_TABLES = [
@@ -10273,7 +10279,14 @@ async function sbFullSync(){
   SB.busy=true;
   try{
     sbSetStatus('Sincronizando...','var(--amber)');
-    await sbSyncTables(SB_TABLES, false, true);
+    var sujas=SB_TABLES.filter(function(t){ return SB.dirty[t]; });
+    var limpas=SB_TABLES.filter(function(t){ return !SB.dirty[t]; });
+    if(sujas.length){
+      var falhasEnvio=await sbSyncTables(sujas, true, false);
+      sujas.forEach(function(t){ if(falhasEnvio.indexOf(t)<0) delete SB.dirty[t]; });
+      sbPersistDirty();
+    }
+    await sbSyncTables(limpas, false, true);
   }finally{ SB.busy=false; }
 }
 /* Sync automático: só reenvia as tabelas que realmente foram salvas desde
@@ -10290,6 +10303,7 @@ async function sbSyncDirty(){
     sbSetStatus('Sincronizando...','var(--amber)');
     var failedTables=await sbSyncTables(tables, true);
     tables.forEach(function(t){ if(failedTables.indexOf(t)<0) delete SB.dirty[t]; });
+    sbPersistDirty();
   }finally{ SB.busy=false; }
 }
 function scheduleSupabaseSync(){
@@ -10309,7 +10323,6 @@ function scheduleSupabaseSync(){
 window.addEventListener('online', function(){
   sbSetStatus('Conexão restabelecida — sincronizando...','var(--amber)');
   sbFullSync().then(function(){
-    SB.dirty={};
     showToast('🌐 Conexão restabelecida — sincronizado com a nuvem.','success');
   }).catch(function(e){ console.warn('Falha ao sincronizar após reconectar:',e&&e.message); });
 });
@@ -10348,6 +10361,7 @@ function testConnection(){
     var table=sbTableForKey(k);
     if(!table) return;
     SB.dirty[table]=true;
+    sbPersistDirty();
     scheduleSupabaseSync();
   };
 })();
@@ -10588,7 +10602,7 @@ function restaurarBackup() {
         if (confirm('⚠️ Isso substituirá os dados atuais pelos do arquivo.\n\nAntes de restaurar, o sistema salva automaticamente um backup do estado atual na sua pasta de downloads.\n\nDeseja continuar?')) {
           try { fazerBackup(); } catch (eBk) { if (!confirm('Não foi possível gerar o backup automático (' + eBk.message + ').\n\nRestaurar mesmo assim?')) return; }
           Object.keys(dados).forEach(function(key) {
-            if (dados[key] !== null && dados[key] !== undefined) {
+            if (dados[key] !== null && dados[key] !== undefined && !/^sb_/.test(key)) {
               DB.save(key, dados[key]);
             }
           });
