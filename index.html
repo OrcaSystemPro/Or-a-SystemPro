@@ -10257,6 +10257,8 @@ async function sbSyncTables(tables, silent, pullFirst){
     try{ await ordem[0](tables[i]); }catch(e){ falhas.push(e.message); if(failedTables.indexOf(tables[i])<0) failedTables.push(tables[i]); console.error(e); }
   }
   for(var k=0;k<tables.length;k++){
+    // Envio falhou: não baixa por cima — a alteração local ainda não chegou à nuvem.
+    if(!pullFirst && failedTables.indexOf(tables[k])>=0) continue;
     try{ await ordem[1](tables[k]); }catch(e){ falhas.push(e.message); if(failedTables.indexOf(tables[k])<0) failedTables.push(tables[k]); console.error(e); }
   }
   if(falhas.length){
@@ -10329,6 +10331,26 @@ window.addEventListener('online', function(){
 window.addEventListener('offline', function(){
   sbSetStatus('Offline — trabalhando localmente','var(--amber)');
 });
+/* Usado pelo Restaurar Backup: envia já as tabelas restauradas (antes de
+   recarregar a página) e devolve o que aconteceu, para avisar na tela. */
+async function sbEsperarLivre(){
+  for(var i=0;i<120 && SB.busy;i++) await new Promise(function(r){ setTimeout(r,250); });
+}
+async function sbEnviarPendentes(){
+  clearTimeout(SB.timer);
+  var session=null;
+  try{ session=await sbSession(); }catch(e){ console.warn(e); }
+  if(!session) return { semSessao:true, falhas:[] };
+  await sbEsperarLivre();
+  SB.busy=true;
+  try{
+    var sujas=SB_TABLES.filter(function(t){ return SB.dirty[t]; });
+    var falhas=await sbSyncTables(sujas, true, false);
+    sujas.forEach(function(t){ if(falhas.indexOf(t)<0) delete SB.dirty[t]; });
+    sbPersistDirty();
+    return { semSessao:false, falhas:falhas, enviadas:sujas.length-falhas.length };
+  }finally{ SB.busy=false; }
+}
 function syncSupabase(){
   sbFullSync().catch(function(e){ console.error(e); sbSetStatus('Não conectado','var(--amber)'); showToast('❌ '+e.message,'error'); });
 }
@@ -10595,11 +10617,13 @@ function restaurarBackup() {
     if (!file) return;
     
     var reader = new FileReader();
-    reader.onload = function(event) {
+    reader.onload = async function(event) {
       try {
         var dados = JSON.parse(event.target.result);
         
-        if (confirm('⚠️ Isso substituirá os dados atuais pelos do arquivo.\n\nAntes de restaurar, o sistema salva automaticamente um backup do estado atual na sua pasta de downloads.\n\nDeseja continuar?')) {
+        var nOrc = Array.isArray(dados.orcamentos) ? dados.orcamentos.length : 0;
+        if (confirm('⚠️ Isso substituirá os dados atuais (neste navegador E na nuvem) pelos do arquivo.\n\nArquivo: ' + file.name + ' — ' + nOrc + ' orçamento(s).\n\nAntes de restaurar, o sistema salva automaticamente um backup do estado atual na sua pasta de downloads.\n\nDeseja continuar?')) {
+          if (typeof sbEsperarLivre === 'function') await sbEsperarLivre();
           try { fazerBackup(); } catch (eBk) { if (!confirm('Não foi possível gerar o backup automático (' + eBk.message + ').\n\nRestaurar mesmo assim?')) return; }
           Object.keys(dados).forEach(function(key) {
             if (dados[key] !== null && dados[key] !== undefined && !/^sb_/.test(key)) {
@@ -10607,8 +10631,13 @@ function restaurarBackup() {
             }
           });
           
-          showToast('✅ Backup restaurado! Recarregando...', 'success');
-          setTimeout(function() { location.reload(); }, 1500);
+          var res = { semSessao:true, falhas:[] };
+          try { showToast('☁️ Enviando o backup restaurado para a nuvem...', 'success'); res = await sbEnviarPendentes(); }
+          catch (eNuvem) { console.error(eNuvem); res = { semSessao:false, falhas:['(' + eNuvem.message + ')'] }; }
+          if (res.semSessao) alert('✅ Backup restaurado neste navegador.\n\n⚠️ A nuvem não está conectada agora. Assim que conectar (Configurações → Supabase → Entrar), os dados restaurados serão enviados automaticamente.');
+          else if (res.falhas.length) alert('✅ Backup restaurado neste navegador.\n\n⚠️ Não foi possível enviar para a nuvem: ' + res.falhas.join(', ') + '.\nOs dados continuam salvos aqui e o envio será tentado de novo.');
+          else alert('✅ Backup restaurado e enviado para a nuvem (' + res.enviadas + ' tabelas).');
+          location.reload();
         }
       } catch(err) {
         showToast('❌ Erro ao ler arquivo: ' + err.message, 'error');
