@@ -88,7 +88,7 @@ label.l{font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase
 .b-ok{background:rgba(48,209,88,.14);color:var(--ok)}.b-warn{background:rgba(255,159,10,.14);color:var(--warn)}
 .b-bad{background:rgba(255,69,58,.14);color:var(--bad)}.b-pri{background:rgba(10,132,255,.14);color:var(--pri)}
 .b-vio{background:rgba(191,90,242,.14);color:var(--vio)}
-.res{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--bd);border:1px solid var(--bd);border-radius:var(--rs);overflow:hidden}
+.res{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:1px;background:var(--bd);border:1px solid var(--bd);border-radius:var(--rs);overflow:hidden}
 .res>div{background:var(--bg3);padding:13px 14px}
 .res .l{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--tx3)}
 .res .v{font-family:var(--fd);font-size:20px;font-weight:800;margin:4px 0 2px}
@@ -937,7 +937,10 @@ function calcular(fn, reg = 'campo'){
   const he100 = salHora * 2 * kDsr * kEnc;
   const kRed = c.horaReduzida ? 60 / 52.5 : 1;
   const adNot = salHora * num(c.noturnoPct, 20) / 100 * kRed * kEnc;
-  return {reg, sal, peric, outros, rem, E, enc, itens, custoItens, custoMes, hp, hh, salHora, kEnc, kDsr, kRed, he50, he100, adNot, noturna:hh + adNot};
+  // HE noturna: o adicional noturno integra a base da hora extra (OJ 97 da SDI-1 do TST) — 1,5 × 1,2 = 1,8 da hora normal
+  const kNot = 1 + num(c.noturnoPct, 20) / 100;
+  const he50Not = salHora * 1.5 * kNot * kRed * kDsr * kEnc;
+  return {reg, sal, peric, outros, rem, E, enc, itens, custoItens, custoMes, hp, hh, salHora, kEnc, kDsr, kRed, kNot, he50, he100, adNot, noturna:hh + adNot, he50Not};
 }
 function bdiPct(b = S.cfg.bdi){
   const soma = (num(b.ac) + num(b.ad) + num(b.df) + num(b.r) + num(b.l)) / 100;
@@ -977,6 +980,7 @@ function memoria(fn, r){
   L.push('  HE 100% = ' + fmt(r.salHora) + ' × 2,0 × ' + fmtN(r.kDsr, 4) + ' × ' + fmtN(r.kEnc, 4) + ' = ' + fmt(r.he100) + '/h');
   L.push('  Adicional noturno = ' + fmt(r.salHora) + ' × ' + fmtN(c.noturnoPct, 0) + '%' + (c.horaReduzida ? ' × 60/52,5 (hora reduzida)' : '') + ' × ' + fmtN(r.kEnc, 4) + ' = ' + fmt(r.adNot));
   L.push('  HH noturna = ' + fmt(r.hh) + ' + ' + fmt(r.adNot) + ' = ' + fmt(r.noturna) + '/h');
+  L.push('  HE 50% noturna = ' + fmt(r.salHora) + ' × 1,5 × ' + fmtN(r.kNot, 2) + ' (adicional noturno)' + (c.horaReduzida ? ' × 60/52,5' : '') + ' × ' + fmtN(r.kDsr, 4) + ' × ' + fmtN(r.kEnc, 4) + ' = ' + fmt(r.he50Not) + '/h');
   return L.join('\n');
 }
 
@@ -1320,6 +1324,7 @@ function renderCompDetalhe(){
         <div><div class="l">HE 50%</div><div class="v" style="color:var(--warn)">${fmt(r.he50)}</div><div class="s">custo marginal da hora</div></div>
         <div><div class="l">HE 100%</div><div class="v" style="color:var(--bad)">${fmt(r.he100)}</div><div class="s">custo marginal da hora</div></div>
         <div><div class="l">HH noturna</div><div class="v" style="color:var(--vio)">${fmt(r.noturna)}</div><div class="s">HH normal + adicional ${fmtN(S.cfg.noturnoPct, 0)}%</div></div>
+        <div><div class="l">HE 50% noturna</div><div class="v" style="color:#ff6b9a">${fmt(r.he50Not)}</div><div class="s">extra 50% + noturno ${fmtN(S.cfg.noturnoPct, 0)}%</div></div>
       </div>
       <div class="hint" style="margin-top:10px">Campo ${fmt(rc.hh)}/h · Fábrica ${fmt(rf.hh)}/h${f.ref2026 ? ` · Tabela 2026 do OrcaSystem ${fmt(f.ref2026)}/h (<b class="${dif > 0 ? 'up' : 'down'}">${dif > 0 ? '+' : ''}${fmtN(dif, 1)}%</b>)` : ''} · valores de custo, sem BDI.</div>
     </div>
@@ -1582,23 +1587,25 @@ function documentoRelatorio(){
       <tr class="tot"><td>HH NORMAL</td><td class="n">${fmt(r.hh)}/h</td><td></td></tr>
       <tr><td>HE 50% (custo marginal)</td><td class="n">${fmt(r.he50)}/h</td><td></td></tr>
       <tr><td>HE 100% (custo marginal)</td><td class="n">${fmt(r.he100)}/h</td><td></td></tr>
-      <tr><td>HH noturna</td><td class="n">${fmt(r.noturna)}/h</td><td></td></tr></tbody></table>`; }).join('') +
+      <tr><td>HH noturna</td><td class="n">${fmt(r.noturna)}/h</td><td></td></tr>
+      <tr><td>HE 50% noturna (custo marginal)</td><td class="n">${fmt(r.he50Not)}/h</td><td></td></tr></tbody></table>`; }).join('') +
       regs.map(reg => `<h3>Memória de cálculo — ${nomeReg(reg)}</h3><pre>${esc(memoria(f, calcular(f, reg)))}</pre>`).join('');
   } else {
     const L = linhasRelatorio();
     const com = rel.tipo === 'comercial';
     titulo = com ? 'TABELA DE PREÇOS DE HORA-HOMEM' : 'TABELA DE CUSTO DE HORA-HOMEM';
     assunto = (com && rel.cliente ? 'Cliente: ' + rel.cliente + ' · ' : '') + (rel.base ? (S.bases.find(b => b.id === rel.base) || {}).nome : 'Todas as bases') + (rel.areas.length ? ' · ' + rel.areas.join(', ') : '');
-    const cols = regs.map(r => `<th class="n">HH ${nomeReg(r)}</th><th class="n">HE 50%</th><th class="n">HE 100%</th><th class="n">Noturna</th>`).join('');
+    const cols = regs.map(r => `<th class="n">HH ${nomeReg(r)}</th><th class="n">HE 50%</th><th class="n">HE 100%</th><th class="n">Noturna</th><th class="n">HE 50% not.</th>`).join('');
     corpo = `<table><thead><tr><th>Função</th>${com ? '' : '<th class="n">Remuneração</th><th class="n">Custo/mês campo</th>'}${cols}</tr></thead><tbody>
-      ${(() => { let area = null; return L.map(x => { let h = ''; if (x.f.area !== area) { area = x.f.area; h = `<tr class="grp"><td colspan="${(com ? 1 : 3) + regs.length * 4}">${esc(area || 'Sem área')}</td></tr>`; }
-        return h + `<tr><td>${esc(x.f.nome)}</td>${com ? '' : `<td class="n">${fmt(x.c.rem)}</td><td class="n">${fmt(x.c.custoMes)}</td>`}${regs.map(r => { const v = r === 'fabrica' ? x.fa : x.c; return `<td class="n"><b>${fmt(v.hh * k)}</b></td><td class="n">${fmt(v.he50 * k)}</td><td class="n">${fmt(v.he100 * k)}</td><td class="n">${fmt(v.noturna * k)}</td>`; }).join('')}</tr>`; }).join(''); })()}
+      ${(() => { let area = null; return L.map(x => { let h = ''; if (x.f.area !== area) { area = x.f.area; h = `<tr class="grp"><td colspan="${(com ? 1 : 3) + regs.length * 5}">${esc(area || 'Sem área')}</td></tr>`; }
+        return h + `<tr><td>${esc(x.f.nome)}</td>${com ? '' : `<td class="n">${fmt(x.c.rem)}</td><td class="n">${fmt(x.c.custoMes)}</td>`}${regs.map(r => { const v = r === 'fabrica' ? x.fa : x.c; return `<td class="n"><b>${fmt(v.hh * k)}</b></td><td class="n">${fmt(v.he50 * k)}</td><td class="n">${fmt(v.he100 * k)}</td><td class="n">${fmt(v.noturna * k)}</td><td class="n">${fmt(v.he50Not * k)}</td>`; }).join('')}</tr>`; }).join(''); })()}
       </tbody></table>
       <div class="notas"><b>CONDIÇÕES E NOTAS</b><br>
         ${com ? `• Valores por hora, com BDI de ${pct(bdiPct())} (impostos inclusos)${rel.validade ? ' · validade: ' + esc(rel.validade) : ''}.<br>` : `• Valores de CUSTO, sem BDI. Encargos sociais de ${pct(resumoEncargos().total)}; custo mensal dividido por ${fmtN(horasProdutivas(), 0)} h produtivas.<br>`}
         • HH normal: jornada contratual de ${fmtN(S.cfg.horasMes, 0)} h/mês.<br>
         • HE 50% / 100%: custo da hora extra (salário-hora com adicional, reflexo no DSR e encargos), sem repetir os custos fixos do mês.<br>
         • Noturna: HH normal + adicional de ${fmtN(S.cfg.noturnoPct, 0)}%${S.cfg.horaReduzida ? ' com hora reduzida' : ''} (22h–5h).<br>
+        • HE 50% noturna: hora extra de 50% feita no período noturno — o adicional de ${fmtN(S.cfg.noturnoPct, 0)}% integra a base da extra (1,5 × ${fmtN(1 + num(S.cfg.noturnoPct, 20) / 100, 2)}), custo marginal.<br>
         ${regs.includes('fabrica') ? `• Regime fábrica: alimentação ${fmtN(S.cfg.fabrica.alim, 0)}%, hospedagem ${fmtN(S.cfg.fabrica.hosp, 0)}%, mobilização ${fmtN(S.cfg.fabrica.mob, 0)}% dos valores de campo.<br>` : ''}
         ${rel.obs ? '• ' + esc(rel.obs) + '<br>' : ''}</div>`;
   }
@@ -1661,10 +1668,10 @@ function exportarExcel(){
   const wb = XLSX.utils.book_new(), k = rel.tipo === 'comercial' ? 1 + bdiPct() / 100 : 1;
   const r2 = v => Math.round(v * 100) / 100;
   const L = rel.tipo === 'detalhado' ? funcoesOrdenadas(ativas()).map(f => ({f, c:calcular(f, 'campo'), fa:calcular(f, 'fabrica')})) : linhasRelatorio();
-  const cab = ['Área','Função','Base','Salário-base','Periculosidade','Remuneração','Encargos','Custos campo','Custo mensal campo','HH campo','HE 50%','HE 100%','HH noturna campo','Custos fábrica','Custo mensal fábrica','HH fábrica','HH noturna fábrica','Ref. tabela 2026'];
+  const cab = ['Área','Função','Base','Salário-base','Periculosidade','Remuneração','Encargos','Custos campo','Custo mensal campo','HH campo','HE 50%','HE 100%','HH noturna campo','HE 50% noturna','Custos fábrica','Custo mensal fábrica','HH fábrica','HH noturna fábrica','Ref. tabela 2026'];
   const aoa = [[(rel.tipo === 'comercial' ? 'Tabela de preços de HH (BDI ' + fmtN(bdiPct()) + '%)' : 'Tabela de custo de HH (sem BDI)') + ' — ' + S.cfg.empresa + ' — ' + dataBR(hoje())], [], cab];
   L.forEach(x => aoa.push([x.f.area || '', x.f.nome, (baseDe(x.f) || {}).nome || '', r2(x.c.sal), r2(x.c.peric), r2(x.c.rem), r2(x.c.enc), r2(x.c.custoItens), r2(x.c.custoMes),
-    r2(x.c.hh * k), r2(x.c.he50 * k), r2(x.c.he100 * k), r2(x.c.noturna * k), r2(x.fa.custoItens), r2(x.fa.custoMes), r2(x.fa.hh * k), r2(x.fa.noturna * k), x.f.ref2026 || '']));
+    r2(x.c.hh * k), r2(x.c.he50 * k), r2(x.c.he100 * k), r2(x.c.noturna * k), r2(x.c.he50Not * k), r2(x.fa.custoItens), r2(x.fa.custoMes), r2(x.fa.hh * k), r2(x.fa.noturna * k), x.f.ref2026 || '']));
   const ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = cab.map((_, i) => ({wch:i === 1 ? 38 : i < 3 ? 22 : 14}));
   XLSX.utils.book_append_sheet(wb, ws, 'Tabela HH');
   const det = [['Função','Regime','Componente','Valor','Período','Qtd','Fator regime','Valor mensal']];
