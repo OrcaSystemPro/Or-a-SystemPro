@@ -781,6 +781,7 @@ function tabelaItens(lista, alvo, editavel){
   return barra + `<div class="tw"><table class="${editavel ? 'itens' : ''}"><thead><tr>${cab}</tr></thead><tbody>${linhas}
     <tr class="tot">${editavel ? `<td colspan="6">Total mensal</td><td class="n"><div>${fmt(tc)}</div><div style="color:var(--vio)">${fmt(tf)}</div></td><td></td>` : `<td colspan="5">Total mensal</td><td class="n">${fmt(tc)}</td><td class="n">${fmt(tf)}</td>`}</tr></tbody></table></div>`;
 }
+function botaoSalvarCustos(alvo){ const pend = rascunho && rascunho.alvo === alvo; return `<button class="btn bp" ${pend ? '' : 'disabled title="Nenhuma alteração pendente"'} onclick="salvarCustos()">💾 Salvar custos${pend ? ' (' + rascunho.dets.length + ')' : ''}</button>`; }
 // ---- Rascunho: alterações nos custos só valem depois de "Salvar custos" ----
 let rascunho = null; // {alvo, original, dets:[]}
 function iniciarRascunho(alvo){
@@ -883,7 +884,7 @@ function renderCompDetalhe(){
   $('comp-baixo').innerHTML = `
     <div class="card">
       <div class="ch"><div><div class="ct">Custos da função</div><div class="cs">${proprios ? 'Esta função tem custos próprios.' : 'Usando o modelo de custos da base ' + (b ? esc(b.nome) : '') + '. Para mudar só esta função, personalize.'}</div></div>
-        ${proprios ? `<button class="btn" onclick="voltarModelo('${f.id}')">↺ Voltar ao modelo da base</button>` : `<button class="btn bp" onclick="personalizar('${f.id}')">Personalizar custos desta função</button>`}</div>
+        ${proprios ? `<div style="display:flex;gap:8px;flex-wrap:wrap">${botaoSalvarCustos('fn:' + f.id)}<button class="btn" onclick="voltarModelo('${f.id}')">↺ Voltar ao modelo da base</button></div>` : `<button class="btn bp" onclick="personalizar('${f.id}')">Personalizar custos desta função</button>`}</div>
       ${tabelaItens(itensDe(f), 'fn:' + f.id, proprios)}
     </div>
     <div class="card"><div class="ch"><div class="ct">Memória de cálculo · ${compReg === 'fabrica' ? 'Fábrica' : 'Campo'}</div><button class="btn bs" onclick="copiarMemoria()">Copiar</button></div><div class="memo" id="memo">${esc(memoria(f, r))}</div></div>`;
@@ -966,7 +967,7 @@ function detalheBase(b){
 // Modelo de custos: largura toda da página, abaixo da lista de bases
 function modeloBase(b){
   return `
-    <div class="card" style="margin-top:16px"><div class="ch"><div><div class="ct">Modelo de custos da base</div><div class="cs">Usado por todas as funções da base que não têm custos próprios. Valores iniciais são exemplos do HH Composer v4.4 — revise.</div></div></div>
+    <div class="card" style="margin-top:16px"><div class="ch"><div><div class="ct">Modelo de custos da base</div><div class="cs">Usado por todas as funções da base que não têm custos próprios. Valores iniciais são exemplos do HH Composer v4.4 — revise.</div></div>${botaoSalvarCustos('base:' + b.id)}</div>
       ${tabelaItens(b.modelo, 'base:' + b.id, true)}</div>`;
 }
 function novaBase(){
