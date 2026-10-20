@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <style>
 :root{
   --pri:#0a84ff; --ok:#30d158; --warn:#ff9f0a; --bad:#ff453a; --vio:#bf5af2;
@@ -144,6 +145,68 @@ table.itens td input,table.itens td select{font-size:13px;padding:7px 9px}
 .ms-op:hover{background:var(--bg3)}
 .ms-op.todas{border-bottom:1px solid var(--bd);border-radius:0;margin-bottom:4px;padding-bottom:8px}
 .up{color:var(--bad)}.down{color:var(--ok)}
+/* login (mesmo desenho do OrcaSystem) */
+#login{position:fixed;inset:0;display:flex;z-index:300;background:var(--bg)}
+.lg-l{flex:1 1 55%;position:relative;overflow:hidden;background:linear-gradient(160deg,#0b0f1a 0%,#12172a 45%,#171b28 100%);padding:56px 64px;display:flex;flex-direction:column;justify-content:center;border-right:1px solid var(--bd2);color:#f0f0f8}
+.lg-l::before{content:'';position:absolute;inset:0;background-image:radial-gradient(ellipse at 20% 20%,rgba(10,132,255,.18) 0%,transparent 55%),radial-gradient(ellipse at 85% 75%,rgba(48,209,88,.12) 0%,transparent 50%);pointer-events:none}
+.lg-l::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#0a84ff,#30d158,#0a84ff)}
+.lg-l>*{position:relative;z-index:2}
+.lg-logo{background:#fff;border-radius:12px;padding:8px 14px;display:inline-block;margin-bottom:22px;box-shadow:0 8px 32px rgba(10,132,255,.25)}
+.lg-logo img{height:52px;display:block}
+.lg-tit{font-family:var(--fd);font-size:34px;font-weight:800;line-height:1.12;margin-bottom:14px}
+.lg-tit span{display:block;color:#30d158}
+.lg-desc{font-size:15px;color:#a0a0b8;line-height:1.65;max-width:440px}
+.lg-feats{display:flex;flex-direction:column;gap:12px;margin-top:38px;max-width:480px}
+.lg-feat{display:flex;align-items:center;gap:14px;padding:13px 16px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.1);border-radius:12px;transition:all .15s}
+.lg-feat:hover{background:rgba(255,255,255,.05);border-color:#0a84ff;transform:translateX(4px)}
+.lg-fi{width:38px;height:38px;border-radius:10px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:17px;background:rgba(10,132,255,.15);border:1px solid rgba(10,132,255,.25)}
+.lg-feat:nth-child(2) .lg-fi{background:rgba(48,209,88,.12);border-color:rgba(48,209,88,.25)}
+.lg-feat:nth-child(3) .lg-fi{background:rgba(191,90,242,.13);border-color:rgba(191,90,242,.25)}
+.lg-feat:nth-child(4) .lg-fi{background:rgba(255,159,10,.12);border-color:rgba(255,159,10,.25)}
+.lg-ft{font-size:13px;color:#a0a0b8;line-height:1.4}
+.lg-ft b{color:#f0f0f8;display:block}
+.lg-rod{font-size:11px;color:#6a6a82;margin-top:38px}
+.lg-r{flex:1 1 45%;display:flex;align-items:center;justify-content:center;padding:40px;background:var(--bg);background-image:radial-gradient(ellipse at 70% 30%,rgba(10,132,255,.07) 0%,transparent 55%)}
+.lg-form{width:100%;max-width:370px;animation:lgIn .5s ease-out}
+@keyframes lgIn{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:none}}
+.lg-form h2{font-family:var(--fd);font-size:24px;margin-bottom:6px}
+.lg-form .sub{font-size:13px;color:var(--tx2);margin-bottom:26px}
+.lg-g{margin-bottom:17px}
+.lg-g label{display:block;font-size:11px;color:var(--tx2);margin-bottom:7px;text-transform:uppercase;letter-spacing:.6px;font-weight:600}
+.lg-g input{padding:12px 15px;font-size:14px;border-width:1.5px;border-radius:10px}
+.lg-g input:focus{box-shadow:0 0 0 3px rgba(10,132,255,.18)}
+.lg-btn{width:100%;padding:13px;border:none;border-radius:10px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;margin-top:6px;background:linear-gradient(135deg,#0a84ff,#5e5ce6);box-shadow:0 4px 16px rgba(10,132,255,.3);transition:all .15s}
+.lg-btn:hover{transform:translateY(-1px);box-shadow:0 6px 24px rgba(10,132,255,.4)}
+.lg-btn:disabled{opacity:.6;transform:none;cursor:wait}
+.lg-link{background:none;border:none;color:var(--pri);font-size:12px;cursor:pointer;margin-top:14px;padding:0}
+.lg-msg{display:none;margin-top:14px;padding:10px 12px;border-radius:9px;font-size:12.5px;line-height:1.5;background:rgba(255,69,58,.1);border:1px solid rgba(255,69,58,.3);color:var(--bad)}
+.lg-msg.on{display:block}.lg-msg.ok{background:rgba(48,209,88,.1);border-color:rgba(48,209,88,.3);color:var(--ok)}
+.lg-info{margin-top:22px;padding:13px 15px;border-radius:10px;background:var(--bg3);border:1px solid var(--bd);font-size:12.5px;color:var(--tx2);line-height:1.55}
+@media (max-width:900px){.lg-l{display:none}.lg-r{padding:24px}}
+/* usuário, nuvem, log */
+.userbox{display:flex;gap:10px;align-items:center}
+.userbox b{display:block;font-size:13px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px;margin-bottom:3px}
+.avatar{width:34px;height:34px;border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;background:linear-gradient(135deg,#0a84ff,#30d158)}
+.avatar.sm{width:30px;height:30px;font-size:11px}
+.avatar.xs{width:18px;height:18px;font-size:8px;display:inline-flex;vertical-align:middle;margin-right:6px}
+.nuvem{border:1px solid var(--bd2);background:var(--bg3);border-radius:20px;padding:5px 11px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;color:var(--tx2)}
+.n-ok{color:var(--ok)}.n-warn{color:var(--warn)}.n-pri{color:var(--pri)}.n-bad{color:var(--bad);border-color:rgba(255,69,58,.4)}
+.perfis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:6px}
+.perfis div{background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);padding:10px 12px;font-size:12px;color:var(--tx2);line-height:1.45}
+.perfis b{display:block;color:var(--tx);font-size:13px;margin-bottom:3px}
+.tl-dia{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--tx3);margin:6px 0 10px}
+.tl-dia:not(:first-child){margin-top:22px}
+.tl{position:relative;padding-left:4px}
+.tl::before{content:'';position:absolute;left:21px;top:6px;bottom:6px;width:2px;background:var(--bd2)}
+.tl-it{display:flex;gap:14px;position:relative;padding:8px 0}
+.tl-ic{width:36px;height:36px;border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;background:var(--bg2);border:2px solid;font-size:14px;font-weight:700;z-index:1}
+.tl-c{flex:1;min-width:0;background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:10px 13px}
+.tl-h{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.tl-h b{font-size:13px}
+.tl-t{margin-left:auto;font-family:var(--fm);font-size:11px;color:var(--tx3)}
+.tl-d{font-size:12.5px;color:var(--tx2);margin-top:5px;line-height:1.5;word-break:break-word}
+.tl-u{font-size:11.5px;color:var(--tx2);margin-top:7px}
+@media (max-width:900px){.perfis{grid-template-columns:1fr 1fr}}
 @media (max-width:1100px){.g3{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.res{grid-template-columns:1fr 1fr}}
 @media (max-width:900px){
   .side{transform:translateX(-100%);transition:transform .2s}
@@ -161,7 +224,40 @@ table.itens td input,table.itens td select{font-size:13px;padding:7px 9px}
 <body>
 <div class="toasts" id="toasts"></div>
 
-<div class="app">
+<!-- LOGIN -->
+<div id="login" style="display:none">
+  <div class="lg-l">
+    <div><div class="lg-logo"><img src="img/logo-innova.png" id="lg-logo" alt="INNOVA"></div></div>
+    <div class="lg-tit">OrcaSystem<span>HH</span></div>
+    <div class="lg-desc">Composição de custo da hora-homem da INNOVA HYDRO — encargos, regimes campo e fábrica, convenções e reajustes, integrado ao OrcaSystem.</div>
+    <div class="lg-feats">
+      <div class="lg-feat"><div class="lg-fi">⊟</div><div class="lg-ft"><b>Composição detalhada</b>Salário, periculosidade, encargos A/B/C/D e custos da função, com memória de cálculo</div></div>
+      <div class="lg-feat"><div class="lg-fi">⇄</div><div class="lg-ft"><b>Campo e fábrica</b>Dois valores por função, horas extras e noturno calculados corretamente</div></div>
+      <div class="lg-feat"><div class="lg-fi">▤</div><div class="lg-ft"><b>Relatórios no padrão INNOVA</b>Tabela interna de custo, comercial com BDI e detalhado — PDF e Excel</div></div>
+      <div class="lg-feat"><div class="lg-fi">☁</div><div class="lg-ft"><b>Integrado ao OrcaSystem</b>Mesma conta, dados na nuvem e envio direto para a Mão de Obra</div></div>
+    </div>
+    <div class="lg-rod">OrcaSystem HH · INNOVA HYDRO Montagem Eletromecânica</div>
+  </div>
+  <div class="lg-r"><div class="lg-form">
+    <div id="lg-entrar">
+      <h2>Bem-vindo</h2><div class="sub">Acesse sua conta para continuar</div>
+      <div class="lg-g"><label>E-mail ou usuário</label><input id="lg-user" autocomplete="username" placeholder="nome@innovahydro.com.br" onkeydown="if(event.key==='Enter')$('lg-pass').focus()"></div>
+      <div class="lg-g"><label>Senha</label><input id="lg-pass" type="password" autocomplete="current-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')fazerLogin()"></div>
+      <button class="lg-btn" id="lg-btn" onclick="fazerLogin()">Entrar no sistema →</button>
+      <button class="lg-link" onclick="esqueciSenha()">Esqueci minha senha</button>
+    </div>
+    <div id="lg-senha" style="display:none">
+      <h2>Definir senha</h2><div class="sub">Crie a senha que você vai usar para entrar</div>
+      <div class="lg-g"><label>Nova senha</label><input id="lg-nova1" type="password" autocomplete="new-password" placeholder="mínimo 8 caracteres"></div>
+      <div class="lg-g"><label>Confirmar senha</label><input id="lg-nova2" type="password" autocomplete="new-password" onkeydown="if(event.key==='Enter')definirNovaSenha()"></div>
+      <button class="lg-btn" onclick="definirNovaSenha()">Salvar senha e entrar →</button>
+    </div>
+    <div class="lg-msg" id="lg-msg"></div>
+    <div class="lg-info">🔒 <b>Acesso restrito.</b> Use o mesmo login do OrcaSystem (e-mail ou usuário). Sem acesso? Peça ao administrador do sistema.</div>
+  </div></div>
+</div>
+
+<div class="app" id="app" style="display:none">
 <nav class="side" id="side">
   <div class="brand">
     <img id="brand-logo" alt="" style="display:none">
@@ -180,10 +276,14 @@ table.itens td input,table.itens td select{font-size:13px;padding:7px 9px}
   <div class="navsec"><div>Saídas</div>
     <div class="nav" data-pg="relatorios"><span>▤</span>Relatórios</div>
     <div class="nav" data-pg="envio"><span>➜</span>Enviar ao OrcaSystem</div>
-    <div class="nav" data-pg="historico"><span>⟲</span>Histórico</div>
+    <div class="nav" data-pg="historico"><span>⟲</span>Histórico de versões</div>
+  </div>
+  <div class="navsec"><div>Administração</div>
+    <div class="nav" data-pg="log"><span>☰</span>Log de atividades</div>
+    <div class="nav" data-pg="usuarios"><span>👤</span>Usuários e permissões</div>
     <div class="nav" data-pg="config"><span>⚙</span>Configurações</div>
   </div>
-  <div class="sidefoot" id="sidefoot">Modo local · dados neste navegador</div>
+  <div class="sidefoot" id="sidefoot"></div>
 </nav>
 
 <div class="main">
@@ -193,7 +293,7 @@ table.itens td input,table.itens td select{font-size:13px;padding:7px 9px}
       <div style="min-width:0"><h1 id="tt">Painel</h1><p id="ts"></p></div>
     </div>
     <div class="acts">
-      <span class="saved" id="saved"></span>
+      <button class="nuvem" id="nuvem" onclick="atualizarAgora()"></button>
       <button class="btn" onclick="toggleTema()" title="Tema claro/escuro">◐</button>
       <button class="btn bp" onclick="abrirFuncao()">+ Função</button>
     </div>
@@ -208,6 +308,8 @@ table.itens td input,table.itens td select{font-size:13px;padding:7px 9px}
     <section class="pg" id="pg-relatorios"></section>
     <section class="pg" id="pg-envio"></section>
     <section class="pg" id="pg-historico"></section>
+    <section class="pg" id="pg-log"></section>
+    <section class="pg" id="pg-usuarios"></section>
     <section class="pg" id="pg-config"></section>
   </div>
 </div>
@@ -245,6 +347,13 @@ table.itens td input,table.itens td select{font-size:13px;padding:7px 9px}
     </div>
   </div>
 </div>
+<!-- MODAL TROCAR SENHA -->
+<div class="ov" id="m-senha"><div class="modal" style="max-width:400px">
+  <div class="mh"><b>Trocar senha</b><button class="x" onclick="fecharModal('m-senha')">✕</button></div>
+  <div class="fr"><div class="f"><label class="l">Nova senha</label><input id="ts-1" type="password" autocomplete="new-password" placeholder="mínimo 8 caracteres"></div></div>
+  <div class="fr"><div class="f"><label class="l">Confirmar</label><input id="ts-2" type="password" autocomplete="new-password" onkeydown="if(event.key==='Enter')trocarSenha()"></div></div>
+  <div style="display:flex;justify-content:flex-end;gap:8px"><button class="btn" onclick="fecharModal('m-senha')">Cancelar</button><button class="btn bp" onclick="trocarSenha()">Salvar</button></div>
+</div></div>
 <datalist id="dl-areas"></datalist>
 <input type="file" id="file-in" style="display:none">
 
@@ -418,13 +527,11 @@ function migrar(d){
   return out;
 }
 let _tSalvar = null;
+// Guarda a cópia deste navegador e agenda o envio para a nuvem
 function salvar(){
-  try {
-    localStorage.setItem(KEY, JSON.stringify(estadoParaGravar()));
-    $('saved').textContent = 'Salvo ' + new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
-  } catch (e) {
-    toast('Falha ao salvar (armazenamento cheio?): ' + e.message + ' — exporte um backup.', true);
-  }
+  if (!SESSAO) return;
+  agendarNuvem();
+  salvarCache();
 }
 // Com custos em edição, grava a lista original (o rascunho só entra em "Salvar custos")
 function estadoParaGravar(){
@@ -435,8 +542,367 @@ function estadoParaGravar(){
   return copia;
 }
 function registrar(acao, det){
-  S.auditoria.unshift({ts:new Date().toISOString(), usuario:S.cfg.usuario || '—', acao, det});
-  if (S.auditoria.length > 2000) S.auditoria.length = 2000;
+  const l = {ts:new Date().toISOString(), usuario:usuarioAtual(), acao, det:det || ''};
+  S.auditoria.unshift(l);
+  if (S.auditoria.length > 300) S.auditoria.length = 300;
+  if (SESSAO) { LOGPEND.push(l); if (LOG) LOG.unshift({...l, email:SESSAO.email, detalhe:l.det}); }
+}
+
+// =====================================================================
+// NUVEM — Supabase do OrcaSystem: login, perfis, sincronização e log
+// =====================================================================
+// A anon key é pública por natureza (fica no HTML do OrcaSystem também); quem
+// protege os dados é o RLS das tabelas hh_* (ver supabase_hh.sql).
+const SB_URL = 'https://pjqpbugzboqxtsjuwhbt.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBqcXBidWd6Ym9xeHRzanV3aGJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5NTUyNjYsImV4cCI6MjEwMTUzMTI2Nn0.2LUYB-AOcefQhMi-Z6mG1kbBRS07eQkbxySHGZS_D8o';
+const URL_APP = location.origin + location.pathname;
+const PERFIS = {admin:'Administrador', orcamentista:'Orçamentista', aprovador:'Aprovador', consulta:'Consulta'};
+const PERFIS_DESC = {
+  admin:'Tudo: funções, bases, encargos, parâmetros, usuários, envio ao OrcaSystem e log completo.',
+  orcamentista:'Cadastra e altera funções, custos, bases e reajustes; envia ao OrcaSystem.',
+  aprovador:'Consulta tudo e aprova as versões das funções.',
+  consulta:'Somente leitura: vê valores e emite relatórios.'
+};
+const PODE = {
+  editarFuncoes:['admin','orcamentista'], editarBases:['admin','orcamentista'], editarEncargos:['admin'],
+  config:['admin'], aprovar:['admin','aprovador'], enviarOrca:['admin','orcamentista'], usuarios:['admin']
+};
+let sb = null;      // cliente Supabase
+let SESSAO = null;  // {email, nome, perfil}
+function pode(acao){ return !!SESSAO && (PODE[acao] || []).includes(SESSAO.perfil); }
+function exige(acao){ if (pode(acao)) return true; toast('Seu perfil (' + (SESSAO ? PERFIS[SESSAO.perfil] : '—') + ') não permite esta ação.', true); return false; }
+function usuarioAtual(){ return SESSAO ? (SESSAO.nome || SESSAO.email) : '—'; }
+function iniciais(nome){ return String(nome || '?').trim().split(/\s+/).map(p => p[0]).slice(0, 2).join('').toUpperCase(); }
+
+// Tabelas: listas (uma linha por registro) e configuração (uma linha por chave)
+const TAB_LISTAS = {funcoes:'hh_funcoes', bases:'hh_bases', versoes:'hh_versoes', envios:'hh_envios'};
+const NOME_TAB = {hh_funcoes:'funções', hh_bases:'bases', hh_versoes:'versões', hh_envios:'envios', hh_config:'configuração'};
+function podeGravar(tab){
+  if (tab === 'hh_funcoes') return pode('editarFuncoes');
+  if (tab === 'hh_bases') return pode('editarBases');
+  if (tab === 'hh_versoes') return pode('editarFuncoes') || pode('aprovar');
+  if (tab === 'hh_envios') return pode('enviarOrca');
+  if (tab === 'hh_config') return pode('config');
+  return false;
+}
+const CONFIG_CHAVES = ['cfg','encargos','logos','meta'];
+function valorConfig(E, ch){
+  if (ch === 'cfg') { const c = {...E.cfg}; delete c.bdi; delete c.tema; delete c.usuario; return c; } // BDI vem do OrcaSystem; tema é de cada pessoa
+  if (ch === 'meta') return {semeado:!!E.semeado, schema:SCHEMA};
+  return E[ch];
+}
+
+// Estado de sincronização: carimbo do servidor + conteúdo enviado de cada linha
+let SYNC = {rows:{}, config:{}};
+let LOGPEND = [];
+let PEND = false;  // há alterações locais ainda não enviadas
+function chaveCache(){ return 'orcahh_nuvem_' + (SESSAO ? SESSAO.email : ''); }
+function salvarCache(){
+  if (!SESSAO) return;
+  try {
+    localStorage.setItem(chaveCache(), JSON.stringify({S:estadoParaGravar(), SYNC, LOGPEND, PEND}));
+  } catch (e) { toast('Não foi possível guardar a cópia local: ' + e.message, true); }
+}
+function lerCache(){
+  try { const c = JSON.parse(localStorage.getItem(chaveCache()) || 'null'); if (c && c.S) { S = migrar(c.S); SYNC = c.SYNC || {rows:{}, config:{}}; LOGPEND = c.LOGPEND || []; PEND = !!c.PEND; return true; } }
+  catch (e) { console.error(e); }
+  S = estadoPadrao(); SYNC = {rows:{}, config:{}}; LOGPEND = []; PEND = false; return false;
+}
+
+// ---- indicador de sincronização (barra do topo)
+let _ultSync = null;
+function statusNuvem(st, msg){
+  const el = $('nuvem'); if (!el) return;
+  const t = {ok:['☁ Sincronizado' + (_ultSync ? ' ' + _ultSync : ''), 'ok'], pend:['● Alterações a enviar', 'warn'], enviando:['⟳ Enviando…', 'pri'], baixando:['⟳ Atualizando…', 'pri'], erro:['⚠ Sem conexão com a nuvem', 'bad']}[st] || ['', ''];
+  el.textContent = t[0]; el.className = 'nuvem n-' + t[1]; el.title = msg || (st === 'erro' ? 'As alterações ficam guardadas neste navegador e são enviadas quando a conexão voltar.' : 'Clique para buscar as últimas alterações da equipe');
+}
+
+// ---- envio (push) com controle de concorrência por linha
+let _tPush = null, _enviando = false, _enviarDeNovo = false;
+function agendarNuvem(){ if (!SESSAO) return; PEND = true; statusNuvem('pend'); clearTimeout(_tPush); _tPush = setTimeout(enviarNuvem, 1200); }
+async function enviarNuvem(){
+  if (!SESSAO || !sb) return true;
+  if (_enviando) { _enviarDeNovo = true; return true; }
+  _enviando = true; statusNuvem('enviando');
+  const E = estadoParaGravar(), conflitos = [];
+  let erro = null;
+  try {
+    // Dados só são enviados depois de a nuvem ter sido lida ao menos uma vez neste navegador
+    if (SYNC.inicializado) {
+      for (const [k, tab] of Object.entries(TAB_LISTAS)) if (podeGravar(tab)) await enviarLista(tab, E[k] || [], conflitos);
+      if (podeGravar('hh_config')) for (const ch of CONFIG_CHAVES) await enviarConfig(ch, valorConfig(E, ch), conflitos);
+    }
+    await enviarLogs();
+  } catch (e) { erro = e; console.error('[nuvem] envio', e); }
+  _enviando = false;
+  if (!erro && !_enviarDeNovo) PEND = false;
+  salvarCache();
+  if (erro) statusNuvem('erro', 'Erro ao enviar: ' + (erro.message || erro));
+  else if (conflitos.length) {
+    toast('Outra pessoa alterou ' + [...new Set(conflitos)].join(', ') + ' ao mesmo tempo. Carreguei a versão da nuvem — confira e refaça sua última alteração se precisar.', true);
+    await baixarNuvem();
+  } else { _ultSync = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'}); statusNuvem(PEND ? 'pend' : 'ok'); }
+  if (_enviarDeNovo) { _enviarDeNovo = false; return enviarNuvem(); }
+  return !erro;
+}
+async function enviarLista(tab, arr, conflitos){
+  const M = SYNC.rows[tab] = SYNC.rows[tab] || {};
+  const vistos = new Set(), novos = [];
+  for (const item of arr) {
+    if (!item || !item.id) continue;
+    vistos.add(item.id);
+    const json = JSON.stringify(item), m = M[item.id];
+    if (m && m.json === json) continue;
+    if (!m) { novos.push({item, json}); continue; }
+    const {data, error} = await sb.from(tab).update({dados:item}).eq('id', item.id).eq('atualizado_em', m.ts).select('id,atualizado_em');
+    if (error) throw error;
+    if (!data || !data.length) { conflitos.push(NOME_TAB[tab]); continue; }
+    M[item.id] = {ts:data[0].atualizado_em, json};
+  }
+  for (let i = 0; i < novos.length; i += 200) {
+    const lote = novos.slice(i, i + 200);
+    const {data, error} = await sb.from(tab).insert(lote.map(x => ({id:x.item.id, dados:x.item}))).select('id,atualizado_em');
+    if (error) { if (error.code === '23505') { conflitos.push(NOME_TAB[tab]); continue; } throw error; }
+    const ts = {}; (data || []).forEach(r => ts[r.id] = r.atualizado_em);
+    lote.forEach(x => { if (ts[x.item.id]) M[x.item.id] = {ts:ts[x.item.id], json:x.json}; });
+  }
+  const remover = Object.keys(M).filter(id => !vistos.has(id));
+  for (let i = 0; i < remover.length; i += 200) {
+    const lote = remover.slice(i, i + 200);
+    const {error} = await sb.from(tab).delete().in('id', lote);
+    if (error) throw error;
+    lote.forEach(id => delete M[id]);
+  }
+}
+async function enviarConfig(ch, valor, conflitos){
+  const M = SYNC.config, json = JSON.stringify(valor), m = M[ch];
+  if (m && m.json === json) return;
+  if (!m) {
+    const {data, error} = await sb.from('hh_config').insert({chave:ch, dados:valor}).select('chave,atualizado_em');
+    if (error) { if (error.code === '23505') { conflitos.push(NOME_TAB.hh_config); return; } throw error; }
+    M[ch] = {ts:data[0].atualizado_em, json};
+  } else {
+    const {data, error} = await sb.from('hh_config').update({dados:valor}).eq('chave', ch).eq('atualizado_em', m.ts).select('chave,atualizado_em');
+    if (error) throw error;
+    if (!data || !data.length) { conflitos.push(NOME_TAB.hh_config); return; }
+    M[ch] = {ts:data[0].atualizado_em, json};
+  }
+}
+async function enviarLogs(){
+  if (!LOGPEND.length) return;
+  const lote = LOGPEND.slice(0, 500);
+  const {error} = await sb.from('hh_log').insert(lote.map(l => ({ts:l.ts, usuario:l.usuario, acao:l.acao, detalhe:l.det || ''})));
+  if (error) throw error;
+  LOGPEND.splice(0, lote.length);
+}
+
+// ---- leitura (pull)
+async function lerTudo(tab){
+  const out = [];
+  for (let de = 0; ; de += 1000) {
+    const {data, error} = await sb.from(tab).select('*').range(de, de + 999);
+    if (error) throw error;
+    out.push(...(data || []));
+    if (!data || data.length < 1000) break;
+  }
+  return out;
+}
+let _baixando = false;
+async function baixarNuvem(){
+  if (!SESSAO || !sb || _baixando) return false;
+  _baixando = true; statusNuvem('baixando');
+  try {
+    const novo = {}, sync = {rows:{}, config:{}, inicializado:true};
+    for (const [k, tab] of Object.entries(TAB_LISTAS)) {
+      const rows = await lerTudo(tab);
+      novo[k] = rows.map(r => r.dados);
+      sync.rows[tab] = Object.fromEntries(rows.map(r => [r.id, {ts:r.atualizado_em, json:JSON.stringify(r.dados)}]));
+    }
+    const cfgRows = await lerTudo('hh_config');
+    cfgRows.forEach(r => sync.config[r.chave] = {ts:r.atualizado_em, json:JSON.stringify(r.dados)});
+    const cfgN = Object.fromEntries(cfgRows.map(r => [r.chave, r.dados]));
+    const vazia = !cfgN.meta;
+    if (!vazia) {
+      // O rascunho de custos em edição é preservado por cima do que veio da nuvem
+      const rasc = rascunho ? {alvo:rascunho.alvo, lista:clone(listaAlvo(rascunho.alvo) || [])} : null;
+      const bdi = S.cfg.bdi, auditoria = S.auditoria;
+      S = migrar({cfg:{...(cfgN.cfg || {}), bdi}, encargos:cfgN.encargos || clone(ENCARGOS_PADRAO), logos:cfgN.logos || {},
+        bases:novo.bases, funcoes:novo.funcoes, versoes:novo.versoes.sort((a, b) => String(b.data).localeCompare(String(a.data))),
+        envios:novo.envios.sort((a, b) => String(b.data).localeCompare(String(a.data))), auditoria, semeado:true});
+      SYNC = sync;
+      if (rasc) { const l = listaAlvo(rasc.alvo); if (l) { rascunho.original = clone(l); l.splice(0, l.length, ...rasc.lista); } else rascunho = null; }
+    }
+    await lerBdiOrca();
+    _ultSync = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+    _baixando = false;
+    if (vazia) return 'vazia';
+    salvarCache(); aplicarMarca(); render(); statusNuvem(PEND ? 'pend' : 'ok');
+    return true;
+  } catch (e) {
+    _baixando = false; console.error('[nuvem] leitura', e); statusNuvem('erro', 'Erro ao buscar: ' + (e.message || e)); return false;
+  }
+}
+// BDI das Preferências do OrcaSystem (tabela empresa_cfg do próprio OrcaSystem)
+async function lerBdiOrca(){
+  try {
+    const {data, error} = await sb.from('empresa_cfg').select('chave,valor').in('chave', ['bdi_ac','bdi_ad','bdi_df','bdi_r','lucro','imp_padrao']);
+    if (error || !data || !data.length) return;
+    const v = Object.fromEntries(data.map(r => [r.chave, num(String(r.valor ?? '').replace(/"/g, ''))]));
+    S.cfg.bdi = {ac:v.bdi_ac || 0, ad:v.bdi_ad || 0, df:v.bdi_df || 0, r:v.bdi_r || 0, l:v.lucro || 0, i:v.imp_padrao || 0,
+      origem:'Preferências do OrcaSystem (nuvem, lido em ' + dataHoraBR(new Date().toISOString()) + ')'};
+  } catch (e) { console.warn('[nuvem] BDI do OrcaSystem não lido', e); }
+}
+// Busca as alterações da equipe ao voltar para a aba (no máximo a cada 60 s)
+let _ultFoco = 0;
+window.addEventListener('focus', () => {
+  if (!SESSAO || PEND || _enviando || rascunho || Date.now() - _ultFoco < 60000) return;
+  _ultFoco = Date.now(); baixarNuvem();
+});
+function atualizarAgora(){ if (PEND) enviarNuvem().then(() => baixarNuvem()); else baixarNuvem(); }
+
+// ---- login / sessão
+function mostrarTelaLogin(modo, msg){
+  $('login').style.display = 'flex'; $('app').style.display = 'none';
+  $('lg-entrar').style.display = modo === 'senha' ? 'none' : 'block';
+  $('lg-senha').style.display = modo === 'senha' ? 'block' : 'none';
+  const er = $('lg-msg'); er.textContent = msg || ''; er.className = 'lg-msg' + (msg ? ' on' : '') + (msg && /enviad|defin|sucesso/i.test(msg) ? ' ok' : '');
+  $('lg-btn').disabled = false; $('lg-btn').textContent = 'Entrar no sistema →';
+}
+function emailDoLogin(v){ v = String(v || '').trim().toLowerCase(); return v.includes('@') ? v : v.replace(/[^a-z0-9._-]/g, '') + '@orcasystem.local'; }
+async function fazerLogin(){
+  const u = $('lg-user').value.trim(), p = $('lg-pass').value;
+  if (!u || !p) return mostrarTelaLogin('entrar', 'Informe e-mail (ou usuário) e senha.');
+  if (!sb) return mostrarTelaLogin('entrar', 'Sem conexão com o servidor de login. Verifique a internet e recarregue a página.');
+  $('lg-btn').disabled = true; $('lg-btn').textContent = 'Entrando…';
+  const {data, error} = await sb.auth.signInWithPassword({email:emailDoLogin(u), password:p});
+  if (error) return mostrarTelaLogin('entrar', /invalid/i.test(error.message) ? 'E-mail/usuário ou senha incorretos.' : /confirm/i.test(error.message) ? 'Confirme seu e-mail pelo link que você recebeu antes de entrar.' : 'Não foi possível entrar: ' + error.message);
+  try { localStorage.setItem('orcahh_ultimo_login', u); } catch (e) {}
+  $('lg-pass').value = '';
+  await entrarComSessao(data.session, true);
+}
+async function esqueciSenha(){
+  const u = $('lg-user').value.trim();
+  if (!u.includes('@')) return mostrarTelaLogin('entrar', 'Digite seu e-mail no campo acima e clique de novo em "Esqueci minha senha".');
+  if (!sb) return;
+  const {error} = await sb.auth.resetPasswordForEmail(u.toLowerCase(), {redirectTo:URL_APP});
+  mostrarTelaLogin('entrar', error ? 'Não foi possível enviar: ' + error.message : 'Enviamos para ' + u + ' um link para definir uma nova senha. Abra-o neste navegador.');
+}
+async function definirNovaSenha(){
+  const a = $('lg-nova1').value, b = $('lg-nova2').value;
+  const msg = $('lg-msg');
+  if (a.length < 8) { msg.textContent = 'A senha precisa ter pelo menos 8 caracteres.'; msg.className = 'lg-msg on'; return; }
+  if (a !== b) { msg.textContent = 'As senhas não conferem.'; msg.className = 'lg-msg on'; return; }
+  const {data, error} = await sb.auth.updateUser({password:a});
+  if (error) { msg.textContent = 'Não foi possível salvar: ' + error.message; msg.className = 'lg-msg on'; return; }
+  $('lg-nova1').value = $('lg-nova2').value = '';
+  history.replaceState(null, '', URL_APP);
+  const {data:{session}} = await sb.auth.getSession();
+  if (session) { await entrarComSessao(session, true); toast('Senha definida.'); registrar('Senha definida', 'Pelo link enviado por e-mail'); salvar(); }
+  else mostrarTelaLogin('entrar', 'Senha definida com sucesso. Entre com ela.');
+}
+async function entrarComSessao(session, novoLogin){
+  const email = String(session.user.email || '').toLowerCase();
+  let perfil = null, offline = false;
+  try {
+    const {data, error} = await sb.from('hh_perfis').select('email,nome,perfil,ativo').eq('email', email).maybeSingle();
+    if (error) throw error;
+    perfil = data;
+    try { localStorage.setItem('orcahh_perfil_' + email, JSON.stringify(perfil)); } catch (e) {}
+  } catch (e) {
+    console.warn('[nuvem] perfil', e);
+    try { perfil = JSON.parse(localStorage.getItem('orcahh_perfil_' + email) || 'null'); offline = !!perfil; } catch (e2) {}
+    if (!perfil && /relation .* does not exist|hh_perfis/i.test(e.message || '')) {
+      await sb.auth.signOut(); return mostrarTelaLogin('entrar', 'A nuvem do OrcaSystem HH ainda não foi preparada: rode o arquivo supabase_hh.sql no Supabase.');
+    }
+  }
+  if (!perfil || !perfil.ativo) {
+    await sb.auth.signOut();
+    return mostrarTelaLogin('entrar', 'O usuário ' + email + ' não tem acesso ao OrcaSystem HH. Peça ao administrador para cadastrá-lo em Usuários.');
+  }
+  SESSAO = {email, nome:perfil.nome || email, perfil:perfil.perfil};
+  lerCache();
+  $('login').style.display = 'none'; $('app').style.display = 'flex';
+  aplicarTema(); aplicarMarca(); montarUsuarioLateral();
+  ir(pagina || 'painel');
+  if (offline) { statusNuvem('erro'); toast('Sem conexão: trabalhando com a cópia deste navegador.', true); return; }
+  sb.rpc('hh_registrar_acesso').then(() => {}, () => {});
+  if (novoLogin) registrar('Login', 'Entrou no sistema');
+  if (PEND || LOGPEND.length) await enviarNuvem();
+  const r = await baixarNuvem();
+  if (r === 'vazia') await prepararNuvemVazia();
+}
+// Primeira vez: a nuvem do OrcaSystem HH está vazia
+async function prepararNuvemVazia(){
+  if (!pode('config')) {
+    $('app').style.display = 'none'; $('login').style.display = 'flex';
+    return mostrarTelaLogin('entrar', 'O administrador ainda não publicou a base do OrcaSystem HH na nuvem. Tente mais tarde.');
+  }
+  let local = null;
+  try { const raw = localStorage.getItem(KEY); if (raw) local = migrar(JSON.parse(raw)); } catch (e) {}
+  if (local && local.funcoes.length && confirm('A nuvem do OrcaSystem HH ainda está vazia.\n\nEnviar os dados deste navegador (' + local.funcoes.length + ' funções, ' + local.bases.length + ' base(s)) como base inicial da equipe?\n\nCancelar = começar com a tabela 2026 do OrcaSystem.')) {
+    S = local;
+  } else { S = estadoPadrao(); semear(); }
+  S.semeado = true; SYNC = {rows:{}, config:{}, inicializado:true};
+  (S.envios || []).forEach(e => { if (!e.id) e.id = uid(); });
+  registrar('Base publicada na nuvem', S.funcoes.length + ' funções, ' + S.bases.length + ' base(s)');
+  PEND = true; render();
+  toast('Enviando a base para a nuvem…');
+  const ok = await enviarNuvem();
+  if (ok) { toast('Base publicada na nuvem. A equipe já pode entrar.'); await baixarNuvem(); }
+}
+async function sair(){
+  resolverRascunho();
+  if (PEND || LOGPEND.length) {
+    registrar('Logout', 'Saiu do sistema');
+    const ok = await enviarNuvem();
+    if (!ok && !confirm('Há alterações que ainda não chegaram à nuvem (sem conexão). Elas ficam guardadas neste navegador e são enviadas no próximo login.\n\nSair mesmo assim?')) return;
+  } else { registrar('Logout', 'Saiu do sistema'); await enviarNuvem(); }
+  salvarCache();
+  SESSAO = null; await sb.auth.signOut();
+  S = estadoPadrao(); mostrarTelaLogin('entrar');
+}
+function montarUsuarioLateral(){
+  const el = $('sidefoot'); if (!el || !SESSAO) return;
+  el.innerHTML = `<div class="userbox"><div class="avatar">${esc(iniciais(SESSAO.nome))}</div>
+    <div style="min-width:0"><b title="${esc(SESSAO.email)}">${esc(SESSAO.nome)}</b><span class="badge ${SESSAO.perfil === 'admin' ? 'b-pri' : SESSAO.perfil === 'consulta' ? 'b-warn' : 'b-ok'}">${esc(PERFIS[SESSAO.perfil])}</span></div></div>
+    <div style="display:flex;gap:6px;margin-top:10px"><button class="btn bs" style="flex:1" onclick="abrirModal('m-senha')">Trocar senha</button><button class="btn bs bd" style="flex:1" onclick="sair()">Sair</button></div>`;
+  document.querySelector('.nav[data-pg="usuarios"]').style.display = pode('usuarios') ? '' : 'none';
+  document.querySelector('.top .bp').style.display = pode('editarFuncoes') ? '' : 'none';
+}
+async function trocarSenha(){
+  const a = $('ts-1').value, b = $('ts-2').value;
+  if (a.length < 8) return toast('A senha precisa ter pelo menos 8 caracteres.', true);
+  if (a !== b) return toast('As senhas não conferem.', true);
+  const {error} = await sb.auth.updateUser({password:a});
+  if (error) return toast('Não foi possível trocar: ' + error.message, true);
+  $('ts-1').value = $('ts-2').value = ''; fecharModal('m-senha');
+  registrar('Senha trocada', ''); salvar(); toast('Senha trocada.');
+}
+
+// ---- permissões nas telas: o que o perfil não pode alterar fica desabilitado
+const PG_PERM = {funcoes:'editarFuncoes', composicao:'editarFuncoes', bases:'editarBases', encargos:'editarEncargos', envio:'enviarOrca', config:'config', usuarios:'usuarios'};
+function aplicarPermissoes(){
+  const req = PG_PERM[pagina], el = $('pg-' + pagina);
+  if (!el || !SESSAO || !req || pode(req)) return;
+  el.querySelectorAll('input,select,textarea,button').forEach(c => {
+    if (c.closest('.ro-ok')) return;
+    c.disabled = true;
+    if (!c.title) c.title = 'Seu perfil (' + PERFIS[SESSAO.perfil] + ') permite apenas consultar';
+  });
+  el.insertAdjacentHTML('afterbegin', `<div class="alert a-info">🔒 Somente leitura — seu perfil é <b>${esc(PERFIS[SESSAO.perfil])}</b>.</div>`);
+}
+
+// ---- inicialização do Supabase
+async function iniciarNuvem(){
+  if (!window.supabase || !window.supabase.createClient) return mostrarTelaLogin('entrar', 'Não foi possível carregar o login (sem internet?). Recarregue a página.');
+  // storageKey próprio: a sessão do OrcaSystem HH não interfere na do OrcaSystem (mesmo endereço)
+  sb = window.supabase.createClient(SB_URL, SB_KEY, {auth:{storageKey:'orcahh-auth', persistSession:true, autoRefreshToken:true, detectSessionInUrl:true}});
+  let recuperando = /type=recovery/.test(location.hash);
+  sb.auth.onAuthStateChange((ev) => { if (ev === 'PASSWORD_RECOVERY') { recuperando = true; mostrarTelaLogin('senha'); } });
+  const {data:{session}} = await sb.auth.getSession();
+  if (recuperando) return mostrarTelaLogin('senha');
+  if (session) await entrarComSessao(session, false);
+  else mostrarTelaLogin('entrar');
 }
 
 // =====================================================================
@@ -533,7 +999,7 @@ function memoria(fn, r){
 // =====================================================================
 function registrarVersao(fn, motivo){
   const rc = calcular(fn, 'campo'), rf = calcular(fn, 'fabrica');
-  S.versoes.unshift({id:uid(), fnId:fn.id, nome:fn.nome, versao:fn.versao || 1, data:new Date().toISOString(), usuario:S.cfg.usuario || '—',
+  S.versoes.unshift({id:uid(), fnId:fn.id, nome:fn.nome, versao:fn.versao || 1, data:new Date().toISOString(), usuario:usuarioAtual(),
     salario:num(fn.salario), rem:rc.rem, hhCampo:rc.hh, hhFabrica:rf.hh, motivo:motivo || '', aprovadoPor:null, aprovadoEm:null});
   if (S.versoes.length > 5000) S.versoes.length = 5000;
 }
@@ -555,7 +1021,9 @@ const PAGINAS = {
   encargos:['Encargos e parâmetros','Encargos sociais, horas produtivas, regime fábrica e BDI'],
   relatorios:['Relatórios','Interno (custo), comercial (com BDI) e detalhado — PDF e Excel'],
   envio:['Enviar ao OrcaSystem','Atualiza a Mão de Obra do OrcaSystem (vale para orçamentos novos)'],
-  historico:['Histórico','Versões das funções e registro de alterações'],
+  historico:['Histórico de versões','Versões das funções e aprovações'],
+  log:['Log de atividades','Quem fez o quê e quando'],
+  usuarios:['Usuários e permissões','Acesso da equipe por perfil'],
   config:['Configurações','Empresa, logos, tema e backup']
 };
 let pagina = 'painel';
@@ -571,7 +1039,7 @@ function ir(p){
   try { localStorage.setItem(KEY + '_pg', p); } catch (e) {}
   render();
 }
-function render(){ try { RENDER[pagina](); } catch (e) { console.error(e); $('pg-' + pagina).innerHTML = '<div class="alert a-warn">Erro ao montar a tela: ' + esc(e.message) + '</div>'; } }
+function render(){ try { RENDER[pagina](); aplicarPermissoes(); } catch (e) { console.error(e); $('pg-' + pagina).innerHTML = '<div class="alert a-warn">Erro ao montar a tela: ' + esc(e.message) + '</div>'; } }
 document.querySelectorAll('.nav').forEach(n => n.addEventListener('click', () => ir(n.dataset.pg)));
 document.querySelectorAll('.ov').forEach(o => o.addEventListener('click', e => { if (e.target === o) o.classList.remove('on'); }));
 
@@ -655,7 +1123,7 @@ RENDER.funcoes = () => {
   const f = filtroFn;
   const lista = filtrarFuncoes();
   $('pg-funcoes').innerHTML = `
-    <div class="card" style="padding:12px 14px">
+    <div class="card ro-ok" style="padding:12px 14px">
       <div class="fr" style="margin:0;align-items:flex-end">
         <div class="f w2"><label class="l">Buscar</label><input id="ff-busca" value="${esc(f.busca)}" placeholder="Nome da função" oninput="filtroFn.busca=this.value;renderFnTabela()"></div>
         <div class="f"><label class="l">Base</label><select onchange="filtroFn.base=this.value;render()"><option value="">Todas</option>${S.bases.map(b => `<option value="${b.id}" ${f.base === b.id ? 'selected' : ''}>${esc(b.nome)}</option>`).join('')}</select></div>
@@ -680,12 +1148,13 @@ function renderFnTabela(lista){
       <td>${Array.isArray(x.itens) ? '<span class="badge b-vio">próprios</span>' : '<span class="badge b-pri">modelo</span>'}</td>
       <td class="mono" style="color:var(--tx3)">v${x.versao || 1}</td><td><span class="badge ${STATUS_BADGE[x.status] || ''}">${esc(x.status)}</span></td>
       <td style="white-space:nowrap"><button class="btn bs" onclick="abrirFuncao('${x.id}')">Editar</button>
-        <button class="btn bs" onclick="abrirComposicao('${x.id}')">Custos</button>
+        <button class="btn bs ro-ok" onclick="abrirComposicao('${x.id}')">Custos</button>
         <button class="btn bs" title="Duplicar" onclick="duplicarFuncao('${x.id}')">⊕</button>
         <button class="btn bs bd" title="Excluir" onclick="excluirFuncao('${x.id}')">✕</button></td></tr>`; }).join('')}
   </tbody></table>`;
 }
 function abrirFuncao(id){
+  if (!exige('editarFuncoes')) return;
   if (!S.bases.length) { toast('Cadastre uma convenção/base primeiro.', true); ir('bases'); return; }
   const f = id ? S.funcoes.find(x => x.id === id) : null;
   $('m-fn-t').textContent = f ? 'Editar função' : 'Nova função';
@@ -701,6 +1170,7 @@ function abrirFuncao(id){
   abrirModal('m-fn'); setTimeout(() => $('fn-nome').focus(), 50);
 }
 function salvarFuncao(){
+  if (!exige('editarFuncoes')) return;
   const nome = $('fn-nome').value.trim(), sal = num($('fn-sal').value, NaN);
   if (!nome) return toast('Informe o nome da função.', true);
   if (!(sal > 0)) return toast('Informe um salário-base maior que zero.', true);
@@ -724,6 +1194,7 @@ function salvarFuncao(){
   salvar(); fecharModal('m-fn'); render(); toast('Função salva.');
 }
 function duplicarFuncao(id){
+  if (!exige('editarFuncoes')) return;
   const src = S.funcoes.find(x => x.id === id); if (!src) return;
   let nome = src.nome + ' (cópia)', k = 2;
   while (S.funcoes.some(x => norm(x.nome) === norm(nome) && x.baseId === src.baseId)) nome = src.nome + ' (cópia ' + k++ + ')';
@@ -733,6 +1204,7 @@ function duplicarFuncao(id){
   salvar(); render(); toast('Função duplicada como rascunho.');
 }
 function excluirFuncao(id){
+  if (!exige('editarFuncoes')) return;
   const f = S.funcoes.find(x => x.id === id); if (!f) return;
   if (!confirm('Excluir a função "' + f.nome + '"?\n\nO histórico de versões dela continua guardado.')) return;
   S.funcoes = S.funcoes.filter(x => x.id !== id);
@@ -785,6 +1257,7 @@ function botaoSalvarCustos(alvo){ const pend = rascunho && rascunho.alvo === alv
 // ---- Rascunho: alterações nos custos só valem depois de "Salvar custos" ----
 let rascunho = null; // {alvo, original, dets:[]}
 function iniciarRascunho(alvo){
+  if (!exige(alvo.startsWith('base:') ? 'editarBases' : 'editarFuncoes')) return false;
   if (rascunho && rascunho.alvo !== alvo) resolverRascunho();
   if (!rascunho) { const l = listaAlvo(alvo); if (!l) return false; rascunho = {alvo, original:clone(l), dets:[]}; }
   return true;
@@ -835,7 +1308,7 @@ RENDER.composicao = () => {
   if (!compSel || !S.funcoes.some(f => f.id === compSel)) compSel = (funcoesOrdenadas(ativas())[0] || funcoesOrdenadas()[0] || {}).id || null;
   const lista = funcoesOrdenadas(S.funcoes.filter(f => !compBusca || norm(f.nome).includes(norm(compBusca))));
   $('pg-composicao').innerHTML = `<div class="split">
-    <div class="card" style="margin:0"><input placeholder="Buscar função" value="${esc(compBusca)}" oninput="compBusca=this.value;renderCompLista()" style="margin-bottom:10px"><div class="list" id="comp-lista"></div></div>
+    <div class="card ro-ok" style="margin:0"><input placeholder="Buscar função" value="${esc(compBusca)}" oninput="compBusca=this.value;renderCompLista()" style="margin-bottom:10px"><div class="list" id="comp-lista"></div></div>
     <div id="comp-det"></div></div><div id="comp-baixo" style="margin-top:16px"></div>`;
   renderCompLista(lista); renderCompDetalhe();
 };
@@ -853,8 +1326,8 @@ function renderCompDetalhe(){
     <div class="card">
       <div class="ch">
         <div><div class="ct" style="font-size:17px">${esc(f.nome)}</div><div class="cs">${esc(f.area || '—')} · ${b ? esc(b.nome) : 'sem base'} · v${f.versao || 1} · <span class="badge ${STATUS_BADGE[f.status]}">${esc(f.status)}</span></div></div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap"><div class="seg"><button class="${compReg === 'campo' ? 'on' : ''}" onclick="compReg='campo';renderCompDetalhe()">Campo</button><button class="${compReg === 'fabrica' ? 'on' : ''}" onclick="compReg='fabrica';renderCompDetalhe()">Fábrica</button></div>
-          <button class="btn" onclick="imprimirComposicao('${f.id}')">⎙ Imprimir</button><button class="btn" onclick="abrirFuncao('${f.id}')">Editar função</button></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><div class="seg ro-ok"><button class="${compReg === 'campo' ? 'on' : ''}" onclick="compReg='campo';renderCompDetalhe()">Campo</button><button class="${compReg === 'fabrica' ? 'on' : ''}" onclick="compReg='fabrica';renderCompDetalhe()">Fábrica</button></div>
+          <button class="btn ro-ok" onclick="imprimirComposicao('${f.id}')">⎙ Imprimir</button><button class="btn" onclick="abrirFuncao('${f.id}')">Editar função</button></div>
       </div>
       <div class="res">
         <div><div class="l">HH normal · ${compReg === 'fabrica' ? 'Fábrica' : 'Campo'}</div><div class="v" style="color:var(--pri)">${fmt(r.hh)}</div><div class="s">${fmt(r.custoMes)}/mês ÷ ${fmtN(r.hp, 0)} h</div></div>
@@ -875,7 +1348,7 @@ function renderCompDetalhe(){
           <tr><td>Custos da função (${compReg === 'fabrica' ? 'fábrica' : 'campo'})</td><td class="n">${fmt(r.custoItens)}</td></tr>
           <tr class="tot"><td>Custo mensal</td><td class="n">${fmt(r.custoMes)}</td></tr>
         </tbody></table></div></div>
-      <div class="card"><div class="ct" style="margin-bottom:6px">Simulador</div><div class="hint" style="margin-bottom:10px">Usa o mesmo cálculo da função; nada é gravado.</div>
+      <div class="card ro-ok"><div class="ct" style="margin-bottom:6px">Simulador</div><div class="hint" style="margin-bottom:10px">Usa o mesmo cálculo da função; nada é gravado.</div>
         <div class="fr"><div class="f"><label class="l">Salário-base simulado</label><input id="sim-sal" type="number" step="50" value="${num(f.salario)}" oninput="simular()"></div>
           <div class="f"><label class="l">Reajuste (%)</label><input id="sim-pct" type="number" step="0.5" value="0" oninput="simular()"></div></div>
         <div id="sim-out"></div></div>
@@ -887,7 +1360,7 @@ function renderCompDetalhe(){
         ${proprios ? `<div style="display:flex;gap:8px;flex-wrap:wrap">${botaoSalvarCustos('fn:' + f.id)}<button class="btn" onclick="voltarModelo('${f.id}')">↺ Voltar ao modelo da base</button></div>` : `<button class="btn bp" onclick="personalizar('${f.id}')">Personalizar custos desta função</button>`}</div>
       ${tabelaItens(itensDe(f), 'fn:' + f.id, proprios)}
     </div>
-    <div class="card"><div class="ch"><div class="ct">Memória de cálculo · ${compReg === 'fabrica' ? 'Fábrica' : 'Campo'}</div><button class="btn bs" onclick="copiarMemoria()">Copiar</button></div><div class="memo" id="memo">${esc(memoria(f, r))}</div></div>`;
+    <div class="card"><div class="ch"><div class="ct">Memória de cálculo · ${compReg === 'fabrica' ? 'Fábrica' : 'Campo'}</div><button class="btn bs ro-ok" onclick="copiarMemoria()">Copiar</button></div><div class="memo" id="memo">${esc(memoria(f, r))}</div></div>`;
   simular();
 }
 function simular(){
@@ -903,12 +1376,14 @@ function simular(){
 }
 function copiarMemoria(){ const t = $('memo').textContent; (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast('Memória copiada.'), () => toast('Não foi possível copiar.', true)); }
 function personalizar(id){
+  if (!exige('editarFuncoes')) return;
   resolverRascunho();
   const f = S.funcoes.find(x => x.id === id); if (!f) return;
   f.itens = clone(itensDe(f)).map(i => ({...i, id:uid()}));
   registrar('Custos personalizados', f.nome + ' passou a ter custos próprios (cópia do modelo)'); salvar(); render();
 }
 function voltarModelo(id){
+  if (!exige('editarFuncoes')) return;
   resolverRascunho();
   const f = S.funcoes.find(x => x.id === id); if (!f) return;
   if (!confirm('Descartar os custos próprios de "' + f.nome + '" e voltar a usar o modelo da base?')) return;
@@ -971,23 +1446,27 @@ function modeloBase(b){
       ${tabelaItens(b.modelo, 'base:' + b.id, true)}</div>`;
 }
 function novaBase(){
+  if (!exige('editarBases')) return;
   const nome = prompt('Nome da nova convenção/base (ex.: MG – Construção Pesada):'); if (!nome || !nome.trim()) return;
   const modelo = clone((S.bases[0] || {}).modelo || MODELO_PADRAO).map(i => ({qtd:1, ...i, id:uid()}));
   const b = {id:uid(), nome:nome.trim(), uf:'', sindicato:'', dataBase:hoje().slice(0, 7), obs:'', modelo, reajustes:[]};
   S.bases.push(b); baseSel = b.id; registrar('Base criada', b.nome); salvar(); render();
 }
 function alterarBase(id, campo, valor){
+  if (!exige('editarBases')) return;
   const b = S.bases.find(x => x.id === id); if (!b) return;
   registrar('Base alterada', b.nome + ' · ' + campo + ': ' + (b[campo] || '—') + ' → ' + valor);
   b[campo] = valor; salvar(); if (campo === 'nome') render();
 }
 function excluirBase(id){
+  if (!exige('editarBases')) return;
   const b = S.bases.find(x => x.id === id); if (!b) return;
   if (S.funcoes.some(f => f.baseId === id)) return toast('Mova ou exclua as funções desta base antes de excluí-la.', true);
   if (!confirm('Excluir a base "' + b.nome + '"?')) return;
   S.bases = S.bases.filter(x => x.id !== id); registrar('Base excluída', b.nome); salvar(); render();
 }
 function aplicarReajuste(id){
+  if (!exige('editarBases')) return;
   const b = S.bases.find(x => x.id === id); if (!b) return;
   const p = num($('rj-pct').value, NaN), desc = $('rj-desc').value.trim() || 'Reajuste';
   if (!isFinite(p) || p === 0) return toast('Informe o índice do reajuste.', true);
@@ -995,13 +1474,14 @@ function aplicarReajuste(id){
   const fns = S.funcoes.filter(f => f.baseId === id && (alvo === 'todas' || f.status === 'ativo'));
   if (!fns.length) return toast('Nenhuma função para reajustar.', true);
   if (!confirm('Aplicar ' + pct(p) + ' sobre o salário-base de ' + fns.length + ' função(ões) da base "' + b.nome + '"?')) return;
-  const r = {id:uid(), data:new Date().toISOString(), pct:p, desc, usuario:S.cfg.usuario, antes:fns.map(f => ({id:f.id, salario:f.salario})), desfeito:false};
+  const r = {id:uid(), data:new Date().toISOString(), pct:p, desc, usuario:usuarioAtual(), antes:fns.map(f => ({id:f.id, salario:f.salario})), desfeito:false};
   fns.forEach(f => { f.salario = Math.round(f.salario * (1 + p / 100) * 100) / 100; novaVersao(f, desc + ' (' + pct(p) + ')'); });
   b.reajustes = b.reajustes || []; b.reajustes.unshift(r);
   registrar('Reajuste aplicado', b.nome + ' · ' + desc + ' · ' + pct(p) + ' · ' + fns.length + ' funções');
   salvar(); render(); toast('Reajuste aplicado em ' + fns.length + ' funções.');
 }
 function desfazerReajuste(bid, rid){
+  if (!exige('editarBases')) return;
   const b = S.bases.find(x => x.id === bid); const r = b && b.reajustes.find(x => x.id === rid); if (!r) return;
   if (!confirm('Desfazer o reajuste "' + r.desc + '"? Os salários voltam aos valores anteriores a ele.')) return;
   r.antes.forEach(a => { const f = S.funcoes.find(x => x.id === a.id); if (f) { f.salario = a.salario; novaVersao(f, 'Reajuste desfeito: ' + r.desc); } });
@@ -1048,13 +1528,13 @@ RENDER.encargos = () => {
         <div class="alert a-info" style="margin:0">BDI resultante: <b>${pct(bdiPct())}</b> · aplicado só no relatório comercial — o HH enviado ao OrcaSystem é sempre de custo.</div></div>
     </div></div>`;
 };
-function alterarEncargo(i, campo, v){ const e = S.encargos[i]; if (!e) return; const antes = e[campo]; e[campo] = campo === 'pct' ? num(v) : v; registrar('Encargo alterado', e.nome + ' · ' + campo + ': ' + antes + ' → ' + e[campo]); marcarVersoesGlobais('Encargos alterados'); salvar(); render(); }
-function adicionarEncargo(g){ const nome = prompt('Nome do encargo:'); if (!nome || !nome.trim()) return; S.encargos.push({id:uid(), g, nome:nome.trim(), pct:0}); registrar('Encargo incluído', nome + ' (grupo ' + g + ')'); salvar(); render(); }
-function removerEncargo(i){ const e = S.encargos[i]; if (!e || e.fgts) return; if (!confirm('Remover o encargo "' + e.nome + '"?')) return; S.encargos.splice(i, 1); registrar('Encargo removido', e.nome); marcarVersoesGlobais('Encargos alterados'); salvar(); render(); }
-function restaurarEncargos(){ if (!confirm('Voltar todos os encargos aos valores de referência?')) return; S.encargos = clone(ENCARGOS_PADRAO); registrar('Encargos', 'Restaurados os valores de referência'); marcarVersoesGlobais('Encargos restaurados'); salvar(); render(); }
-function alterarCfg(k, v){ const antes = S.cfg[k]; S.cfg[k] = typeof v === 'boolean' ? v : num(v); registrar('Parâmetro alterado', k + ': ' + antes + ' → ' + S.cfg[k]); marcarVersoesGlobais('Parâmetros alterados'); salvar(); render(); }
-function alterarFabrica(k, v){ const antes = S.cfg.fabrica[k]; S.cfg.fabrica[k] = Math.min(100, Math.max(0, num(v, 100))); registrar('Regime fábrica', REGRAS[k] + ': ' + antes + '% → ' + S.cfg.fabrica[k] + '%'); marcarVersoesGlobais('Regras do regime fábrica alteradas'); salvar(); render(); }
-function alterarBdi(k, v){ S.cfg.bdi[k] = num(v); S.cfg.bdi.origem = 'Editado manualmente em ' + dataBR(hoje()); registrar('BDI comercial', k + ' = ' + num(v)); salvar(); render(); }
+function alterarEncargo(i, campo, v){ if (!exige('editarEncargos')) return; const e = S.encargos[i]; if (!e) return; const antes = e[campo]; e[campo] = campo === 'pct' ? num(v) : v; registrar('Encargo alterado', e.nome + ' · ' + campo + ': ' + antes + ' → ' + e[campo]); marcarVersoesGlobais('Encargos alterados'); salvar(); render(); }
+function adicionarEncargo(g){ if (!exige('editarEncargos')) return; const nome = prompt('Nome do encargo:'); if (!nome || !nome.trim()) return; S.encargos.push({id:uid(), g, nome:nome.trim(), pct:0}); registrar('Encargo incluído', nome + ' (grupo ' + g + ')'); salvar(); render(); }
+function removerEncargo(i){ if (!exige('editarEncargos')) return; const e = S.encargos[i]; if (!e || e.fgts) return; if (!confirm('Remover o encargo "' + e.nome + '"?')) return; S.encargos.splice(i, 1); registrar('Encargo removido', e.nome); marcarVersoesGlobais('Encargos alterados'); salvar(); render(); }
+function restaurarEncargos(){ if (!exige('editarEncargos')) return; if (!confirm('Voltar todos os encargos aos valores de referência?')) return; S.encargos = clone(ENCARGOS_PADRAO); registrar('Encargos', 'Restaurados os valores de referência'); marcarVersoesGlobais('Encargos restaurados'); salvar(); render(); }
+function alterarCfg(k, v){ if (!exige('editarEncargos')) return; const antes = S.cfg[k]; S.cfg[k] = typeof v === 'boolean' ? v : num(v); registrar('Parâmetro alterado', k + ': ' + antes + ' → ' + S.cfg[k]); marcarVersoesGlobais('Parâmetros alterados'); salvar(); render(); }
+function alterarFabrica(k, v){ if (!exige('editarEncargos')) return; const antes = S.cfg.fabrica[k]; S.cfg.fabrica[k] = Math.min(100, Math.max(0, num(v, 100))); registrar('Regime fábrica', REGRAS[k] + ': ' + antes + '% → ' + S.cfg.fabrica[k] + '%'); marcarVersoesGlobais('Regras do regime fábrica alteradas'); salvar(); render(); }
+function alterarBdi(k, v){ if (!exige('editarEncargos')) return; S.cfg.bdi[k] = num(v); S.cfg.bdi.origem = 'Editado manualmente em ' + dataBR(hoje()); registrar('BDI comercial', k + ' = ' + num(v)); salvar(); render(); }
 // Mudança global (encargo/parâmetro) muda o HH de todas as funções: registra uma versão por função, agrupada por 10 min
 let _ultGlobal = 0;
 function marcarVersoesGlobais(motivo){
@@ -1169,7 +1649,7 @@ function htmlRelatorio(){
       <tr><td colspan="2"><b>${esc(d.titulo)}</b></td><td style="width:10%"><b>Data</b></td><td>${dataBR(hoje())}</td></tr>
       <tr><td colspan="4" style="text-align:center"><b>ASSUNTO:</b> ${esc(d.assunto)}</td></tr></table>
     ${d.corpo}
-    <table class="rod"><tr><td style="width:20%"><b>Elaborado por:</b></td><td>${esc(c.usuario || '')}</td><td style="width:12%"><b>Data</b></td><td style="width:16%">${dataBR(hoje())}</td></tr>
+    <table class="rod"><tr><td style="width:20%"><b>Elaborado por:</b></td><td>${esc(usuarioAtual())}</td><td style="width:12%"><b>Data</b></td><td style="width:16%">${dataBR(hoje())}</td></tr>
       <tr><td><b>Aprovado por:</b></td><td></td><td><b>Data</b></td><td></td></tr></table>
   </div>`;
 }
@@ -1237,9 +1717,9 @@ RENDER.envio = () => {
   lista.forEach(x => { if (envioSel[x.f.id] === undefined) envioSel[x.f.id] = true; });
   const nSel = lista.filter(x => envioSel[x.f.id]).length;
   $('pg-envio').innerHTML = `
-    <div class="card"><div class="ct" style="margin-bottom:10px">1 · Carregar o backup do OrcaSystem</div>
-      <div class="hint" style="margin-bottom:10px">No OrcaSystem: Configurações → <b>Fazer Backup (Exportar JSON)</b>. Carregue aqui o arquivo gerado. Ele é usado para conferir os valores atuais e manter todos os profissionais já cadastrados. Nada é enviado para a internet.</div>
-      <button class="btn bp" onclick="carregarBackupOrca()">Carregar backup do OrcaSystem</button>
+    <div class="card"><div class="ct" style="margin-bottom:10px">1 · Ler a Mão de Obra atual do OrcaSystem</div>
+      <div class="hint" style="margin-bottom:10px">Lê o cadastro de profissionais direto da nuvem do OrcaSystem (e o BDI das Preferências). Se preferir trabalhar com arquivo, carregue o backup do OrcaSystem (Configurações → Fazer Backup).</div>
+      <button class="btn bp" onclick="lerProfissionaisNuvem()">☁ Ler da nuvem do OrcaSystem</button> <button class="btn" onclick="carregarBackupOrca()">Carregar arquivo de backup</button>
       ${orcaBackup ? `<span class="hint" style="margin-left:10px">✓ ${esc(orcaBackup._arquivo)} · ${prof.length} profissionais · BDI das Preferências lido: ${pct(bdiPct())}</span>` : ''}</div>
     <div class="card"><div class="ch"><div><div class="ct">2 · Conferir os valores</div><div class="cs">Atualiza o cadastro de Mão de Obra. Itens de orçamentos já lançados guardam o próprio valor — só orçamentos novos usam o novo HH.</div></div>
       <div class="seg"><button class="${envioReg === 'campo' ? 'on' : ''}" onclick="envioReg='campo';render()">Campo</button><button class="${envioReg === 'fabrica' ? 'on' : ''}" onclick="envioReg='fabrica';render()">Fábrica</button></div></div>
@@ -1248,15 +1728,19 @@ RENDER.envio = () => {
       ${lista.map(x => { const d = x.p && x.p.valor ? (x.novo / x.p.valor - 1) * 100 : null; return `<tr><td><input type="checkbox" ${envioSel[x.f.id] ? 'checked' : ''} onchange="envioSel['${x.f.id}']=this.checked;render()"></td>
         <td>${esc(nomeEnvio(x.f))}</td><td class="n">${x.p ? fmt(x.p.valor) : '—'}</td><td class="n"><b>${fmt(x.novo)}</b></td>
         <td class="n">${d === null ? '—' : `<span class="${d > 0 ? 'up' : 'down'}">${d > 0 ? '+' : ''}${fmtN(d, 1)}%</span>`}</td>
-        <td>${!orcaBackup ? '<span class="hint">carregue o backup</span>' : x.p ? '<span class="badge b-warn">atualiza</span>' : '<span class="badge b-pri">novo</span>'}</td></tr>`; }).join('')}
+        <td>${!orcaBackup ? '<span class="hint">leia o OrcaSystem</span>' : x.p ? '<span class="badge b-warn">atualiza</span>' : '<span class="badge b-pri">novo</span>'}</td></tr>`; }).join('')}
       </tbody></table></div></div>
-    <div class="card"><div class="ct" style="margin-bottom:10px">3 · Gerar o arquivo e restaurar no OrcaSystem</div>
+    ${orcaBackup && orcaBackup._nuvem ? `<div class="card"><div class="ct" style="margin-bottom:10px">3 · Gravar no OrcaSystem</div>
+      <div class="hint" style="margin-bottom:10px">Grava os valores selecionados direto na Mão de Obra do OrcaSystem. Quem estiver com o OrcaSystem aberto vê os novos valores ao entrar de novo. Se alguém estiver editando a Mão de Obra no OrcaSystem nesse momento, peça para recarregar antes.</div>
+      <button class="btn bp" ${!nSel ? 'disabled' : ''} onclick="enviarDiretoOrca()">➜ Enviar ${nSel} profissionais ao OrcaSystem</button></div>` : ''}
+    <div class="card" ${orcaBackup && orcaBackup._nuvem ? 'style="display:none"' : ''}><div class="ct" style="margin-bottom:10px">3 · Gerar o arquivo e restaurar no OrcaSystem</div>
       <div class="hint" style="margin-bottom:10px">Gera <b>profissionais_orcasystem_hh_${hoje()}.json</b> só com a tabela de profissionais. No OrcaSystem: Configurações → <b>Restaurar Backup</b> → escolha esse arquivo. O OrcaSystem faz backup automático antes e só troca os profissionais.</div>
       <button class="btn bp" ${!orcaBackup || !nSel ? 'disabled' : ''} onclick="gerarEnvio()">Gerar arquivo (${nSel} profissionais)</button></div>
     ${S.envios.length ? `<div class="card"><div class="ct" style="margin-bottom:10px">Envios anteriores</div><div class="tw"><table><thead><tr><th>Data</th><th>Usuário</th><th>Regime</th><th class="n">Atualizados</th><th class="n">Novos</th></tr></thead><tbody>
       ${S.envios.slice(0, 20).map(e => `<tr><td>${dataHoraBR(e.data)}</td><td>${esc(e.usuario)}</td><td>${esc(e.regime)}</td><td class="n">${e.atualizados}</td><td class="n">${e.novos}</td></tr>`).join('')}</tbody></table></div></div>` : ''}`;
 };
 async function carregarBackupOrca(){
+  if (!exige('enviarOrca')) return;
   const file = await escolherArquivo('.json'); if (!file) return;
   try {
     const d = JSON.parse(await lerTexto(file));
@@ -1271,27 +1755,12 @@ async function carregarBackupOrca(){
   } catch (e) { toast('Arquivo inválido: ' + e.message, true); }
 }
 function gerarEnvio(){
+  if (!exige('enviarOrca')) return;
   if (!orcaBackup) return;
-  const lista = clone(orcaBackup.profissionais);
-  const porNome = {}; lista.forEach(p => porNome[norm(p.func)] = p);
-  let proxId = lista.length ? Math.max(...lista.map(p => num(p.id))) + 1 : 1;
-  const dt = hoje(); let atualizados = 0, novos = 0;
-  funcoesOrdenadas(ativas()).filter(f => envioSel[f.id]).forEach(f => {
-    const r = calcular(f, envioReg), valor = Math.round(r.hh * 100) / 100;
-    const nome = envioReg === 'fabrica' ? f.nome + ' (Fábrica)' : f.nome;
-    const obs = 'OrcaSystem HH v' + (f.versao || 1) + ' · ' + dataBR(dt) + ' · regime ' + (envioReg === 'fabrica' ? 'fábrica' : 'campo') + ' · remuneração ' + fmt(r.rem) + '/mês · encargos ' + pct(r.E.total) + ' · ÷ ' + fmtN(r.hp, 0) + ' h';
-    const p = porNome[norm(nome)];
-    if (p) {
-      const antes = p.valor;
-      // Mesmo padrão do OrcaSystem para trocar o valor de tabela: valor e valor original iguais, reajustes zerados
-      p.valor = valor; p.valorOriginal = valor; p.dataInclusao = dt; p.reajustes = []; p.unidade = p.unidade || 'HORA';
-      p.obs = obs + ' · valor anterior ' + fmt(antes) + '/h'; p.origem = 'orcasystem-hh'; p.hhId = f.id; atualizados++;
-    } else {
-      lista.push({id:proxId++, func:nome, valor, valorOriginal:valor, dataInclusao:dt, reajustes:[], unidade:'HORA', obs, origem:'orcasystem-hh', hhId:f.id}); novos++;
-    }
-  });
+  const dt = hoje();
+  const {lista, atualizados, novos} = mesclarProfissionais(orcaBackup.profissionais, funcoesOrdenadas(ativas()).filter(f => envioSel[f.id]));
   baixar('profissionais_orcasystem_hh_' + dt + '.json', JSON.stringify({profissionais:lista}, null, 2), 'application/json');
-  S.envios.unshift({data:new Date().toISOString(), usuario:S.cfg.usuario, regime:envioReg, atualizados, novos});
+  S.envios.unshift({id:uid(), data:new Date().toISOString(), usuario:usuarioAtual(), regime:envioReg, atualizados, novos, destino:'arquivo'});
   registrar('Envio ao OrcaSystem', atualizados + ' atualizados, ' + novos + ' novos (regime ' + envioReg + ')');
   salvar(); render(); toast('Arquivo gerado: ' + atualizados + ' atualizados, ' + novos + ' novos.');
 }
@@ -1302,23 +1771,20 @@ function gerarEnvio(){
 let histAba = 'versoes', histBusca = '';
 RENDER.historico = () => {
   const vs = S.versoes.filter(v => !histBusca || norm(v.nome).includes(norm(histBusca))).slice(0, 400);
-  const au = S.auditoria.filter(a => !histBusca || norm(a.acao + ' ' + a.det).includes(norm(histBusca))).slice(0, 400);
   $('pg-historico').innerHTML = `
     <div class="card" style="padding:12px 14px"><div class="fr" style="margin:0;align-items:center">
-      <div class="seg"><button class="${histAba === 'versoes' ? 'on' : ''}" onclick="histAba='versoes';render()">Versões das funções</button><button class="${histAba === 'audit' ? 'on' : ''}" onclick="histAba='audit';render()">Registro de alterações</button></div>
+      <b style="font-size:13px">Versões das funções</b><button class="btn bs" onclick="ir('log')">☰ Ver o log de atividades</button>
       <div class="f w2"><input placeholder="Filtrar" value="${esc(histBusca)}" onchange="histBusca=this.value;render()"></div></div></div>
-    ${histAba === 'versoes' ? `<div class="tw"><table><thead><tr><th>Data</th><th>Função</th><th>Versão</th><th class="n">Salário</th><th class="n">HH Campo</th><th class="n">HH Fábrica</th><th>Motivo</th><th>Usuário</th><th>Aprovação</th></tr></thead><tbody>
+    ${`<div class="tw"><table><thead><tr><th>Data</th><th>Função</th><th>Versão</th><th class="n">Salário</th><th class="n">HH Campo</th><th class="n">HH Fábrica</th><th>Motivo</th><th>Usuário</th><th>Aprovação</th></tr></thead><tbody>
       ${vs.map(v => `<tr><td style="white-space:nowrap">${dataHoraBR(v.data)}</td><td>${esc(v.nome)}</td><td class="mono">v${v.versao}</td><td class="n">${fmt(v.salario)}</td><td class="n">${fmt(v.hhCampo)}</td><td class="n">${fmt(v.hhFabrica)}</td>
         <td style="font-size:12px">${esc(v.motivo)}</td><td style="font-size:12px">${esc(v.usuario)}</td>
-        <td>${v.aprovadoPor ? `<span class="badge b-ok" title="${dataHoraBR(v.aprovadoEm)}">${esc(v.aprovadoPor)}</span>` : `<button class="btn bs" onclick="aprovarVersao('${v.id}')">Aprovar</button>`}</td></tr>`).join('') || '<tr><td colspan="9" class="empty">Sem versões.</td></tr>'}
-      </tbody></table></div><div class="hint" style="margin-top:8px">A aprovação é opcional: registra quem conferiu a versão.</div>`
-    : `<div class="tw"><table><thead><tr><th>Data</th><th>Usuário</th><th>Ação</th><th>Detalhe</th></tr></thead><tbody>
-      ${au.map(a => `<tr><td style="white-space:nowrap">${dataHoraBR(a.ts)}</td><td style="font-size:12px">${esc(a.usuario)}</td><td>${esc(a.acao)}</td><td style="font-size:12px">${esc(a.det)}</td></tr>`).join('') || '<tr><td colspan="4" class="empty">Sem registros.</td></tr>'}
-      </tbody></table></div>`}`;
+        <td>${v.aprovadoPor ? `<span class="badge b-ok" title="${dataHoraBR(v.aprovadoEm)}">${esc(v.aprovadoPor)}</span>` : (pode('aprovar') ? `<button class="btn bs" onclick="aprovarVersao('${v.id}')">Aprovar</button>` : '<span class="hint">—</span>')}</td></tr>`).join('') || '<tr><td colspan="9" class="empty">Sem versões.</td></tr>'}
+      </tbody></table></div><div class="hint" style="margin-top:8px">A aprovação é opcional: registra quem conferiu a versão.</div>`}`;
 };
 function aprovarVersao(id){
+  if (!exige('aprovar')) return;
   const v = S.versoes.find(x => x.id === id); if (!v) return;
-  v.aprovadoPor = S.cfg.usuario || '—'; v.aprovadoEm = new Date().toISOString();
+  v.aprovadoPor = usuarioAtual(); v.aprovadoEm = new Date().toISOString();
   registrar('Versão aprovada', v.nome + ' v' + v.versao); salvar(); render();
 }
 
@@ -1327,24 +1793,23 @@ function aprovarVersao(id){
 // =====================================================================
 RENDER.config = () => {
   const c = S.cfg;
-  let tam = 0; try { tam = (localStorage.getItem(KEY) || '').length; } catch (e) {}
   $('pg-config').innerHTML = `<div class="g2">
     <div class="card"><div class="ct" style="margin-bottom:12px">Empresa</div>
       <div class="fr"><div class="f"><label class="l">Nome</label><input value="${esc(c.empresa)}" onchange="S.cfg.empresa=this.value;salvar();aplicarMarca()"></div>
         <div class="f"><label class="l">Subtítulo</label><input value="${esc(c.subtitulo || '')}" onchange="S.cfg.subtitulo=this.value;salvar()"></div></div>
-      <div class="fr"><div class="f"><label class="l">Seu nome (aparece no histórico e nos relatórios)</label><input value="${esc(c.usuario || '')}" onchange="S.cfg.usuario=this.value;salvar()"></div></div>
       <div class="fr"><div class="f"><label class="l">Logo da empresa</label><div class="logo-box" onclick="carregarLogo('empresa')">${logoEmpresa() ? `<img src="${logoEmpresa()}">` : 'Clique para enviar (PNG/JPG)'}</div>
         ${S.logos.empresa ? `<button class="btn bs" style="margin-top:6px" onclick="S.logos.empresa=null;salvar();aplicarMarca();render()">↺ Voltar ao logo INNOVA padrão</button>` : '<span class="hint">Logo INNOVA padrão. Clique para trocar.</span>'}</div>
         <div class="f"><label class="l">Logo do cliente (relatório comercial)</label><div class="logo-box" onclick="carregarLogo('cliente')">${S.logos.cliente ? `<img src="${S.logos.cliente}">` : 'Clique para enviar'}</div>
         ${S.logos.cliente ? `<button class="btn bs bd" style="margin-top:6px" onclick="S.logos.cliente=null;salvar();render()">Remover logo</button>` : ''}</div></div>
-      <div class="fr" style="align-items:center"><div class="f w2"><b style="font-size:13px">Tema</b></div><div class="f"><select onchange="S.cfg.tema=this.value;salvar();aplicarTema()"><option value="dark" ${c.tema !== 'light' ? 'selected' : ''}>Escuro</option><option value="light" ${c.tema === 'light' ? 'selected' : ''}>Claro</option></select></div></div></div>
+      <div class="fr ro-ok" style="align-items:center"><div class="f w2"><b style="font-size:13px">Tema (só para você)</b></div><div class="f"><select onchange="definirTema(this.value)"><option value="dark" ${temaAtual() !== 'light' ? 'selected' : ''}>Escuro</option><option value="light" ${temaAtual() === 'light' ? 'selected' : ''}>Claro</option></select></div></div></div>
     <div><div class="card"><div class="ct" style="margin-bottom:10px">Backup</div>
-      <div class="hint" style="margin-bottom:10px">Os dados ficam neste navegador (${fmtN(tam / 1024, 0)} KB). Exporte um backup com frequência até a versão em nuvem ser ativada.</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn bp" onclick="exportarBackup()">⬇ Exportar backup</button><button class="btn" onclick="importarBackup()">⬆ Restaurar backup</button><button class="btn bd" onclick="limparDados()">Apagar todos os dados</button></div></div>
+      <div class="hint" style="margin-bottom:10px">Os dados ficam na nuvem do OrcaSystem e são compartilhados pela equipe. O backup gera um arquivo com tudo; restaurar substitui os dados da nuvem para todos.</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn bp ro-ok" onclick="exportarBackup()">⬇ Exportar backup</button><button class="btn" onclick="importarBackup()">⬆ Restaurar backup</button></div></div>
       <div class="card"><div class="ct" style="margin-bottom:8px">Acesso e nuvem</div>
-        <div class="hint">Versão local, sem login. A próxima etapa liga o sistema ao Supabase do OrcaSystem: login com e-mail e recuperação de senha, perfis (Administrador, Orçamentista, Consulta, Aprovador) e envio direto para a Mão de Obra, sem arquivo.</div></div></div></div>`;
+        <div class="hint">Conectado ao Supabase do OrcaSystem como <b>${esc(SESSAO ? SESSAO.email : '')}</b> (${esc(SESSAO ? PERFIS[SESSAO.perfil] : '')}). Os perfis e acessos ficam em <a href="#" onclick="ir('usuarios');return false" style="color:var(--pri)">Usuários e permissões</a>.</div></div></div></div>`;
 };
 async function carregarLogo(qual){
+  if (qual === 'empresa' && !exige('config')) return;
   const file = await escolherArquivo('image/*'); if (!file) return;
   try { S.logos[qual] = await lerImagem(file); salvar(); aplicarMarca(); render(); toast('Logo carregado.'); }
   catch (e) { toast('Não foi possível ler a imagem.', true); }
@@ -1354,6 +1819,7 @@ function exportarBackup(){
   registrar('Backup exportado', ''); salvar();
 }
 async function importarBackup(){
+  if (!exige('config')) return;
   const file = await escolherArquivo('.json'); if (!file) return;
   try {
     const d = JSON.parse(await lerTexto(file));
@@ -1364,12 +1830,196 @@ async function importarBackup(){
     S = migrar(d); registrar('Backup restaurado', file.name); salvar(); aplicarTema(); aplicarMarca(); render(); toast('Backup restaurado.');
   } catch (e) { toast('Arquivo inválido: ' + e.message, true); }
 }
-function limparDados(){
-  if (!confirm('Apagar TODAS as funções, bases, histórico e configurações deste navegador?\n\nAntes disso será baixado um backup.')) return;
-  if (prompt('Para confirmar, digite APAGAR') !== 'APAGAR') return;
-  exportarBackup();
-  S = estadoPadrao(); S.semeado = true; S.bases.push({id:uid(), nome:'Base padrão', uf:'', sindicato:'', dataBase:hoje().slice(0, 7), obs:'', modelo:MODELO_PADRAO.map(i => ({id:uid(), qtd:1, ...i})), reajustes:[]});
-  registrar('Dados apagados', 'Sistema reiniciado sem funções'); salvar(); render(); toast('Dados apagados.');
+
+// =====================================================================
+// USUÁRIOS E PERMISSÕES (somente administrador)
+// =====================================================================
+let USUARIOS = null, _carregandoUsuarios = false;
+async function carregarUsuarios(){
+  if (_carregandoUsuarios) return;
+  _carregandoUsuarios = true;
+  const {data, error} = await sb.from('hh_perfis').select('*').order('nome');
+  _carregandoUsuarios = false;
+  if (error) { toast('Não foi possível ler os usuários: ' + error.message, true); USUARIOS = []; }
+  else USUARIOS = data || [];
+  if (pagina === 'usuarios') render();
+}
+RENDER.usuarios = () => {
+  const el = $('pg-usuarios');
+  if (!pode('usuarios')) { el.innerHTML = '<div class="card empty">Apenas o administrador gerencia usuários.</div>'; return; }
+  if (USUARIOS === null) { el.innerHTML = '<div class="card empty">Carregando usuários…</div>'; carregarUsuarios(); return; }
+  const nAdmin = USUARIOS.filter(u => u.perfil === 'admin' && u.ativo).length;
+  el.innerHTML = `
+    <div class="card"><div class="ch"><div><div class="ct">Novo usuário</div><div class="cs">O acesso é pelo e-mail. A pessoa recebe um link para criar a própria senha.</div></div></div>
+      <div class="fr" style="align-items:flex-end">
+        <div class="f w2"><label class="l">Nome</label><input id="nu-nome" placeholder="Nome completo"></div>
+        <div class="f w2"><label class="l">E-mail</label><input id="nu-email" type="email" placeholder="nome@innovahydro.com.br"></div>
+        <div class="f"><label class="l">Perfil</label><select id="nu-perfil">${Object.entries(PERFIS).map(([k, v]) => `<option value="${k}" ${k === 'orcamentista' ? 'selected' : ''}>${v}</option>`).join('')}</select></div>
+        <button class="btn bp" onclick="novoUsuario()">+ Cadastrar e enviar convite</button>
+      </div>
+      <div class="perfis">${Object.entries(PERFIS).map(([k, v]) => `<div><b>${v}</b><span>${PERFIS_DESC[k]}</span></div>`).join('')}</div>
+    </div>
+    <div class="card"><div class="ch"><div class="ct">Usuários (${USUARIOS.length})</div><button class="btn bs" onclick="USUARIOS=null;render()">⟳ Atualizar</button></div>
+      <div class="tw"><table><thead><tr><th>Usuário</th><th>E-mail</th><th>Perfil</th><th>Situação</th><th>Último acesso</th><th></th></tr></thead><tbody>
+      ${USUARIOS.map(u => { const eu = u.email === SESSAO.email; const ultimoAdmin = u.perfil === 'admin' && u.ativo && nAdmin <= 1; const e = esc(u.email);
+        return `<tr><td><div style="display:flex;gap:10px;align-items:center"><div class="avatar sm">${esc(iniciais(u.nome || u.email))}</div><div><input value="${esc(u.nome)}" style="min-width:180px" onchange="alterarUsuario('${e}','nome',this.value)">${eu ? '<div class="hint">você</div>' : ''}</div></div></td>
+          <td class="mono">${e}</td>
+          <td><select onchange="alterarUsuario('${e}','perfil',this.value)" ${ultimoAdmin ? 'disabled title="É o único administrador ativo"' : ''}>${Object.entries(PERFIS).map(([k, v]) => `<option value="${k}" ${u.perfil === k ? 'selected' : ''}>${v}</option>`).join('')}</select></td>
+          <td><button class="btn bs ${u.ativo ? 'bo' : 'bd'}" ${ultimoAdmin || eu ? 'disabled title="Não é possível desativar a si mesmo nem o único administrador"' : ''} onclick="alterarUsuario('${e}','ativo',${!u.ativo})">${u.ativo ? '● Ativo' : '○ Inativo'}</button></td>
+          <td style="font-size:12px;color:var(--tx3)">${u.ultimo_acesso ? dataHoraBR(u.ultimo_acesso) : 'nunca entrou'}</td>
+          <td style="white-space:nowrap">${/@orcasystem\.local$/.test(u.email) ? '<span class="hint">usuário do OrcaSystem</span>' : `<button class="btn bs" onclick="enviarLinkSenha('${e}')">✉ Link de senha</button>`}</td></tr>`; }).join('') || '<tr><td colspan="6" class="empty">Nenhum usuário.</td></tr>'}
+      </tbody></table></div>
+      <div class="hint" style="margin-top:10px">Desativar bloqueia o acesso ao OrcaSystem HH na hora (a conta continua existindo, inclusive no OrcaSystem). Quem entra no OrcaSystem pelo usuário (sem e-mail) pode ser cadastrado aqui como <b>usuario@orcasystem.local</b>.</div></div>`;
+};
+async function novoUsuario(){
+  if (!exige('usuarios')) return;
+  const nome = $('nu-nome').value.trim(), email = $('nu-email').value.trim().toLowerCase(), perfil = $('nu-perfil').value;
+  if (!nome) return toast('Informe o nome.', true);
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return toast('Informe um e-mail válido.', true);
+  if ((USUARIOS || []).some(u => u.email === email)) return toast('Esse e-mail já está cadastrado.', true);
+  const {error} = await sb.from('hh_perfis').insert({email, nome, perfil, ativo:true});
+  if (error) return toast('Não foi possível cadastrar: ' + error.message, true);
+  registrar('Usuário cadastrado', nome + ' <' + email + '> · ' + PERFIS[perfil]);
+  const r = await criarAcesso(email, nome);
+  salvar(); USUARIOS = null; render();
+  toast(r, /não foi/i.test(r));
+}
+// Cria a conta de login (se ainda não existir) e envia o link para a pessoa definir a senha
+async function criarAcesso(email, nome){
+  if (/@orcasystem\.local$/.test(email)) return 'Cadastrado. Esse usuário entra com a mesma senha do OrcaSystem.';
+  // cliente separado: o cadastro não pode trocar a sessão do administrador
+  const tmp = window.supabase.createClient(SB_URL, SB_KEY, {auth:{persistSession:false, autoRefreshToken:false, detectSessionInUrl:false, storageKey:'orcahh-cadastro'}});
+  const senha = Array.from(crypto.getRandomValues(new Uint8Array(24)), b => b.toString(16).padStart(2, '0')).join('') + 'A!';
+  const {data, error} = await tmp.auth.signUp({email, password:senha, options:{emailRedirectTo:URL_APP, data:{nome}}});
+  const jaExiste = (error && /already|registered|exists/i.test(error.message)) || (data && data.user && Array.isArray(data.user.identities) && !data.user.identities.length);
+  if (error && !jaExiste) return 'Usuário cadastrado, mas não foi possível criar o login: ' + error.message + '. Crie a conta em Supabase → Authentication → Add user com esse e-mail.';
+  const {error:e2} = await sb.auth.resetPasswordForEmail(email, {redirectTo:URL_APP});
+  if (e2) return 'Usuário cadastrado' + (jaExiste ? ' (a conta já existia)' : '') + ', mas o e-mail não foi enviado: ' + e2.message + '. Use "Link de senha" mais tarde.';
+  return 'Usuário cadastrado. ' + (jaExiste ? 'A conta já existia: ' : '') + 'Enviamos para ' + email + ' o link para definir a senha' + (jaExiste ? '' : ' (pode chegar também um e-mail de confirmação)') + '.';
+}
+async function alterarUsuario(email, campo, valor){
+  if (!exige('usuarios')) return;
+  const u = (USUARIOS || []).find(x => x.email === email); if (!u) return;
+  const {error} = await sb.from('hh_perfis').update({[campo]:valor}).eq('email', email);
+  if (error) { toast('Não foi possível alterar: ' + error.message, true); return render(); }
+  const desc = campo === 'perfil' ? PERFIS[u.perfil] + ' → ' + PERFIS[valor] : campo === 'ativo' ? (valor ? 'ativado' : 'desativado') : 'nome: ' + valor;
+  registrar('Usuário alterado', (u.nome || email) + ' · ' + desc); salvar();
+  u[campo] = valor; render(); toast('Usuário atualizado.');
+}
+async function enviarLinkSenha(email){
+  if (!exige('usuarios')) return;
+  const {error} = await sb.auth.resetPasswordForEmail(email, {redirectTo:URL_APP});
+  if (error) return toast('Não foi possível enviar: ' + error.message, true);
+  registrar('Link de senha enviado', email); salvar(); toast('Link de senha enviado para ' + email + '.');
+}
+
+// =====================================================================
+// LOG DE ATIVIDADES (linha do tempo)
+// =====================================================================
+let LOG = null, logFiltro = {busca:'', usuario:'', tipo:'', periodo:'30'};
+const LOG_TIPOS = [
+  {k:'acesso', nome:'Acesso', ic:'🔑', cor:'var(--tx2)', re:/^(login|logout|senha)/i},
+  {k:'usuario', nome:'Usuários', ic:'👤', cor:'var(--vio)', re:/^(usuário|link de senha)/i},
+  {k:'funcao', nome:'Funções', ic:'⊞', cor:'var(--pri)', re:/^função/i},
+  {k:'custos', nome:'Custos', ic:'⊟', cor:'var(--ok)', re:/^custos/i},
+  {k:'reajuste', nome:'Reajustes e bases', ic:'◎', cor:'var(--warn)', re:/^(reajuste|base)/i},
+  {k:'encargos', nome:'Encargos e parâmetros', ic:'%', cor:'var(--bad)', re:/^(encargo|parâmetro|regime|bdi)/i},
+  {k:'envio', nome:'Envios ao OrcaSystem', ic:'➜', cor:'var(--pri)', re:/^envio/i},
+  {k:'saida', nome:'Relatórios e backups', ic:'▤', cor:'var(--tx2)', re:/^(relatório|excel|backup|carga)/i},
+  {k:'versao', nome:'Aprovações', ic:'✓', cor:'var(--ok)', re:/^versão/i}
+];
+function tipoLog(acao){ return LOG_TIPOS.find(t => t.re.test(acao || '')) || {k:'outros', nome:'Outros', ic:'•', cor:'var(--tx3)'}; }
+async function carregarLog(){
+  const {data, error} = await sb.from('hh_log').select('*').order('ts', {ascending:false}).limit(2000);
+  if (error) { toast('Não foi possível ler o log: ' + error.message, true); LOG = []; }
+  else LOG = data || [];
+  if (pagina === 'log') render();
+}
+RENDER.log = () => {
+  const el = $('pg-log');
+  if (LOG === null) { el.innerHTML = '<div class="card empty">Carregando o log…</div>'; carregarLog(); return; }
+  const lim = logFiltro.periodo ? Date.now() - num(logFiltro.periodo) * 86400000 : 0;
+  const todos = [...LOGPEND.map(l => ({ts:l.ts, email:SESSAO.email, usuario:l.usuario, acao:l.acao, detalhe:l.det, pend:true})), ...LOG];
+  const lista = todos.filter(l => (!lim || new Date(l.ts).getTime() >= lim) && (!logFiltro.usuario || l.email === logFiltro.usuario)
+    && (!logFiltro.tipo || tipoLog(l.acao).k === logFiltro.tipo) && (!logFiltro.busca || norm(l.acao + ' ' + l.detalhe + ' ' + l.usuario).includes(norm(logFiltro.busca))));
+  const usuarios = [...new Map(todos.map(l => [l.email, l.usuario || l.email])).entries()];
+  const hojeN = todos.filter(l => new Date(l.ts).toDateString() === new Date().toDateString()).length;
+  const porTipo = {}; lista.forEach(l => { const t = tipoLog(l.acao).k; porTipo[t] = (porTipo[t] || 0) + 1; });
+  const grupos = {}; lista.slice(0, 600).forEach(l => { const d = new Date(l.ts).toLocaleDateString('pt-BR', {weekday:'long', day:'2-digit', month:'long', year:'numeric'}); (grupos[d] = grupos[d] || []).push(l); });
+  el.innerHTML = `
+    <div class="kpis">
+      <div class="kpi"><div class="l">Registros no período</div><div class="v">${lista.length}</div><div class="s">${pode('usuarios') ? 'de toda a equipe' : 'somente os seus'}</div></div>
+      <div class="kpi" style="--k:var(--ok)"><div class="l">Hoje</div><div class="v">${hojeN}</div><div class="s">ações registradas</div></div>
+      <div class="kpi" style="--k:var(--vio)"><div class="l">Usuários ativos</div><div class="v">${new Set(lista.map(l => l.email)).size}</div><div class="s">no período</div></div>
+      <div class="kpi" style="--k:var(--warn)"><div class="l">Mais frequente</div><div class="v" style="font-size:17px">${(() => { const t = Object.entries(porTipo).sort((a, b) => b[1] - a[1])[0]; return t ? esc((LOG_TIPOS.find(x => x.k === t[0]) || {nome:'Outros'}).nome) : '—'; })()}</div><div class="s">tipo de ação</div></div>
+    </div>
+    <div class="card ro-ok" style="padding:12px 14px"><div class="fr" style="margin:0;align-items:flex-end">
+      <div class="f w2"><label class="l">Buscar</label><input value="${esc(logFiltro.busca)}" placeholder="Ação, função, detalhe…" onchange="logFiltro.busca=this.value;render()"></div>
+      <div class="f"><label class="l">Usuário</label><select onchange="logFiltro.usuario=this.value;render()"><option value="">Todos</option>${usuarios.map(([e, n]) => `<option value="${esc(e)}" ${logFiltro.usuario === e ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></div>
+      <div class="f"><label class="l">Tipo</label><select onchange="logFiltro.tipo=this.value;render()"><option value="">Todos</option>${LOG_TIPOS.map(t => `<option value="${t.k}" ${logFiltro.tipo === t.k ? 'selected' : ''}>${t.ic} ${t.nome}</option>`).join('')}</select></div>
+      <div class="f"><label class="l">Período</label><select onchange="logFiltro.periodo=this.value;render()">${[['1','Hoje'],['7','7 dias'],['30','30 dias'],['90','90 dias'],['','Tudo']].map(([v, n]) => `<option value="${v}" ${logFiltro.periodo === v ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
+      <button class="btn" onclick="LOG=null;render()">⟳ Atualizar</button>
+      <button class="btn" onclick="exportarLogCSV()">⬇ CSV</button>
+    </div></div>
+    <div class="card">${Object.keys(grupos).length ? Object.entries(grupos).map(([dia, ls]) => `<div class="tl-dia">${esc(dia)}</div>
+      <div class="tl">${ls.map(l => { const t = tipoLog(l.acao); return `<div class="tl-it">
+        <div class="tl-ic" style="color:${t.cor};border-color:${t.cor}">${t.ic}</div>
+        <div class="tl-c"><div class="tl-h"><b>${esc(l.acao)}</b><span class="badge" style="background:var(--bg4);color:${t.cor}">${esc(t.nome)}</span>${l.pend ? '<span class="badge b-warn">a enviar</span>' : ''}<span class="tl-t">${new Date(l.ts).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'})}</span></div>
+          ${l.detalhe ? `<div class="tl-d">${esc(l.detalhe)}</div>` : ''}
+          <div class="tl-u"><span class="avatar xs">${esc(iniciais(l.usuario || l.email))}</span>${esc(l.usuario || l.email)} <span style="color:var(--tx3)">· ${esc(l.email)}</span></div></div></div>`; }).join('')}</div>`).join('')
+      + (lista.length > 600 ? '<div class="hint">Mostrando os 600 mais recentes — use os filtros ou exporte o CSV.</div>' : '') : '<div class="empty">Nenhum registro no período.</div>'}</div>`;
+};
+function exportarLogCSV(){
+  const linhas = [['Data','Hora','Usuário','E-mail','Tipo','Ação','Detalhe']].concat((LOG || []).map(l => { const d = new Date(l.ts); return [d.toLocaleDateString('pt-BR'), d.toLocaleTimeString('pt-BR'), l.usuario, l.email, tipoLog(l.acao).nome, l.acao, l.detalhe]; }));
+  baixar('log_orcasystem_hh_' + hoje() + '.csv', '﻿' + linhas.map(r => r.map(c => '"' + String(c ?? '').replace(/"/g, '""') + '"').join(';')).join('\r\n'), 'text/csv;charset=utf-8');
+}
+
+// =====================================================================
+// ENVIO DIRETO PARA A MÃO DE OBRA DO ORCASYSTEM (tabela profissionais)
+// =====================================================================
+async function lerProfissionaisNuvem(){
+  if (!exige('enviarOrca')) return;
+  const {data, error} = await sb.from('profissionais').select('id,dados');
+  if (error) return toast('Não foi possível ler a Mão de Obra do OrcaSystem: ' + error.message, true);
+  orcaBackup = {_arquivo:'nuvem do OrcaSystem', _nuvem:true, profissionais:(data || []).map(r => ({...r.dados, id:r.id}))};
+  await lerBdiOrca();
+  salvar(); render(); toast('Mão de Obra do OrcaSystem lida: ' + orcaBackup.profissionais.length + ' profissionais.');
+}
+async function enviarDiretoOrca(){
+  if (!exige('enviarOrca') || !orcaBackup || !orcaBackup._nuvem) return;
+  const sel = funcoesOrdenadas(ativas()).filter(f => envioSel[f.id]);
+  if (!sel.length) return;
+  if (!confirm('Atualizar ' + sel.length + ' profissional(is) na Mão de Obra do OrcaSystem (regime ' + envioReg + ')?\n\nOrçamentos já lançados não mudam: só os novos usam o novo valor.')) return;
+  const {lista, alterados, atualizados, novos} = mesclarProfissionais(orcaBackup.profissionais, sel);
+  const linhas = lista.filter(p => alterados.has(p.id)).map(p => ({id:p.id, dados:p}));
+  const {error} = await sb.from('profissionais').upsert(linhas, {onConflict:'id'});
+  if (error) return toast('Não foi possível gravar no OrcaSystem: ' + error.message, true);
+  S.envios.unshift({id:uid(), data:new Date().toISOString(), usuario:usuarioAtual(), regime:envioReg, atualizados, novos, destino:'nuvem'});
+  registrar('Envio ao OrcaSystem', atualizados + ' atualizados, ' + novos + ' novos (regime ' + envioReg + ', direto na nuvem)');
+  orcaBackup.profissionais = lista;
+  salvar(); render(); toast('OrcaSystem atualizado: ' + atualizados + ' atualizados, ' + novos + ' novos. Quem estiver com o OrcaSystem aberto vê ao entrar de novo.');
+}
+// Mesma regra do arquivo: valor e valor original iguais, reajustes zerados, valor antigo na observação
+function mesclarProfissionais(base, funcoes){
+  const lista = clone(base), alterados = new Set();
+  const porNome = {}; lista.forEach(p => porNome[norm(p.func)] = p);
+  let proxId = lista.length ? Math.max(...lista.map(p => num(p.id))) + 1 : 1;
+  const dt = hoje(); let atualizados = 0, novos = 0;
+  funcoes.forEach(f => {
+    const r = calcular(f, envioReg), valor = Math.round(r.hh * 100) / 100;
+    const nome = envioReg === 'fabrica' ? f.nome + ' (Fábrica)' : f.nome;
+    const obs = 'OrcaSystem HH v' + (f.versao || 1) + ' · ' + dataBR(dt) + ' · regime ' + (envioReg === 'fabrica' ? 'fábrica' : 'campo') + ' · remuneração ' + fmt(r.rem) + '/mês · encargos ' + pct(r.E.total) + ' · ÷ ' + fmtN(r.hp, 0) + ' h';
+    const p = porNome[norm(nome)];
+    if (p) {
+      const antes = p.valor;
+      p.valor = valor; p.valorOriginal = valor; p.dataInclusao = dt; p.reajustes = []; p.unidade = p.unidade || 'HORA';
+      p.obs = obs + ' · valor anterior ' + fmt(antes) + '/h'; p.origem = 'orcasystem-hh'; p.hhId = f.id; atualizados++; alterados.add(p.id);
+    } else {
+      const n = {id:proxId++, func:nome, valor, valorOriginal:valor, dataInclusao:dt, reajustes:[], unidade:'HORA', obs, origem:'orcasystem-hh', hhId:f.id};
+      lista.push(n); porNome[norm(nome)] = n; novos++; alterados.add(n.id);
+    }
+  });
+  return {lista, alterados, atualizados, novos};
 }
 
 // =====================================================================
@@ -1389,13 +2039,15 @@ function carregarLogoPadrao(){
       if (max > 0 && max < 255) { const k = 255 / max; for (let i = 3; i < d.length; i += 4) d[i] = Math.min(255, Math.round(d[i] * k)); g.putImageData(id, 0, 0); }
       LOGO_PADRAO = c.toDataURL('image/png');
     } catch (e) { LOGO_PADRAO = new URL('img/logo-innova.png', location.href).href; } // aberto como arquivo local: usa a imagem como está
-    aplicarMarca(); if (pagina === 'relatorios' || pagina === 'config') render();
+    aplicarMarca(); const lg = $('lg-logo'); if (lg) lg.src = LOGO_PADRAO; if (SESSAO && (pagina === 'relatorios' || pagina === 'config')) render();
   };
   img.src = 'img/logo-innova.png';
 }
 function logoEmpresa(){ return S.logos.empresa || LOGO_PADRAO; }
-function aplicarTema(){ document.body.classList.toggle('light', S.cfg.tema === 'light'); }
-function toggleTema(){ S.cfg.tema = S.cfg.tema === 'light' ? 'dark' : 'light'; salvar(); aplicarTema(); }
+function temaAtual(){ try { return localStorage.getItem('orcahh_tema') || 'dark'; } catch (e) { return 'dark'; } }
+function definirTema(t){ try { localStorage.setItem('orcahh_tema', t); } catch (e) {} aplicarTema(); }
+function aplicarTema(){ document.body.classList.toggle('light', temaAtual() === 'light'); }
+function toggleTema(){ definirTema(temaAtual() === 'light' ? 'dark' : 'light'); }
 function aplicarMarca(){
   const img = $('brand-logo');
   const lg = logoEmpresa();
@@ -1406,12 +2058,11 @@ function aplicarMarca(){
 // =====================================================================
 // INÍCIO
 // =====================================================================
-carregar();
 aplicarTema();
-aplicarMarca();
 carregarLogoPadrao();
-let pgIni = 'painel'; try { pgIni = localStorage.getItem(KEY + '_pg') || 'painel'; } catch (e) {}
-ir(pgIni);
+try { const pg = localStorage.getItem(KEY + '_pg'); if (PAGINAS[pg]) pagina = pg; } catch (e) {}
+try { const u = localStorage.getItem('orcahh_ultimo_login'); if (u) $('lg-user').value = u; } catch (e) {}
+iniciarNuvem();
 </script>
 </body>
 </html>
