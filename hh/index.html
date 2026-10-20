@@ -333,6 +333,12 @@ table.itens td input,table.itens td select{font-size:13px;padding:7px 9px}
     </div>
   </div>
 </div>
+<!-- MODAL IMPORTAR DO ORCASYSTEM -->
+<div class="ov" id="m-imp"><div class="modal" style="max-width:860px">
+  <div class="mh"><b>Importar profissionais do OrcaSystem</b><button class="x" onclick="fecharModal('m-imp')">✕</button></div>
+  <div id="m-imp-corpo"></div>
+  <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px"><button class="btn" onclick="fecharModal('m-imp')">Cancelar</button><button class="btn bp" id="m-imp-btn" onclick="confirmarImportar()">Importar</button></div>
+</div></div>
 <!-- MODAL TROCAR SENHA -->
 <div class="ov" id="m-senha"><div class="modal" style="max-width:400px">
   <div class="mh"><b>Trocar senha</b><button class="x" onclick="fecharModal('m-senha')">✕</button></div>
@@ -1108,7 +1114,7 @@ RENDER.funcoes = () => {
         <div class="f"><label class="l">Base</label><select onchange="filtroFn.base=this.value;render()"><option value="">Todas</option>${S.bases.map(b => `<option value="${b.id}" ${f.base === b.id ? 'selected' : ''}>${esc(b.nome)}</option>`).join('')}</select></div>
         <div class="f"><label class="l">Áreas</label>${multiSel('fnAreas', areas, 'áreas')}</div>
         <div class="f"><label class="l">Status</label><select onchange="filtroFn.status=this.value;render()"><option value="">Todos</option>${['ativo','rascunho','inativo'].map(s => `<option value="${s}" ${f.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
-        <button class="btn bp" onclick="abrirFuncao()">+ Nova função</button>
+        ${pode('editarFuncoes') ? '<button class="btn" onclick="abrirImportarOrca()">☁ Importar do OrcaSystem</button><button class="btn bp" onclick="abrirFuncao()">+ Nova função</button>' : ''}
       </div>
     </div>
     <div class="tw" id="fn-tabela"></div>`;
@@ -1181,6 +1187,63 @@ function duplicarFuncao(id){
   if (Array.isArray(f.itens)) f.itens.forEach(i => i.id = uid());
   S.funcoes.push(f); registrarVersao(f, 'Duplicada de ' + src.nome); registrar('Função duplicada', src.nome + ' → ' + nome);
   salvar(); render(); toast('Função duplicada como rascunho.');
+}
+// =====================================================================
+// IMPORTAR PROFISSIONAIS DO ORCASYSTEM (os que ainda não são funções no HH)
+// =====================================================================
+// O OrcaSystem guarda só o valor por hora. O salário é estimado pela mesma regra
+// da tabela 2026 (valor/h = remuneração × 2 ÷ 176), sem periculosidade, e a
+// função entra marcada para conferência.
+let IMPORT = null; // {lista:[{p, nome, salario, sel}], baseId}
+function salarioEstimado(valorH){ return Math.round(num(valorH) * 176 / 2 * 100) / 100; }
+async function abrirImportarOrca(){
+  if (!exige('editarFuncoes')) return;
+  if (!S.bases.length) return toast('Cadastre uma convenção/base primeiro.', true);
+  const {data, error} = await sb.from('profissionais').select('id,dados');
+  if (error) return toast('Não foi possível ler a Mão de Obra do OrcaSystem: ' + error.message, true);
+  // 1 para 1 com o OrcaSystem: cada profissional vira uma função, exceto os que já têm função
+  // com o mesmo nome no HH (contando repetições). Nomes parecidos ou repetidos entram também.
+  const disponiveis = {};
+  S.funcoes.forEach(f => { const k = String(f.nome || '').trim(); disponiveis[k] = (disponiveis[k] || 0) + 1; });
+  const idsHH = new Set(S.funcoes.map(f => f.id));
+  const lista = [];
+  (data || []).map(r => ({...r.dados, id:r.id})).sort((a, b) => num(a.id) - num(b.id)).forEach(p => {
+    const nome = String(p.func || '').trim();
+    if (!nome || (p.hhId && idsHH.has(p.hhId))) return; // registros que o próprio HH enviou
+    if (disponiveis[nome]) { disponiveis[nome]--; return; }
+    lista.push({p, nome, salario:salarioEstimado(p.valor), sel:true});
+  });
+  IMPORT = {lista, baseId:filtroFn.base || S.bases[0].id, total:(data || []).length};
+  renderImportar(); abrirModal('m-imp');
+}
+function renderImportar(){
+  const el = $('m-imp-corpo'); if (!el || !IMPORT) return;
+  const n = IMPORT.lista.filter(x => x.sel).length;
+  el.innerHTML = !IMPORT.lista.length
+    ? `<div class="empty">Todos os ${IMPORT.total} profissionais do OrcaSystem já existem como funções no HH.</div>`
+    : `<div class="alert a-info">O OrcaSystem tem <b>${IMPORT.total}</b> profissionais; <b>${IMPORT.lista.length}</b> ainda não existem no HH (comparação pelo nome exato — repetidos e parecidos entram também, para você revisar). O salário-base é estimado pelo valor/h (<b>valor × 176 ÷ 2</b>, a mesma regra da tabela 2026), sem periculosidade. Cada função entra ativa, com a observação “salário estimado — conferir”, e o valor/h atual fica como referência no Comparativo.</div>
+      <div class="fr" style="align-items:flex-end"><div class="f"><label class="l">Base / convenção</label><select onchange="IMPORT.baseId=this.value">${S.bases.map(b => `<option value="${b.id}" ${IMPORT.baseId === b.id ? 'selected' : ''}>${esc(b.nome)}</option>`).join('')}</select></div>
+        <label style="display:flex;gap:8px;align-items:center;font-size:13px;cursor:pointer"><input type="checkbox" ${n === IMPORT.lista.length ? 'checked' : ''} onchange="IMPORT.lista.forEach(x=>x.sel=this.checked);renderImportar()"> Marcar todos</label></div>
+      <div class="tw" style="max-height:50vh;overflow-y:auto"><table><thead><tr><th></th><th>Profissional no OrcaSystem</th><th class="n">Valor/h OrcaSystem</th><th class="n">Salário estimado</th><th class="n">HH calculado (campo)</th></tr></thead><tbody>
+      ${IMPORT.lista.map((x, i) => { const hh = calcular({salario:x.salario, peric:false, outrosAdic:0, baseId:IMPORT.baseId, itens:null}, 'campo').hh;
+        return `<tr><td><input type="checkbox" ${x.sel ? 'checked' : ''} onchange="IMPORT.lista[${i}].sel=this.checked;renderImportar()"></td><td>${esc(x.nome)}</td><td class="n">${fmt(x.p.valor)}</td><td class="n">${fmt(x.salario)}</td><td class="n">${fmt(hh)}</td></tr>`; }).join('')}
+      </tbody></table></div>`;
+  $('m-imp-btn').disabled = !n;
+  $('m-imp-btn').textContent = 'Importar ' + n + ' função(ões)';
+}
+function confirmarImportar(){
+  if (!exige('editarFuncoes') || !IMPORT) return;
+  const sel = IMPORT.lista.filter(x => x.sel); if (!sel.length) return;
+  const agora = new Date().toISOString();
+  sel.forEach(x => {
+    const f = {id:uid(), baseId:IMPORT.baseId, area:String(x.p.area || x.p.categoria || 'Importados do OrcaSystem'), nome:x.nome, status:'ativo',
+      salario:x.salario, peric:false, outrosAdic:0, ref2026:num(x.p.valor), itens:null, versao:1, criadoEm:agora, atualizadoEm:agora, orcaId:x.p.id,
+      obs:'Importado do OrcaSystem · salário estimado pelo valor/h ' + fmt(x.p.valor) + ' × 176 ÷ 2 — conferir'};
+    S.funcoes.push(f); registrarVersao(f, 'Importada do OrcaSystem (salário estimado)');
+  });
+  registrar('Funções importadas', sel.length + ' profissionais do OrcaSystem (salário estimado pelo valor/h) na base ' + ((S.bases.find(b => b.id === IMPORT.baseId) || {}).nome || ''));
+  IMPORT = null; fecharModal('m-imp'); salvar(); render();
+  toast(sel.length + ' funções importadas. Confira os salários (filtro de área “Importados do OrcaSystem”).');
 }
 function excluirFuncao(id){
   if (!exige('editarFuncoes')) return;
