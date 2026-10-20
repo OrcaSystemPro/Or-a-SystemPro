@@ -145,43 +145,37 @@ table.itens td input,table.itens td select{font-size:13px;padding:7px 9px}
 .ms-op:hover{background:var(--bg3)}
 .ms-op.todas{border-bottom:1px solid var(--bd);border-radius:0;margin-bottom:4px;padding-bottom:8px}
 .up{color:var(--bad)}.down{color:var(--ok)}
-/* login (mesmo desenho do OrcaSystem) */
-#login{position:fixed;inset:0;display:flex;z-index:300;background:var(--bg)}
-.lg-l{flex:1 1 55%;position:relative;overflow-x:hidden;overflow-y:auto;background:linear-gradient(160deg,#0b0f1a 0%,#12172a 45%,#171b28 100%);padding:56px 64px;display:flex;flex-direction:column;justify-content:safe center;border-right:1px solid var(--bd2);color:#f0f0f8}
-.lg-l::before{content:'';position:absolute;inset:0;background-image:radial-gradient(ellipse at 20% 20%,rgba(10,132,255,.18) 0%,transparent 55%),radial-gradient(ellipse at 85% 75%,rgba(48,209,88,.12) 0%,transparent 50%);pointer-events:none}
-.lg-l::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#0a84ff,#30d158,#0a84ff)}
-.lg-l>*{position:relative;z-index:2}
-.lg-marca{width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#0a84ff,#30d158);display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:20px;box-shadow:0 8px 32px rgba(10,132,255,.3)}
-.lg-tit{font-family:var(--fd);font-size:34px;font-weight:800;line-height:1.12;margin-bottom:14px}
-.lg-tit span{display:block;color:#30d158}
-.lg-desc{font-size:15px;color:#a0a0b8;line-height:1.65;max-width:440px}
-.lg-feats{display:flex;flex-direction:column;gap:12px;margin-top:38px;max-width:480px}
-.lg-feat{display:flex;align-items:center;gap:14px;padding:13px 16px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.1);border-radius:12px;transition:all .15s}
-.lg-feat:hover{background:rgba(255,255,255,.05);border-color:#0a84ff;transform:translateX(4px)}
-.lg-fi{width:38px;height:38px;border-radius:10px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:17px;background:rgba(10,132,255,.15);border:1px solid rgba(10,132,255,.25)}
-.lg-feat:nth-child(2) .lg-fi{background:rgba(48,209,88,.12);border-color:rgba(48,209,88,.25)}
-.lg-feat:nth-child(3) .lg-fi{background:rgba(191,90,242,.13);border-color:rgba(191,90,242,.25)}
-.lg-feat:nth-child(4) .lg-fi{background:rgba(255,159,10,.12);border-color:rgba(255,159,10,.25)}
-.lg-ft{font-size:13px;color:#a0a0b8;line-height:1.4}
-.lg-ft b{color:#f0f0f8;display:block}
-.lg-rod{font-size:11px;color:#6a6a82;margin-top:38px}
-.lg-r{flex:1 1 45%;display:flex;align-items:center;justify-content:center;padding:40px;background:var(--bg);background-image:radial-gradient(ellipse at 70% 30%,rgba(10,132,255,.07) 0%,transparent 55%)}
-.lg-form{width:100%;max-width:370px;animation:lgIn .5s ease-out}
-@keyframes lgIn{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:none}}
-.lg-form h2{font-family:var(--fd);font-size:24px;margin-bottom:6px}
-.lg-form .sub{font-size:13px;color:var(--tx2);margin-bottom:26px}
-.lg-g{margin-bottom:17px}
-.lg-g label{display:block;font-size:11px;color:var(--tx2);margin-bottom:7px;text-transform:uppercase;letter-spacing:.6px;font-weight:600}
-.lg-g input{padding:12px 15px;font-size:14px;border-width:1.5px;border-radius:10px}
-.lg-g input:focus{box-shadow:0 0 0 3px rgba(10,132,255,.18)}
-.lg-btn{width:100%;padding:13px;border:none;border-radius:10px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;margin-top:6px;background:linear-gradient(135deg,#0a84ff,#5e5ce6);box-shadow:0 4px 16px rgba(10,132,255,.3);transition:all .15s}
+/* login: tela única, centralizada */
+#login{position:fixed;inset:0;z-index:300;display:flex;overflow-y:auto;background:linear-gradient(160deg,#0b0f1a 0%,#12172a 50%,#0a0a0f 100%);color:#f0f0f8}
+#login::before{content:'';position:fixed;inset:0;pointer-events:none;background-image:radial-gradient(ellipse at 18% 15%,rgba(10,132,255,.20) 0%,transparent 50%),radial-gradient(ellipse at 85% 85%,rgba(48,209,88,.13) 0%,transparent 50%)}
+#login::after{content:'';position:fixed;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#0a84ff,#30d158,#0a84ff)}
+.lg-wrap{position:relative;z-index:1;margin:auto;width:100%;max-width:430px;padding:22px 20px;animation:lgIn .5s ease-out}
+@keyframes lgIn{from{opacity:0;transform:translateY(16px) scale(.98)}to{opacity:1;transform:none}}
+.lg-head{text-align:center;margin-bottom:18px}
+.lg-marca{width:46px;height:46px;border-radius:14px;margin:0 auto 12px;background:linear-gradient(135deg,#0a84ff,#30d158);display:flex;align-items:center;justify-content:center;font-size:25px;box-shadow:0 8px 32px rgba(10,132,255,.35)}
+.lg-tit{font-family:var(--fd);font-size:30px;font-weight:800;letter-spacing:-.3px}
+.lg-tit span{color:#30d158}
+.lg-desc{font-size:13.5px;color:#a0a0b8;margin-top:6px}
+.lg-card{background:rgba(17,17,24,.82);border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:24px 26px;box-shadow:0 24px 60px rgba(0,0,0,.45);backdrop-filter:blur(10px)}
+.lg-card h2{font-family:var(--fd);font-size:21px;margin-bottom:4px}
+.lg-card .sub{font-size:13px;color:#a0a0b8;margin-bottom:18px}
+.lg-g{margin-bottom:16px}
+.lg-g label{display:block;font-size:11px;color:#a0a0b8;margin-bottom:7px;text-transform:uppercase;letter-spacing:.6px;font-weight:600}
+.lg-g input{padding:12px 15px;font-size:14px;border:1.5px solid rgba(255,255,255,.14);border-radius:10px;background:#1a1a24;color:#f0f0f8}
+.lg-g input::placeholder{color:#6a6a82}
+.lg-g input:focus{border-color:#0a84ff;box-shadow:0 0 0 3px rgba(10,132,255,.18)}
+.lg-btn{width:100%;padding:13px;border:none;border-radius:10px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;margin-top:4px;background:linear-gradient(135deg,#0a84ff,#5e5ce6);box-shadow:0 4px 16px rgba(10,132,255,.3);transition:all .15s}
 .lg-btn:hover{transform:translateY(-1px);box-shadow:0 6px 24px rgba(10,132,255,.4)}
 .lg-btn:disabled{opacity:.6;transform:none;cursor:wait}
-.lg-link{background:none;border:none;color:var(--pri);font-size:12px;cursor:pointer;margin-top:14px;padding:0}
-.lg-msg{display:none;margin-top:14px;padding:10px 12px;border-radius:9px;font-size:12.5px;line-height:1.5;background:rgba(255,69,58,.1);border:1px solid rgba(255,69,58,.3);color:var(--bad)}
-.lg-msg.on{display:block}.lg-msg.ok{background:rgba(48,209,88,.1);border-color:rgba(48,209,88,.3);color:var(--ok)}
-.lg-info{margin-top:22px;padding:13px 15px;border-radius:10px;background:var(--bg3);border:1px solid var(--bd);font-size:12.5px;color:var(--tx2);line-height:1.55}
-@media (max-width:900px){.lg-l{display:none}.lg-r{padding:24px}}
+.lg-link{display:block;margin:14px auto 0;background:none;border:none;color:#3d9bff;font-size:12.5px;cursor:pointer;padding:0}
+.lg-msg{display:none;margin-top:14px;padding:10px 12px;border-radius:9px;font-size:12.5px;line-height:1.5;background:rgba(255,69,58,.1);border:1px solid rgba(255,69,58,.3);color:#ff6b61}
+.lg-msg.on{display:block}.lg-msg.ok{background:rgba(48,209,88,.1);border-color:rgba(48,209,88,.3);color:#30d158}
+.lg-info{margin-top:18px;padding-top:16px;border-top:1px solid rgba(255,255,255,.08);font-size:12px;color:#8a8aa0;line-height:1.55;text-align:center}
+.lg-chips{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:16px}
+.lg-chips span{font-size:11.5px;color:#a0a0b8;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:20px;padding:5px 11px}
+.lg-rod{text-align:center;font-size:11px;color:#5a5a72;margin-top:12px}
+@media (max-height:760px){.lg-chips,.lg-rod,.lg-marca{display:none}.lg-head{margin-bottom:14px}.lg-g{margin-bottom:12px}.lg-card .sub{margin-bottom:14px}}
+
 /* usuário, nuvem, log */
 .userbox{display:flex;gap:10px;align-items:center}
 .userbox b{display:block;font-size:13px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px;margin-bottom:3px}
@@ -225,19 +219,9 @@ table.itens td input,table.itens td select{font-size:13px;padding:7px 9px}
 
 <!-- LOGIN -->
 <div id="login" style="display:none">
-  <div class="lg-l">
-    <div class="lg-marca">⏱</div>
-    <div class="lg-tit">OrcaSystem<span>HH</span></div>
-    <div class="lg-desc">Composição de custo da hora-homem da INNOVA HYDRO — encargos, regimes campo e fábrica, convenções e reajustes, integrado ao OrcaSystem.</div>
-    <div class="lg-feats">
-      <div class="lg-feat"><div class="lg-fi">⊟</div><div class="lg-ft"><b>Composição detalhada</b>Salário, periculosidade, encargos A/B/C/D e custos da função, com memória de cálculo</div></div>
-      <div class="lg-feat"><div class="lg-fi">⇄</div><div class="lg-ft"><b>Campo e fábrica</b>Dois valores por função, horas extras e noturno calculados corretamente</div></div>
-      <div class="lg-feat"><div class="lg-fi">▤</div><div class="lg-ft"><b>Relatórios no padrão INNOVA</b>Tabela interna de custo, comercial com BDI e detalhado — PDF e Excel</div></div>
-      <div class="lg-feat"><div class="lg-fi">☁</div><div class="lg-ft"><b>Integrado ao OrcaSystem</b>Mesma conta, dados na nuvem e envio direto para a Mão de Obra</div></div>
-    </div>
-    <div class="lg-rod">OrcaSystem HH · INNOVA HYDRO Montagem Eletromecânica</div>
-  </div>
-  <div class="lg-r"><div class="lg-form">
+  <div class="lg-wrap">
+    <div class="lg-head"><div class="lg-marca">⏱</div><div class="lg-tit">OrcaSystem <span>HH</span></div><div class="lg-desc">Composição de custo da hora-homem · INNOVA HYDRO</div></div>
+    <div class="lg-card">
     <div id="lg-entrar">
       <h2>Bem-vindo</h2><div class="sub">Acesse sua conta para continuar</div>
       <div class="lg-g"><label>E-mail ou usuário</label><input id="lg-user" autocomplete="username" placeholder="nome@innovahydro.com.br" onkeydown="if(event.key==='Enter')$('lg-pass').focus()"></div>
@@ -252,8 +236,11 @@ table.itens td input,table.itens td select{font-size:13px;padding:7px 9px}
       <button class="lg-btn" onclick="definirNovaSenha()">Salvar senha e entrar →</button>
     </div>
     <div class="lg-msg" id="lg-msg"></div>
-    <div class="lg-info">🔒 <b>Acesso restrito.</b> Use o mesmo login do OrcaSystem (e-mail ou usuário). Sem acesso? Peça ao administrador do sistema.</div>
-  </div></div>
+    <div class="lg-info">🔒 Acesso restrito — use o mesmo login do OrcaSystem (e-mail ou usuário). Sem acesso? Fale com o administrador.</div>
+    </div>
+    <div class="lg-chips"><span>⊟ Composição detalhada</span><span>⇄ Campo e fábrica</span><span>▤ Relatórios PDF e Excel</span><span>☁ Integrado ao OrcaSystem</span></div>
+    <div class="lg-rod">OrcaSystem HH · INNOVA HYDRO Montagem Eletromecânica</div>
+  </div>
 </div>
 
 <div class="app" id="app" style="display:none">
