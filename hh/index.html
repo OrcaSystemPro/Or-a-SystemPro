@@ -937,9 +937,9 @@ function calcular(fn, reg = 'campo'){
   const he100 = salHora * 2 * kDsr * kEnc;
   const kRed = c.horaReduzida ? 60 / 52.5 : 1;
   const adNot = salHora * num(c.noturnoPct, 20) / 100 * kRed * kEnc;
-  // HE noturna: o adicional noturno integra a base da hora extra (OJ 97 da SDI-1 do TST) — 1,5 × 1,2 = 1,8 da hora normal
-  const kNot = 1 + num(c.noturnoPct, 20) / 100;
-  const he50Not = salHora * 1.5 * kNot * kRed * kDsr * kEnc;
+  // HE 50% noturna: percentuais somados (critério INNOVA) — 1 + 0,50 + 0,20 = 1,70 da hora normal
+  const kNot = 1.5 + num(c.noturnoPct, 20) / 100;
+  const he50Not = salHora * kNot * kRed * kDsr * kEnc;
   return {reg, sal, peric, outros, rem, E, enc, itens, custoItens, custoMes, hp, hh, salHora, kEnc, kDsr, kRed, kNot, he50, he100, adNot, noturna:hh + adNot, he50Not};
 }
 function bdiPct(b = S.cfg.bdi){
@@ -980,7 +980,7 @@ function memoria(fn, r){
   L.push('  HE 100% = ' + fmt(r.salHora) + ' × 2,0 × ' + fmtN(r.kDsr, 4) + ' × ' + fmtN(r.kEnc, 4) + ' = ' + fmt(r.he100) + '/h');
   L.push('  Adicional noturno = ' + fmt(r.salHora) + ' × ' + fmtN(c.noturnoPct, 0) + '%' + (c.horaReduzida ? ' × 60/52,5 (hora reduzida)' : '') + ' × ' + fmtN(r.kEnc, 4) + ' = ' + fmt(r.adNot));
   L.push('  HH noturna = ' + fmt(r.hh) + ' + ' + fmt(r.adNot) + ' = ' + fmt(r.noturna) + '/h');
-  L.push('  HE 50% noturna = ' + fmt(r.salHora) + ' × 1,5 × ' + fmtN(r.kNot, 2) + ' (adicional noturno)' + (c.horaReduzida ? ' × 60/52,5' : '') + ' × ' + fmtN(r.kDsr, 4) + ' × ' + fmtN(r.kEnc, 4) + ' = ' + fmt(r.he50Not) + '/h');
+  L.push('  HE 50% noturna = ' + fmt(r.salHora) + ' × ' + fmtN(r.kNot, 2) + ' (50% extra + ' + fmtN(c.noturnoPct, 0) + '% noturno)' + (c.horaReduzida ? ' × 60/52,5' : '') + ' × ' + fmtN(r.kDsr, 4) + ' × ' + fmtN(r.kEnc, 4) + ' = ' + fmt(r.he50Not) + '/h');
   return L.join('\n');
 }
 
@@ -1605,7 +1605,7 @@ function documentoRelatorio(){
         • HH normal: jornada contratual de ${fmtN(S.cfg.horasMes, 0)} h/mês.<br>
         • HE 50% / 100%: custo da hora extra (salário-hora com adicional, reflexo no DSR e encargos), sem repetir os custos fixos do mês.<br>
         • Noturna: HH normal + adicional de ${fmtN(S.cfg.noturnoPct, 0)}%${S.cfg.horaReduzida ? ' com hora reduzida' : ''} (22h–5h).<br>
-        • HE 50% noturna: hora extra de 50% feita no período noturno — o adicional de ${fmtN(S.cfg.noturnoPct, 0)}% integra a base da extra (1,5 × ${fmtN(1 + num(S.cfg.noturnoPct, 20) / 100, 2)}), custo marginal.<br>
+        • HE 50% noturna: hora extra de 50% feita no período noturno — 50% de extra + ${fmtN(S.cfg.noturnoPct, 0)}% de adicional noturno (× ${fmtN(1.5 + num(S.cfg.noturnoPct, 20) / 100, 2)})${S.cfg.horaReduzida ? ' com hora reduzida' : ''}, custo marginal.<br>
         ${regs.includes('fabrica') ? `• Regime fábrica: alimentação ${fmtN(S.cfg.fabrica.alim, 0)}%, hospedagem ${fmtN(S.cfg.fabrica.hosp, 0)}%, mobilização ${fmtN(S.cfg.fabrica.mob, 0)}% dos valores de campo.<br>` : ''}
         ${rel.obs ? '• ' + esc(rel.obs) + '<br>' : ''}</div>`;
   }
