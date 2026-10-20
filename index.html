@@ -894,8 +894,8 @@ tr:hover td { background: rgba(79,110,247,0.05); }
       <div class="login-form-title">Bem-vindo</div>
       <div class="login-form-sub">Acesse sua conta para continuar</div>
       <div class="form-group">
-        <label>Usuário</label>
-        <input type="text" id="login-user" placeholder="admin" />
+        <label>E-mail ou usuário</label>
+        <input type="text" id="login-user" placeholder="nome@innovahydro.com.br" autocomplete="username" />
       </div>
       <div class="form-group">
         <label>Senha</label>
@@ -904,7 +904,7 @@ tr:hover td { background: rgba(79,110,247,0.05); }
       <button class="btn-primary" onclick="doLogin()">Entrar no Sistema →</button>
       <div class="login-error" id="login-error">❌ Credenciais inválidas. Tente novamente.</div>
       <div style="margin-top:20px;padding:12px;background:var(--bg3);border-radius:8px;font-size:12px;color:var(--text2);">
-        🔒 <strong>Acesso restrito.</strong> Use suas credenciais master.<br>
+        🔒 <strong>Acesso restrito.</strong> Use o mesmo login do OrcaSystem HH (e-mail) ou seu usuário master.<br>
         <span style="opacity:0.6;font-size:11px;">Em caso de dúvidas, contate o administrador do sistema.</span>
       </div>
     </div>
@@ -3203,9 +3203,40 @@ function showToast(msg, type) {
 function sbEmailForUser(username){
   return (username||'').toLowerCase().replace(/[^a-z0-9._-]/g,'')+'@orcasystem.local';
 }
+function _entrarNoApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  var app = document.getElementById('app');
+  app.style.display = 'flex'; app.style.flexDirection = 'column';
+  initDB(); renderAll();
+  var dd = document.getElementById('dash-date');
+  if(dd) dd.textContent = new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+}
+function _erroLogin(msg) {
+  var err = document.getElementById('login-error');
+  err.textContent = msg || '❌ Credenciais inválidas. Tente novamente.';
+  err.style.display = 'block';
+  setTimeout(function(){ err.style.display='none'; }, 4000);
+}
 async function doLogin() {
   var u = document.getElementById('login-user').value.trim();
   var p = document.getElementById('login-pass').value;
+
+  // Login por e-mail: a mesma conta da nuvem usada no OrcaSystem HH. A senha é
+  // conferida no Supabase; se estiver certa, baixa os dados da nuvem e entra.
+  if (u.indexOf('@') >= 0) {
+    if (!p) { _erroLogin('❌ Informe a senha.'); return; }
+    try {
+      await sbLogin(u.toLowerCase(), p);
+    } catch(e) {
+      _erroLogin(/invalid/i.test((e && e.message) || '') ? '❌ E-mail ou senha incorretos.' : '❌ Não foi possível entrar: ' + (e && e.message));
+      return;
+    }
+    try { if (typeof sbFullSync==='function') await sbFullSync(); }
+    catch(e) { console.warn('Sincronização após login por e-mail:', e && e.message); }
+    sbSetStatus('Autenticado ✅','var(--green)');
+    _entrarNoApp();
+    return;
+  }
 
   // Login unificado com a nuvem: tenta autenticar no Supabase com as
   // MESMAS credenciais digitadas (e-mail derivado do usuário local).
@@ -3223,16 +3254,9 @@ async function doLogin() {
   // CORREÇÃO: Verificar contra credenciais salvas no localStorage
   var authCfg = DB.load('auth_cfg') || { user: 'Admim-Vag.r10', pass: 'Vemsr8759' };
   if (u === authCfg.user && p === authCfg.pass) {
-    document.getElementById('login-screen').style.display = 'none';
-    var app = document.getElementById('app');
-    app.style.display = 'flex'; app.style.flexDirection = 'column';
-    initDB(); renderAll();
-    var dd = document.getElementById('dash-date');
-    if(dd) dd.textContent = new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+    _entrarNoApp();
   } else {
-    var err = document.getElementById('login-error');
-    err.style.display = 'block';
-    setTimeout(function(){ err.style.display='none'; }, 3000);
+    _erroLogin();
   }
 }
 document.getElementById('login-pass').addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
