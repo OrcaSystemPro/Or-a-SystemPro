@@ -121,6 +121,19 @@ label.l{font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase
 .logo-box{border:1px dashed var(--bd2);border-radius:var(--rs);padding:12px;text-align:center;cursor:pointer;min-height:70px;display:flex;align-items:center;justify-content:center;color:var(--tx3);font-size:12px}
 .logo-box img{max-height:60px;max-width:180px}
 .mono{font-family:var(--fm);font-size:12px}
+table.itens{min-width:900px}
+table.itens th{letter-spacing:.4px}
+table.itens td{padding:6px 7px}
+table.itens td:nth-child(1) input{min-width:200px}
+table.itens td:nth-child(2) select{width:128px}
+table.itens td:nth-child(3) input{width:96px;max-width:none}
+table.itens td:nth-child(4) select{width:105px}
+table.itens td:nth-child(4) input{width:62px;max-width:none}
+table.itens td:nth-child(5) input{width:62px;max-width:none}
+table.itens td:nth-child(6) select{width:160px}
+table.itens td input,table.itens td select{font-size:13px;padding:7px 9px}
+.salvar-bar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:9px 12px;margin-bottom:10px;border-radius:var(--rs);border:1px solid var(--bd);background:var(--bg3);font-size:12px;color:var(--tx3)}
+.salvar-bar.pend{border-color:rgba(255,159,10,.45);background:rgba(255,159,10,.08);color:var(--warn);font-weight:600}
 .ms{position:relative}
 .ms-btn{width:100%;display:flex;justify-content:space-between;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--bd2);border-radius:var(--rs);color:var(--tx);padding:7px 10px;font-size:13px;cursor:pointer;text-align:left}
 .ms-btn span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -407,11 +420,19 @@ function migrar(d){
 let _tSalvar = null;
 function salvar(){
   try {
-    localStorage.setItem(KEY, JSON.stringify(S));
+    localStorage.setItem(KEY, JSON.stringify(estadoParaGravar()));
     $('saved').textContent = 'Salvo ' + new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
   } catch (e) {
     toast('Falha ao salvar (armazenamento cheio?): ' + e.message + ' — exporte um backup.', true);
   }
+}
+// Com custos em edição, grava a lista original (o rascunho só entra em "Salvar custos")
+function estadoParaGravar(){
+  if (!rascunho) return S;
+  const l = listaAlvo(rascunho.alvo); if (!l) return S;
+  const atual = l.slice(); l.splice(0, l.length, ...rascunho.original);
+  const copia = clone(S); l.splice(0, l.length, ...atual);
+  return copia;
 }
 function registrar(acao, det){
   S.auditoria.unshift({ts:new Date().toISOString(), usuario:S.cfg.usuario || '—', acao, det});
@@ -540,6 +561,7 @@ const PAGINAS = {
 let pagina = 'painel';
 const RENDER = {};
 function ir(p){
+  if (p !== pagina) resolverRascunho();
   if (!PAGINAS[p]) p = 'painel';
   pagina = p;
   document.querySelectorAll('.pg').forEach(x => x.classList.toggle('on', x.id === 'pg-' + p));
@@ -731,49 +753,72 @@ function tabelaItens(lista, alvo, editavel){
   const linhas = Object.keys(CATS).map(cat => {
     const itens = lista.map((it, i) => ({it, i})).filter(x => (x.it.cat || 'outros') === cat);
     if (!itens.length && !editavel) return '';
-    return `<tr class="grp"><td colspan="${editavel ? 10 : 7}">${CATS[cat]}</td></tr>` + itens.map(({it, i}) => {
+    return `<tr class="grp"><td colspan="${editavel ? 8 : 7}">${CATS[cat]}</td></tr>` + itens.map(({it, i}) => {
       const m = itemMensal(it), mf = m * num(cf[it.regra || 'int'], 100) / 100; tc += m; tf += mf;
       if (!editavel) return `<tr><td>${esc(it.nome)}</td><td class="n">${fmt(it.valor)}</td><td>${PERIODOS[it.per] || 'Mensal'}</td><td class="n">${fmtN(num(it.qtd, 1), 2)}</td><td>${REGRAS[it.regra || 'int']}</td><td class="n">${fmt(m)}</td><td class="n">${fmt(mf)}</td></tr>`;
-      const ch = (campo) => `onchange="alterarItem('${alvo}',${i},'${campo}',this.${campo === 'nome' || campo === 'per' || campo === 'regra' || campo === 'cat' ? 'value' : 'value'})"`;
-      const extra = it.per === 'diario' ? `<input class="num" type="number" min="0" step="1" value="${esc(it.dias ?? '')}" placeholder="${fmtN(S.cfg.diasMes, 0)}" title="Dias no mês (vazio = padrão)" ${ch('dias')}>`
+      const ch = campo => `onchange="alterarItem('${alvo}',${i},'${campo}',this.value)"`;
+      const extra = it.per === 'diario' ? `<input class="num" type="number" min="0" step="1" value="${esc(it.dias ?? '')}" placeholder="${fmtN(S.cfg.diasMes, 0)}" title="Dias no mês (vazio = ${fmtN(S.cfg.diasMes, 0)}, o padrão)" ${ch('dias')}>`
         : it.per === 'unitario' ? `<input class="num" type="number" min="1" step="1" value="${esc(it.vida ?? 1)}" title="Vida útil em meses" ${ch('vida')}>` : '<span class="hint">—</span>';
+      const sel = (campo, mapa, atual, rot) => `<select title="${esc(rot(atual))}" ${ch(campo)}>${Object.keys(mapa).map(k => `<option value="${k}" ${atual === k ? 'selected' : ''}>${esc(rot(k))}</option>`).join('')}</select>`;
       return `<tr>
-        <td><input value="${esc(it.nome)}" ${ch('nome')}></td>
-        <td><select ${ch('cat')}>${Object.entries(CATS).map(([k, v]) => `<option value="${k}" ${it.cat === k ? 'selected' : ''}>${v}</option>`).join('')}</select></td>
-        <td><input class="num" type="number" min="0" step="0.01" value="${num(it.valor)}" ${ch('valor')}></td>
-        <td><select ${ch('per')}>${Object.entries(PERIODOS).map(([k, v]) => `<option value="${k}" ${(it.per || 'mensal') === k ? 'selected' : ''}>${v}</option>`).join('')}</select></td>
-        <td>${extra}</td>
-        <td><input class="num" type="number" min="0" step="0.01" value="${num(it.qtd, 1)}" style="max-width:70px" ${ch('qtd')}></td>
-        <td><select ${ch('regra')}>${Object.entries(REGRAS).map(([k, v]) => `<option value="${k}" ${(it.regra || 'int') === k ? 'selected' : ''}>${v} (${fmtN(cf[k], 0)}%)</option>`).join('')}</select></td>
-        <td class="n">${fmt(m)}</td><td class="n">${fmt(mf)}</td>
-        <td><button class="btn bs bd" onclick="removerItem('${alvo}',${i})">✕</button></td></tr>`;
-    }).join('') + (editavel ? `<tr><td colspan="10"><button class="btn bs" onclick="adicionarItem('${alvo}','${cat}')">+ item em ${CATS[cat]}</button></td></tr>` : '');
+        <td><input value="${esc(it.nome)}" title="${esc(it.nome)}" oninput="this.title=this.value" ${ch('nome')}></td>
+        <td>${sel('cat', CATS, it.cat || 'outros', k => CATS[k])}</td>
+        <td><input class="num" type="number" min="0" step="0.01" value="${num(it.valor)}" title="${esc(fmt(it.valor))}" ${ch('valor')}></td>
+        <td><div style="display:flex;gap:6px;align-items:center">${sel('per', PERIODOS, it.per || 'mensal', k => PERIODOS[k])}${it.per === 'diario' || it.per === 'unitario' ? extra : ''}</div></td>
+        <td><input class="num" type="number" min="0" step="0.01" value="${num(it.qtd, 1)}" title="Quantidade" ${ch('qtd')}></td>
+        <td>${sel('regra', REGRAS, it.regra || 'int', k => REGRAS[k] + ' · ' + fmtN(cf[k], 0) + '%')}</td>
+        <td class="n"><div>${fmt(m)}</div><div style="color:var(--vio)">${fmt(mf)}</div></td>
+        <td><button class="btn bs bd" title="Remover item" onclick="removerItem('${alvo}',${i})">✕</button></td></tr>`;
+    }).join('') + (editavel ? `<tr><td colspan="8"><button class="btn bs" onclick="adicionarItem('${alvo}','${cat}')">+ item em ${CATS[cat]}</button></td></tr>` : '');
   }).join('');
-  const cab = editavel ? '<th>Descrição</th><th>Categoria</th><th class="n">Valor</th><th>Período</th><th>Dias / vida</th><th class="n">Qtd</th><th>Regra fábrica</th><th class="n">Mensal campo</th><th class="n">Mensal fábrica</th><th></th>'
+  const cab = editavel ? '<th>Descrição</th><th>Categoria</th><th class="n">Valor (R$)</th><th>Período · dias/vida</th><th class="n">Qtd</th><th>Regra fábrica</th><th class="n">Mensal campo<br><span style="color:var(--vio)">fábrica</span></th><th></th>'
     : '<th>Descrição</th><th class="n">Valor</th><th>Período</th><th class="n">Qtd</th><th>Regra fábrica</th><th class="n">Mensal campo</th><th class="n">Mensal fábrica</th>';
-  return `<div class="tw"><table><thead><tr>${cab}</tr></thead><tbody>${linhas}
-    <tr class="tot"><td colspan="${editavel ? 7 : 5}">Total mensal</td><td class="n">${fmt(tc)}</td><td class="n">${fmt(tf)}</td>${editavel ? '<td></td>' : ''}</tr></tbody></table></div>`;
+  const pend = editavel && rascunho && rascunho.alvo === alvo;
+  const barra = editavel ? `<div class="salvar-bar ${pend ? 'pend' : ''}">
+      <span>${pend ? '⚠ ' + rascunho.dets.length + ' alteração(ões) não salva(s) — o HH acima já mostra o efeito' : 'Nenhuma alteração pendente'}</span>
+      <span style="display:flex;gap:8px"><button class="btn" ${pend ? '' : 'disabled'} onclick="descartarCustos()">Descartar</button>
+      <button class="btn bp" ${pend ? '' : 'disabled'} onclick="salvarCustos()">💾 Salvar custos</button></span></div>` : '';
+  return barra + `<div class="tw"><table class="${editavel ? 'itens' : ''}"><thead><tr>${cab}</tr></thead><tbody>${linhas}
+    <tr class="tot">${editavel ? `<td colspan="6">Total mensal</td><td class="n"><div>${fmt(tc)}</div><div style="color:var(--vio)">${fmt(tf)}</div></td><td></td>` : `<td colspan="5">Total mensal</td><td class="n">${fmt(tc)}</td><td class="n">${fmt(tf)}</td>`}</tr></tbody></table></div>`;
+}
+// ---- Rascunho: alterações nos custos só valem depois de "Salvar custos" ----
+let rascunho = null; // {alvo, original, dets:[]}
+function iniciarRascunho(alvo){
+  if (rascunho && rascunho.alvo !== alvo) resolverRascunho();
+  if (!rascunho) { const l = listaAlvo(alvo); if (!l) return false; rascunho = {alvo, original:clone(l), dets:[]}; }
+  return true;
 }
 function alterarItem(alvo, i, campo, valor){
-  const l = listaAlvo(alvo); if (!l || !l[i]) return;
+  const l = listaAlvo(alvo); if (!l || !l[i] || !iniciarRascunho(alvo)) return;
   const numerico = ['valor','qtd','dias','vida'].includes(campo);
   if (numerico) l[i][campo] = (campo === 'dias' && valor === '') ? null : num(valor, campo === 'qtd' || campo === 'vida' ? 1 : 0);
   else l[i][campo] = valor;
-  aposAlterarCustos(alvo, 'Item "' + l[i].nome + '" · ' + campo + ' = ' + valor);
+  rascunho.dets.push('"' + l[i].nome + '" ' + campo + ' = ' + valor); render();
 }
-function adicionarItem(alvo, cat){ const l = listaAlvo(alvo); if (!l) return; l.push({id:uid(), cat, nome:'Novo item', valor:0, per:'mensal', qtd:1, regra:'int'}); aposAlterarCustos(alvo, 'Item incluído'); }
-function removerItem(alvo, i){ const l = listaAlvo(alvo); if (!l || !l[i]) return; if (!confirm('Remover o item "' + l[i].nome + '"?')) return; const n = l[i].nome; l.splice(i, 1); aposAlterarCustos(alvo, 'Item removido: ' + n); }
-// Alterações de custo geram versão (agrupadas: no máximo uma por função a cada 10 min)
-const _ultVersao = {};
-function aposAlterarCustos(alvo, det){
-  const [tipo, id] = alvo.split(':');
+function adicionarItem(alvo, cat){ const l = listaAlvo(alvo); if (!l || !iniciarRascunho(alvo)) return; l.push({id:uid(), cat, nome:'Novo item', valor:0, per:'mensal', qtd:1, regra:'int'}); rascunho.dets.push('item incluído em ' + CATS[cat]); render(); }
+function removerItem(alvo, i){ const l = listaAlvo(alvo); if (!l || !l[i]) return; if (!confirm('Remover o item "' + l[i].nome + '"?')) return; if (!iniciarRascunho(alvo)) return; rascunho.dets.push('item removido: ' + l[i].nome); l.splice(i, 1); render(); }
+function nomeDoAlvo(alvo){ const [tipo, id] = alvo.split(':'); return tipo === 'base' ? 'Base ' + ((S.bases.find(b => b.id === id) || {}).nome || '') : 'Função ' + ((S.funcoes.find(f => f.id === id) || {}).nome || ''); }
+function salvarCustos(){
+  if (!rascunho) return;
+  const [tipo, id] = rascunho.alvo.split(':');
   const afetadas = tipo === 'base' ? S.funcoes.filter(f => f.baseId === id && !Array.isArray(f.itens)) : S.funcoes.filter(f => f.id === id);
-  const agora = Date.now();
-  afetadas.forEach(f => { if (!_ultVersao[f.id] || agora - _ultVersao[f.id] > 600000) { novaVersao(f, tipo === 'base' ? 'Modelo de custos da base alterado' : 'Custos da função alterados'); _ultVersao[f.id] = agora; } else registrarVersaoAtualiza(f); });
-  const nomeAlvo = tipo === 'base' ? 'Base ' + (S.bases.find(b => b.id === id) || {}).nome : 'Função ' + (S.funcoes.find(f => f.id === id) || {}).nome;
-  registrar('Custos alterados', nomeAlvo + ' · ' + det);
-  salvar(); render();
+  const dets = rascunho.dets, alvo = rascunho.alvo;
+  rascunho = null;
+  afetadas.forEach(f => novaVersao(f, tipo === 'base' ? 'Modelo de custos da base alterado' : 'Custos da função alterados'));
+  registrar('Custos alterados', nomeDoAlvo(alvo) + ' · ' + dets.join(' · '));
+  salvar(); render(); toast('Custos salvos' + (afetadas.length > 1 ? ' — ' + afetadas.length + ' funções atualizadas.' : '.'));
 }
+function descartarCustos(){
+  if (!rascunho) return;
+  const l = listaAlvo(rascunho.alvo); if (l) l.splice(0, l.length, ...rascunho.original);
+  rascunho = null; render(); toast('Alterações descartadas.');
+}
+// Antes de sair da tela ou trocar de função/base: pergunta se salva ou descarta
+function resolverRascunho(){
+  if (!rascunho) return;
+  if (confirm('Há ' + rascunho.dets.length + ' alteração(ões) não salva(s) nos custos (' + nomeDoAlvo(rascunho.alvo) + ').\n\nOK = salvar   ·   Cancelar = descartar')) salvarCustos(); else descartarCustos();
+}
+window.addEventListener('beforeunload', e => { if (rascunho) { e.preventDefault(); e.returnValue = ''; } });
 // Atualiza os valores da última versão (mesma sessão de edição) em vez de criar outra
 function registrarVersaoAtualiza(f){
   const v = S.versoes.find(x => x.fnId === f.id && x.versao === f.versao); if (!v) return registrarVersao(f, 'Custos alterados');
@@ -790,16 +835,16 @@ RENDER.composicao = () => {
   const lista = funcoesOrdenadas(S.funcoes.filter(f => !compBusca || norm(f.nome).includes(norm(compBusca))));
   $('pg-composicao').innerHTML = `<div class="split">
     <div class="card" style="margin:0"><input placeholder="Buscar função" value="${esc(compBusca)}" oninput="compBusca=this.value;renderCompLista()" style="margin-bottom:10px"><div class="list" id="comp-lista"></div></div>
-    <div id="comp-det"></div></div>`;
+    <div id="comp-det"></div></div><div id="comp-baixo" style="margin-top:16px"></div>`;
   renderCompLista(lista); renderCompDetalhe();
 };
 function renderCompLista(lista){
   lista = lista || funcoesOrdenadas(S.funcoes.filter(f => !compBusca || norm(f.nome).includes(norm(compBusca))));
-  $('comp-lista').innerHTML = lista.length ? lista.map(f => `<div class="li ${f.id === compSel ? 'on' : ''}" onclick="compSel='${f.id}';renderCompLista();renderCompDetalhe()"><b>${esc(f.nome)}</b><small>${esc(f.area || '—')} · ${fmt(calcular(f).hh)}/h${f.status !== 'ativo' ? ' · ' + esc(f.status) : ''}</small></div>`).join('') : '<div class="empty">Nada encontrado.</div>';
+  $('comp-lista').innerHTML = lista.length ? lista.map(f => `<div class="li ${f.id === compSel ? 'on' : ''}" onclick="resolverRascunho();compSel='${f.id}';renderCompLista();renderCompDetalhe()"><b>${esc(f.nome)}</b><small>${esc(f.area || '—')} · ${fmt(calcular(f).hh)}/h${f.status !== 'ativo' ? ' · ' + esc(f.status) : ''}</small></div>`).join('') : '<div class="empty">Nada encontrado.</div>';
 }
 function renderCompDetalhe(){
   const el = $('comp-det'); const f = S.funcoes.find(x => x.id === compSel);
-  if (!f) { el.innerHTML = '<div class="card empty">Selecione uma função.</div>'; return; }
+  if (!f) { el.innerHTML = '<div class="card empty">Selecione uma função.</div>'; $('comp-baixo').innerHTML = ''; return; }
   const r = calcular(f, compReg), rc = calcular(f, 'campo'), rf = calcular(f, 'fabrica'), b = baseDe(f);
   const proprios = Array.isArray(f.itens);
   const dif = f.ref2026 ? (rc.hh / f.ref2026 - 1) * 100 : null;
@@ -808,7 +853,7 @@ function renderCompDetalhe(){
       <div class="ch">
         <div><div class="ct" style="font-size:17px">${esc(f.nome)}</div><div class="cs">${esc(f.area || '—')} · ${b ? esc(b.nome) : 'sem base'} · v${f.versao || 1} · <span class="badge ${STATUS_BADGE[f.status]}">${esc(f.status)}</span></div></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap"><div class="seg"><button class="${compReg === 'campo' ? 'on' : ''}" onclick="compReg='campo';renderCompDetalhe()">Campo</button><button class="${compReg === 'fabrica' ? 'on' : ''}" onclick="compReg='fabrica';renderCompDetalhe()">Fábrica</button></div>
-          <button class="btn" onclick="abrirFuncao('${f.id}')">Editar função</button></div>
+          <button class="btn" onclick="imprimirComposicao('${f.id}')">⎙ Imprimir</button><button class="btn" onclick="abrirFuncao('${f.id}')">Editar função</button></div>
       </div>
       <div class="res">
         <div><div class="l">HH normal · ${compReg === 'fabrica' ? 'Fábrica' : 'Campo'}</div><div class="v" style="color:var(--pri)">${fmt(r.hh)}</div><div class="s">${fmt(r.custoMes)}/mês ÷ ${fmtN(r.hp, 0)} h</div></div>
@@ -833,7 +878,9 @@ function renderCompDetalhe(){
         <div class="fr"><div class="f"><label class="l">Salário-base simulado</label><input id="sim-sal" type="number" step="50" value="${num(f.salario)}" oninput="simular()"></div>
           <div class="f"><label class="l">Reajuste (%)</label><input id="sim-pct" type="number" step="0.5" value="0" oninput="simular()"></div></div>
         <div id="sim-out"></div></div>
-    </div>
+    </div>`;
+  // Custos e memória ocupam a largura toda da página (abaixo da lista de funções)
+  $('comp-baixo').innerHTML = `
     <div class="card">
       <div class="ch"><div><div class="ct">Custos da função</div><div class="cs">${proprios ? 'Esta função tem custos próprios.' : 'Usando o modelo de custos da base ' + (b ? esc(b.nome) : '') + '. Para mudar só esta função, personalize.'}</div></div>
         ${proprios ? `<button class="btn" onclick="voltarModelo('${f.id}')">↺ Voltar ao modelo da base</button>` : `<button class="btn bp" onclick="personalizar('${f.id}')">Personalizar custos desta função</button>`}</div>
@@ -855,11 +902,13 @@ function simular(){
 }
 function copiarMemoria(){ const t = $('memo').textContent; (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast('Memória copiada.'), () => toast('Não foi possível copiar.', true)); }
 function personalizar(id){
+  resolverRascunho();
   const f = S.funcoes.find(x => x.id === id); if (!f) return;
   f.itens = clone(itensDe(f)).map(i => ({...i, id:uid()}));
   registrar('Custos personalizados', f.nome + ' passou a ter custos próprios (cópia do modelo)'); salvar(); render();
 }
 function voltarModelo(id){
+  resolverRascunho();
   const f = S.funcoes.find(x => x.id === id); if (!f) return;
   if (!confirm('Descartar os custos próprios de "' + f.nome + '" e voltar a usar o modelo da base?')) return;
   f.itens = null; novaVersao(f, 'Voltou ao modelo de custos da base'); registrar('Custos', f.nome + ' voltou ao modelo da base'); salvar(); render();
@@ -891,8 +940,8 @@ RENDER.bases = () => {
   const nFn = id => S.funcoes.filter(f => f.baseId === id).length;
   $('pg-bases').innerHTML = `<div class="split">
     <div class="card" style="margin:0"><div class="ch" style="margin-bottom:10px"><div class="ct">Convenções / bases</div><button class="btn bs bp" onclick="novaBase()">+ Nova</button></div>
-      <div class="list">${S.bases.map(x => `<div class="li ${x.id === baseSel ? 'on' : ''}" onclick="baseSel='${x.id}';render()"><b>${esc(x.nome)}</b><small>${esc(x.uf || '—')} · data-base ${esc(x.dataBase || '—')} · ${nFn(x.id)} funções</small></div>`).join('') || '<div class="empty">Nenhuma base.</div>'}</div></div>
-    <div>${b ? detalheBase(b) : '<div class="card empty">Cadastre uma convenção/base.</div>'}</div></div>`;
+      <div class="list">${S.bases.map(x => `<div class="li ${x.id === baseSel ? 'on' : ''}" onclick="resolverRascunho();baseSel='${x.id}';render()"><b>${esc(x.nome)}</b><small>${esc(x.uf || '—')} · data-base ${esc(x.dataBase || '—')} · ${nFn(x.id)} funções</small></div>`).join('') || '<div class="empty">Nenhuma base.</div>'}</div></div>
+    <div>${b ? detalheBase(b) : '<div class="card empty">Cadastre uma convenção/base.</div>'}</div></div>${b ? modeloBase(b) : ''}`;
 };
 function detalheBase(b){
   const fns = S.funcoes.filter(f => f.baseId === b.id);
@@ -912,8 +961,12 @@ function detalheBase(b){
         <button class="btn bp" onclick="aplicarReajuste('${b.id}')">Aplicar</button></div>
       ${(b.reajustes || []).length ? `<div class="tw"><table><thead><tr><th>Data</th><th>Descrição</th><th class="n">Índice</th><th class="n">Funções</th><th>Usuário</th><th></th></tr></thead><tbody>
         ${b.reajustes.map(r => `<tr style="${r.desfeito ? 'opacity:.5;text-decoration:line-through' : ''}"><td>${dataHoraBR(r.data)}</td><td>${esc(r.desc)}</td><td class="n">${pct(r.pct)}</td><td class="n">${r.antes.length}</td><td>${esc(r.usuario)}</td>
-          <td>${r === ult ? `<button class="btn bs" onclick="desfazerReajuste('${b.id}','${r.id}')">Desfazer</button>` : (r.desfeito ? '<span class="hint">desfeito</span>' : '')}</td></tr>`).join('')}</tbody></table></div>` : '<div class="hint">Nenhum reajuste aplicado.</div>'}</div>
-    <div class="card"><div class="ch"><div><div class="ct">Modelo de custos da base</div><div class="cs">Usado por todas as funções da base que não têm custos próprios. Valores iniciais são exemplos do HH Composer v4.4 — revise.</div></div></div>
+          <td>${r === ult ? `<button class="btn bs" onclick="desfazerReajuste('${b.id}','${r.id}')">Desfazer</button>` : (r.desfeito ? '<span class="hint">desfeito</span>' : '')}</td></tr>`).join('')}</tbody></table></div>` : '<div class="hint">Nenhum reajuste aplicado.</div>'}</div>`;
+}
+// Modelo de custos: largura toda da página, abaixo da lista de bases
+function modeloBase(b){
+  return `
+    <div class="card" style="margin-top:16px"><div class="ch"><div><div class="ct">Modelo de custos da base</div><div class="cs">Usado por todas as funções da base que não têm custos próprios. Valores iniciais são exemplos do HH Composer v4.4 — revise.</div></div></div>
       ${tabelaItens(b.modelo, 'base:' + b.id, true)}</div>`;
 }
 function novaBase(){
@@ -1063,7 +1116,7 @@ function documentoRelatorio(){
       <tr><td>HE 50% (custo marginal)</td><td class="n">${fmt(r.he50)}/h</td><td></td></tr>
       <tr><td>HE 100% (custo marginal)</td><td class="n">${fmt(r.he100)}/h</td><td></td></tr>
       <tr><td>HH noturna</td><td class="n">${fmt(r.noturna)}/h</td><td></td></tr></tbody></table>`; }).join('') +
-      `<h3>Memória de cálculo — ${nomeReg(regs[0])}</h3><pre>${esc(memoria(f, calcular(f, regs[0])))}</pre>`;
+      regs.map(reg => `<h3>Memória de cálculo — ${nomeReg(reg)}</h3><pre>${esc(memoria(f, calcular(f, reg)))}</pre>`).join('');
   } else {
     const L = linhasRelatorio();
     const com = rel.tipo === 'comercial';
@@ -1129,6 +1182,12 @@ function imprimirRelatorio(){
   w.document.close();
   registrar('Relatório emitido', rel.tipo + ' · ' + rel.regime); salvar();
   setTimeout(() => { w.focus(); w.print(); }, 500);
+}
+function imprimirComposicao(id){
+  const salvo = {...rel};
+  rel.tipo = 'detalhado'; rel.fnDet = id; rel.regime = 'ambos';
+  imprimirRelatorio();
+  Object.assign(rel, salvo);
 }
 function exportarExcel(){
   if (typeof XLSX === 'undefined') return toast('Biblioteca do Excel não carregou (sem internet?).', true);
