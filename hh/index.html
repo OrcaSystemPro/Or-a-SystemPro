@@ -1,0 +1,1294 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OrcaSystem HH</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --pri:#0a84ff; --ok:#30d158; --warn:#ff9f0a; --bad:#ff453a; --vio:#bf5af2;
+  --bg:#0a0a0f; --bg2:#111118; --bg3:#1a1a24; --bg4:#22222e;
+  --bd:rgba(255,255,255,.08); --bd2:rgba(255,255,255,.14);
+  --tx:#f0f0f8; --tx2:#a0a0b8; --tx3:#6a6a82;
+  --r:12px; --rs:7px;
+  --fd:'Syne',sans-serif; --fb:'Instrument Sans',sans-serif; --fm:'JetBrains Mono',monospace;
+}
+body.light{
+  --bg:#f2f2f7; --bg2:#fff; --bg3:#f5f5fa; --bg4:#e9e9f1;
+  --bd:rgba(0,0,0,.08); --bd2:rgba(0,0,0,.14);
+  --tx:#1a1a2e; --tx2:#4a4a62; --tx3:#8a8aa0;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--fb);background:var(--bg);color:var(--tx);font-size:14px;min-height:100vh;overflow-x:hidden}
+button{font-family:inherit}
+.app{display:flex;min-height:100vh}
+.side{width:236px;min-width:236px;background:var(--bg2);border-right:1px solid var(--bd);position:fixed;height:100vh;overflow-y:auto;display:flex;flex-direction:column;z-index:20}
+.brand{padding:18px 16px;border-bottom:1px solid var(--bd);display:flex;gap:10px;align-items:center}
+.brand img{max-height:34px;max-width:110px;object-fit:contain}
+.brand b{font-family:var(--fd);font-size:16px;display:block}
+.brand small{font-size:10px;color:var(--tx3)}
+.navsec{padding:12px 0 2px}
+.navsec>div{font-size:9px;font-weight:700;letter-spacing:2px;color:var(--tx3);text-transform:uppercase;padding:0 16px 6px}
+.nav{display:flex;gap:9px;align-items:center;padding:8px 16px;color:var(--tx2);cursor:pointer;font-size:13px;font-weight:500;border-left:2px solid transparent;user-select:none}
+.nav:hover{color:var(--tx);background:var(--bg3)}
+.nav.on{color:var(--pri);border-left-color:var(--pri);background:rgba(10,132,255,.08)}
+.nav span{width:18px;text-align:center}
+.sidefoot{margin-top:auto;padding:12px 16px;border-top:1px solid var(--bd);font-size:11px;color:var(--tx3)}
+.main{margin-left:236px;flex:1;min-width:0;display:flex;flex-direction:column}
+.top{position:sticky;top:0;z-index:10;background:var(--bg2);border-bottom:1px solid var(--bd);padding:11px 24px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.top h1{font-family:var(--fd);font-size:17px}
+.top p{font-size:11px;color:var(--tx3)}
+.top .acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.saved{font-size:11px;color:var(--tx3)}
+.btn.menu-btn{display:none}
+.content{padding:22px 24px;max-width:1500px}
+.pg{display:none}.pg.on{display:block}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border-radius:var(--rs);border:1px solid var(--bd2);background:var(--bg3);color:var(--tx);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
+.btn:hover{background:var(--bg4)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.bp{background:var(--pri);border-color:var(--pri);color:#fff}.bp:hover{background:var(--pri);opacity:.88}
+.bo{background:rgba(48,209,88,.12);border-color:rgba(48,209,88,.35);color:var(--ok)}
+.bd{background:rgba(255,69,58,.1);border-color:rgba(255,69,58,.35);color:var(--bad)}
+.bs{padding:4px 9px;font-size:11px}
+.card{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);padding:18px;margin-bottom:16px}
+.ch{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.ct{font-family:var(--fd);font-size:14px;font-weight:700}
+.cs{font-size:11px;color:var(--tx3);margin-top:2px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:16px}
+.kpi{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);padding:15px 17px;border-top:2px solid var(--k,var(--pri))}
+.kpi .l{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--tx3);margin-bottom:8px}
+.kpi .v{font-family:var(--fd);font-size:22px;font-weight:800}
+.kpi .s{font-size:10px;color:var(--tx3);margin-top:4px}
+.g2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+.g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.tw{overflow-x:auto;border:1px solid var(--bd);border-radius:var(--rs)}
+table{width:100%;border-collapse:collapse}
+th{background:var(--bg3);padding:8px 11px;text-align:left;font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;border-bottom:1px solid var(--bd);white-space:nowrap}
+td{padding:8px 11px;border-bottom:1px solid var(--bd);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:rgba(127,127,160,.05)}
+td.n,th.n{text-align:right;font-family:var(--fm);font-size:12px;white-space:nowrap}
+tr.tot td{font-weight:700;background:var(--bg3)}
+tr.grp td{background:var(--bg3);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tx2)}
+input,select,textarea{background:var(--bg3);border:1px solid var(--bd2);border-radius:var(--rs);color:var(--tx);padding:7px 10px;font-size:13px;font-family:var(--fb);width:100%;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--pri)}
+input[type=checkbox]{width:auto}
+td input,td select{padding:5px 7px;font-size:12px}
+td input.num{text-align:right;font-family:var(--fm);max-width:110px}
+.fr{display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.f{display:flex;flex-direction:column;gap:5px;flex:1;min-width:140px}
+.f.w2{flex:2}
+label.l{font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.9px}
+.hint{font-size:11px;color:var(--tx3);line-height:1.5}
+.badge{display:inline-flex;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap}
+.b-ok{background:rgba(48,209,88,.14);color:var(--ok)}.b-warn{background:rgba(255,159,10,.14);color:var(--warn)}
+.b-bad{background:rgba(255,69,58,.14);color:var(--bad)}.b-pri{background:rgba(10,132,255,.14);color:var(--pri)}
+.b-vio{background:rgba(191,90,242,.14);color:var(--vio)}
+.res{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--bd);border:1px solid var(--bd);border-radius:var(--rs);overflow:hidden}
+.res>div{background:var(--bg3);padding:13px 14px}
+.res .l{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--tx3)}
+.res .v{font-family:var(--fd);font-size:20px;font-weight:800;margin:4px 0 2px}
+.res .s{font-size:10px;color:var(--tx3)}
+.memo{font-family:var(--fm);font-size:12px;line-height:1.75;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);padding:12px 14px;white-space:pre-wrap;overflow-x:auto}
+.split{display:grid;grid-template-columns:270px minmax(0,1fr);gap:16px;align-items:start}
+.list{max-height:calc(100vh - 230px);overflow-y:auto}
+.li{padding:9px 11px;border-radius:var(--rs);cursor:pointer;border:1px solid transparent;margin-bottom:3px}
+.li:hover{background:var(--bg3)}
+.li.on{background:rgba(10,132,255,.1);border-color:rgba(10,132,255,.3)}
+.li b{font-size:13px;font-weight:600;display:block}
+.li small{font-size:11px;color:var(--tx3)}
+.seg{display:inline-flex;border:1px solid var(--bd2);border-radius:var(--rs);overflow:hidden}
+.seg button{background:var(--bg3);border:none;color:var(--tx2);padding:7px 13px;font-size:12px;font-weight:600;cursor:pointer}
+.seg button.on{background:var(--pri);color:#fff}
+.empty{text-align:center;padding:36px 16px;color:var(--tx3)}
+.alert{padding:10px 13px;border-radius:var(--rs);font-size:12px;line-height:1.55;margin-bottom:12px;border:1px solid}
+.a-warn{background:rgba(255,159,10,.07);border-color:rgba(255,159,10,.3);color:var(--warn)}
+.a-info{background:rgba(10,132,255,.06);border-color:rgba(10,132,255,.25);color:var(--tx2)}
+.bar{height:7px;background:var(--bg4);border-radius:4px;overflow:hidden;min-width:60px}
+.bar i{display:block;height:100%;background:var(--pri)}
+.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;align-items:center;justify-content:center;padding:16px}
+.ov.on{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--bd2);border-radius:16px;width:100%;max-width:620px;max-height:92vh;overflow-y:auto;padding:24px}
+.mh{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.mh b{font-family:var(--fd);font-size:17px}
+.x{background:none;border:none;color:var(--tx3);font-size:22px;cursor:pointer}
+.toasts{position:fixed;right:18px;bottom:18px;z-index:200;display:flex;flex-direction:column;gap:8px}
+.toast{background:var(--bg2);border:1px solid var(--bd2);border-left:3px solid var(--ok);padding:10px 14px;border-radius:var(--rs);font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.3);max-width:360px}
+.toast.err{border-left-color:var(--bad)}
+.logo-box{border:1px dashed var(--bd2);border-radius:var(--rs);padding:12px;text-align:center;cursor:pointer;min-height:70px;display:flex;align-items:center;justify-content:center;color:var(--tx3);font-size:12px}
+.logo-box img{max-height:60px;max-width:180px}
+.mono{font-family:var(--fm);font-size:12px}
+.up{color:var(--bad)}.down{color:var(--ok)}
+@media (max-width:1100px){.g3{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.res{grid-template-columns:1fr 1fr}}
+@media (max-width:900px){
+  .side{transform:translateX(-100%);transition:transform .2s}
+  .side.open{transform:none;box-shadow:0 0 40px rgba(0,0,0,.5)}
+  .main{margin-left:0}
+  .btn.menu-btn{display:inline-flex}
+  .g2,.g3,.split{grid-template-columns:minmax(0,1fr)}
+  .content{padding:16px}
+  .top{padding:10px 16px}
+  .list{max-height:260px}
+}
+@media (max-width:560px){.res{grid-template-columns:1fr 1fr}.kpi .v{font-size:19px}.top p{display:none}}
+</style>
+</head>
+<body>
+<div class="toasts" id="toasts"></div>
+
+<div class="app">
+<nav class="side" id="side">
+  <div class="brand">
+    <img id="brand-logo" alt="" style="display:none">
+    <div><b>OrcaSystem HH</b><small id="brand-sub">Composição de custo da hora-homem</small></div>
+  </div>
+  <div class="navsec"><div>Principal</div>
+    <div class="nav" data-pg="painel"><span>◉</span>Painel</div>
+    <div class="nav" data-pg="funcoes"><span>⊞</span>Funções</div>
+    <div class="nav" data-pg="composicao"><span>⊟</span>Composição</div>
+    <div class="nav" data-pg="comparativo"><span>⇄</span>Comparativo</div>
+  </div>
+  <div class="navsec"><div>Bases de cálculo</div>
+    <div class="nav" data-pg="bases"><span>◎</span>Convenções e reajustes</div>
+    <div class="nav" data-pg="encargos"><span>%</span>Encargos e parâmetros</div>
+  </div>
+  <div class="navsec"><div>Saídas</div>
+    <div class="nav" data-pg="relatorios"><span>▤</span>Relatórios</div>
+    <div class="nav" data-pg="envio"><span>➜</span>Enviar ao OrcaSystem</div>
+    <div class="nav" data-pg="historico"><span>⟲</span>Histórico</div>
+    <div class="nav" data-pg="config"><span>⚙</span>Configurações</div>
+  </div>
+  <div class="sidefoot" id="sidefoot">Modo local · dados neste navegador</div>
+</nav>
+
+<div class="main">
+  <div class="top">
+    <div style="display:flex;gap:10px;align-items:center;min-width:0">
+      <button class="btn menu-btn" onclick="document.getElementById('side').classList.toggle('open')">☰</button>
+      <div style="min-width:0"><h1 id="tt">Painel</h1><p id="ts"></p></div>
+    </div>
+    <div class="acts">
+      <span class="saved" id="saved"></span>
+      <button class="btn" onclick="toggleTema()" title="Tema claro/escuro">◐</button>
+      <button class="btn bp" onclick="abrirFuncao()">+ Função</button>
+    </div>
+  </div>
+  <div class="content">
+    <section class="pg" id="pg-painel"></section>
+    <section class="pg" id="pg-funcoes"></section>
+    <section class="pg" id="pg-composicao"></section>
+    <section class="pg" id="pg-comparativo"></section>
+    <section class="pg" id="pg-bases"></section>
+    <section class="pg" id="pg-encargos"></section>
+    <section class="pg" id="pg-relatorios"></section>
+    <section class="pg" id="pg-envio"></section>
+    <section class="pg" id="pg-historico"></section>
+    <section class="pg" id="pg-config"></section>
+  </div>
+</div>
+</div>
+
+<!-- MODAL FUNÇÃO -->
+<div class="ov" id="m-fn">
+  <div class="modal">
+    <div class="mh"><b id="m-fn-t">Nova função</b><button class="x" onclick="fecharModal('m-fn')">✕</button></div>
+    <input type="hidden" id="fn-id">
+    <div class="fr">
+      <div class="f w2"><label class="l">Nome da função *</label><input id="fn-nome"></div>
+      <div class="f"><label class="l">Área</label><input id="fn-area" list="dl-areas"></div>
+    </div>
+    <div class="fr">
+      <div class="f"><label class="l">Convenção / base *</label><select id="fn-base"></select></div>
+      <div class="f"><label class="l">Status</label>
+        <select id="fn-status"><option value="ativo">Ativo</option><option value="rascunho">Rascunho</option><option value="inativo">Inativo</option></select></div>
+    </div>
+    <div class="fr">
+      <div class="f"><label class="l">Salário-base (R$/mês) *</label><input id="fn-sal" type="number" step="0.01" min="0"></div>
+      <div class="f"><label class="l">Outros adicionais fixos (R$/mês)</label><input id="fn-outros" type="number" step="0.01" min="0" value="0"></div>
+    </div>
+    <div class="fr" style="align-items:center">
+      <label style="display:flex;gap:8px;align-items:center;font-size:13px;cursor:pointer"><input type="checkbox" id="fn-peric"> Recebe periculosidade (<span id="fn-peric-pct">30</span>% sobre o salário-base)</label>
+    </div>
+    <div class="fr">
+      <div class="f"><label class="l">Referência tabela 2026 do OrcaSystem (R$/h)</label><input id="fn-ref" type="number" step="0.01" min="0"></div>
+      <div class="f w2"><label class="l">Observações</label><input id="fn-obs"></div>
+    </div>
+    <div class="fr"><div class="f"><label class="l">Motivo da alteração (vai para o histórico)</label><input id="fn-motivo" placeholder="Ex.: dissídio 2026, correção de piso"></div></div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:6px">
+      <button class="btn" onclick="fecharModal('m-fn')">Cancelar</button>
+      <button class="btn bp" onclick="salvarFuncao()">Salvar</button>
+    </div>
+  </div>
+</div>
+<datalist id="dl-areas"></datalist>
+<input type="file" id="file-in" style="display:none">
+
+<script>
+'use strict';
+// =====================================================================
+// UTILITÁRIOS
+// =====================================================================
+const KEY = 'orcahh_v1';
+const SCHEMA = 1;
+const $ = id => document.getElementById(id);
+function esc(s){ return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+function num(v, d = 0){ if (v === null || v === undefined || v === '') return d; const n = parseFloat(String(v).replace(',', '.')); return isFinite(n) ? n : d; }
+function fmt(n){ return 'R$ ' + Number(n || 0).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+function fmtN(n, d = 2){ return Number(n || 0).toLocaleString('pt-BR', {minimumFractionDigits:d, maximumFractionDigits:d}); }
+function pct(n, d = 2){ return fmtN(n, d) + '%'; }
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+function hoje(){ return new Date().toISOString().slice(0, 10); }
+function dataBR(iso){ if (!iso) return '—'; const d = new Date(iso.length <= 10 ? iso + 'T12:00:00' : iso); return isNaN(d) ? esc(iso) : d.toLocaleDateString('pt-BR'); }
+function dataHoraBR(iso){ const d = new Date(iso); return isNaN(d) ? '—' : d.toLocaleString('pt-BR', {dateStyle:'short', timeStyle:'short'}); }
+function norm(s){ return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim(); }
+function clone(o){ return JSON.parse(JSON.stringify(o)); }
+function toast(msg, err){ const el = document.createElement('div'); el.className = 'toast' + (err ? ' err' : ''); el.textContent = msg; $('toasts').appendChild(el); setTimeout(() => el.remove(), 3800); }
+function abrirModal(id){ $(id).classList.add('on'); }
+function fecharModal(id){ $(id).classList.remove('on'); }
+function baixar(nome, conteudo, tipo){ const b = new Blob([conteudo], {type:tipo}); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = nome; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); }
+function escolherArquivo(accept){ return new Promise(res => { const inp = $('file-in'); inp.value = ''; inp.accept = accept; inp.onchange = () => res(inp.files[0] || null); inp.click(); }); }
+function lerTexto(file){ return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsText(file); }); }
+// Reduz a imagem (máx. 480 px) para não estourar o armazenamento local
+function lerImagem(file){
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onerror = rej;
+    r.onload = () => { const img = new Image(); img.onerror = rej; img.onload = () => {
+      const k = Math.min(1, 480 / Math.max(img.width, img.height)); const c = document.createElement('canvas');
+      c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); res(c.toDataURL('image/png')); };
+      img.src = r.result; };
+    r.readAsDataURL(file);
+  });
+}
+
+// =====================================================================
+// DADOS PADRÃO
+// =====================================================================
+// Encargos sociais — Lucro Real, montagem industrial (referência editável).
+// Grupo A: incidem sobre toda a remuneração. Grupo B: provisões que recebem
+// a incidência do grupo A. Grupo C: indenizatórios (sem incidência do A).
+// Grupo D: reincidências, calculadas — D1 = A × B; D2 = FGTS × aviso indenizado.
+const ENCARGOS_PADRAO = [
+  {id:'inss',   g:'A', nome:'INSS patronal', pct:20},
+  {id:'sesi',   g:'A', nome:'SESI', pct:1.5},
+  {id:'senai',  g:'A', nome:'SENAI', pct:1.0},
+  {id:'sebrae', g:'A', nome:'SEBRAE', pct:0.6},
+  {id:'incra',  g:'A', nome:'INCRA', pct:0.2},
+  {id:'saledu', g:'A', nome:'Salário-educação', pct:2.5},
+  {id:'rat',    g:'A', nome:'RAT × FAP (3% × 1,00)', pct:3},
+  {id:'fgts',   g:'A', nome:'FGTS', pct:8, fgts:true},
+  {id:'ferias', g:'B', nome:'Férias + 1/3 constitucional', pct:11.11},
+  {id:'decimo', g:'B', nome:'13º salário', pct:8.33},
+  {id:'auxenf', g:'B', nome:'Auxílio-enfermidade (15 primeiros dias)', pct:0.69},
+  {id:'faltas', g:'B', nome:'Faltas justificadas', pct:0.56},
+  {id:'licpat', g:'B', nome:'Licença-paternidade', pct:0.06},
+  {id:'acid',   g:'B', nome:'Acidente de trabalho', pct:0.08},
+  {id:'salmat', g:'B', nome:'Salário-maternidade', pct:0.03},
+  {id:'aptrab', g:'B', nome:'Aviso prévio trabalhado', pct:0.07},
+  {id:'apind',  g:'C', nome:'Aviso prévio indenizado', pct:2.82, fgtsIncide:true},
+  {id:'ferind', g:'C', nome:'Férias indenizadas', pct:1.52},
+  {id:'multa',  g:'C', nome:'Multa rescisória do FGTS (40%)', pct:2.56},
+  {id:'indad',  g:'C', nome:'Indenização adicional', pct:0.24},
+];
+const GRUPOS = {A:'Grupo A — sobre a remuneração', B:'Grupo B — provisões (recebem o grupo A)', C:'Grupo C — indenizatórios'};
+const CATS = {oper:'Operacionais', seg:'Segurança', tec:'Técnicos e saúde', outros:'Outros'};
+const REGRAS = {alim:'Alimentação', hosp:'Hospedagem', mob:'Mobilização / viagens', int:'Integral'};
+const PERIODOS = {mensal:'Mensal', diario:'Diário', unitario:'Unitário'};
+
+// Valores de exemplo herdados do HH Composer v4.4 — revisar
+const MODELO_PADRAO = [
+  {cat:'oper', nome:'Alimentação', valor:800, per:'mensal', regra:'alim'},
+  {cat:'oper', nome:'Hospedagem / alojamento', valor:1200, per:'mensal', regra:'hosp'},
+  {cat:'oper', nome:'Transporte local / VT', valor:300, per:'mensal', regra:'int'},
+  {cat:'oper', nome:'Mobilização / desmobilização', valor:200, per:'mensal', regra:'mob'},
+  {cat:'oper', nome:'Viagens de folga (escala)', valor:0, per:'mensal', regra:'mob'},
+  {cat:'seg',  nome:'EPI', valor:150, per:'mensal', regra:'int'},
+  {cat:'seg',  nome:'EPC', valor:0, per:'mensal', regra:'int'},
+  {cat:'tec',  nome:'Treinamentos obrigatórios (NR)', valor:120, per:'mensal', regra:'int'},
+  {cat:'tec',  nome:'Exames médicos (ASO)', valor:0, per:'mensal', regra:'int'},
+  {cat:'outros', nome:'Uniformes', valor:0, per:'mensal', regra:'int'},
+  {cat:'outros', nome:'Ferramentas individuais', valor:0, per:'mensal', regra:'int'},
+  {cat:'outros', nome:'Seguro de vida', valor:0, per:'mensal', regra:'int'},
+];
+
+// Tabela 2026 do OrcaSystem: [área, função, R$/h da tabela, remuneração com adicionais]
+const TABELA_2026 = [
+  ['Mecânica','Auxiliar Mecânico',28.07,2470],['Mecânica','Mecânico I',38.41,3380],['Mecânica','Mecânico II',41.36,3640],
+  ['Mecânica','Mecânico III / Montador',44.32,3900],['Mecânica','Mecânico Ajustador',53.18,4680],['Mecânica','Técnico Mecânico',59.09,5200],
+  ['Mecânica','Líder Mecânico',62.05,5460],['Elétrica','Ajudante de Eletricista',31.02,2730],['Elétrica','Eletricista I',41.36,3640],
+  ['Elétrica','Eletricista II',44.32,3900],['Elétrica','Eletricista III / Montador',47.27,4160],['Elétrica','Eletricista Força e Controle',56.14,4940],
+  ['Elétrica','Técnico Eletrotécnico',62.05,5460],['Elétrica','Lider Eletrica',65,5720],['Fábrica | Corte','Operador de Oxicorte CNC',43.88,3861],
+  ['Caldeiraria | Solda','Ajudante Caldeiraria',28.81,2535],['Caldeiraria | Solda','Caldeireiro I',44.32,3900],['Caldeiraria | Solda','Caldeireiro II',53.18,4680],
+  ['Caldeiraria | Solda','Caldeireiro III',63.7,5605.6],['Caldeiraria | Solda','Caldeireiro Montador',38.41,3380],['Caldeiraria | Solda','Encanador Obra / Tubulação',63.76,5610.8],
+  ['Caldeiraria | Solda','Soldador Fábrica / Montagem',45.8,4030],['Caldeiraria | Solda','Meio Oficial Soldador Fábrica / Montagem',44.32,3900],
+  ['Caldeiraria | Solda','Soldador Obra / Tubulação',67.51,5941],['Caldeiraria | Solda','Encarregado Solda / Tubulação',79.55,7000.5],
+  ['Segurança Do Trabalho','Tec. Segurança do Trabalho I',56.14,4940],['Segurança Do Trabalho','Tec. Segurança do Trabalho II',63.52,5590],
+  ['Segurança Do Trabalho','Tec. Segurança do Trabalho III',65,5720],['Almoxarifado','Almoxarife I',33.98,2990],['Almoxarifado','Almoxarife II',36.93,3250],
+  ['Almoxarifado','Almoxarife III',39.89,3510],['Adm','Assistente Administrativo',32.5,2860],['Adm','Assistente Compras',31.82,2800],
+  ['Pintura','Ajudante de Pintor',26.67,2347.06],['Pintura','Pintor',41.36,3640],['Pintura','Jatista',45.8,4030],
+  ['Montagem / Obras','Montador de Andaime',41.36,3640],['Montagem / Obras','Encarregado Montador de Andaime',60.57,5330],['Transporte','Motorista',36.93,3250],
+  ['Transporte','Motorista Operador de Munck',45.8,4030],['Transporte','Operador de Maquinas Pesadas',51.7,4550],['Civil','Carpinteiro',47.27,4160],
+  ['Civil','Pedreiro',47.27,4160],['Civil','Servente',28.07,2470],['Civil','Mestre de Obras',82.73,7280],
+  ['Alimentação','Cozinheira Industrial',33.23,2924.2],['Limpeza','Auxiliar de Limpeza',23.95,2107.3],['Qualidade','Inspetor de Qualidade',73.86,6500]
+];
+
+function estadoPadrao(){
+  return {
+    _schema: SCHEMA,
+    cfg: {
+      empresa:'INNOVA HYDRO', subtitulo:'Montagem Eletromecânica', usuario:'Vagner Rodrigues',
+      horasMes:220, produtividade:80, horasNaoProd:0, diasMes:22,
+      pericPct:30, noturnoPct:20, horaReduzida:true, dsrHE:16.67,
+      fabrica:{alim:50, hosp:0, mob:100, int:100},
+      bdi:{ac:4, ad:0, df:1, r:1, l:8, i:22.5, origem:'Preferências do OrcaSystem (valores de 20/10/2026)'},
+      tema:'dark'
+    },
+    encargos: clone(ENCARGOS_PADRAO),
+    bases: [], funcoes: [], versoes: [], auditoria: [], envios: [],
+    logos: {empresa:null, cliente:null},
+    semeado: false
+  };
+}
+
+function semear(){
+  const base = {id:uid(), nome:'SP – Metalúrgicos', uf:'SP', sindicato:'Base INNOVA 2026 (tabela do OrcaSystem)', dataBase:'2026-09',
+    obs:'Salários da tabela 2026 do OrcaSystem. Pisos e benefícios da convenção a detalhar.',
+    modelo: MODELO_PADRAO.map(it => ({id:uid(), qtd:1, ...it})), reajustes:[]};
+  S.bases.push(base);
+  const agora = new Date().toISOString();
+  TABELA_2026.forEach(([area, nome, ref, rem]) => {
+    // A tabela guarda a remuneração COM periculosidade (salário × 1,30).
+    // Duas linhas não fecham com × 1,30 e entram com a remuneração inteira como salário.
+    const exato = Math.abs(Math.round(rem / 1.3 * 100) / 100 * 1.3 - rem) < 0.011;
+    const fn = {id:uid(), baseId:base.id, area, nome, status:'ativo', outrosAdic:0, ref2026:ref, itens:null, versao:1, criadoEm:agora, atualizadoEm:agora,
+      salario: exato ? Math.round(rem / 1.3 * 100) / 100 : rem, peric: exato,
+      obs: exato ? '' : 'Remuneração da tabela não fecha com salário × 1,30 — conferir salário-base e adicionais'};
+    S.funcoes.push(fn);
+  });
+  S.semeado = true;
+  registrar('Carga inicial', TABELA_2026.length + ' funções da tabela 2026 do OrcaSystem na base ' + base.nome);
+  S.funcoes.forEach(f => registrarVersao(f, 'Carga inicial (tabela 2026 do OrcaSystem)'));
+}
+
+// =====================================================================
+// ESTADO E PERSISTÊNCIA
+// =====================================================================
+let S = estadoPadrao();
+function carregar(){
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) S = migrar(JSON.parse(raw));
+  } catch (e) { console.error(e); toast('Não foi possível ler os dados salvos: ' + e.message, true); }
+  if (!S.semeado) { semear(); salvar(); }
+}
+function migrar(d){
+  const p = estadoPadrao();
+  const out = {...p, ...d, cfg:{...p.cfg, ...(d.cfg || {})}};
+  out.cfg.fabrica = {...p.cfg.fabrica, ...((d.cfg || {}).fabrica || {})};
+  out.cfg.bdi = {...p.cfg.bdi, ...((d.cfg || {}).bdi || {})};
+  out.logos = {...p.logos, ...(d.logos || {})};
+  ['encargos','bases','funcoes','versoes','auditoria','envios'].forEach(k => { if (!Array.isArray(out[k])) out[k] = p[k]; });
+  out._schema = SCHEMA;
+  return out;
+}
+let _tSalvar = null;
+function salvar(){
+  try {
+    localStorage.setItem(KEY, JSON.stringify(S));
+    $('saved').textContent = 'Salvo ' + new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+  } catch (e) {
+    toast('Falha ao salvar (armazenamento cheio?): ' + e.message + ' — exporte um backup.', true);
+  }
+}
+function registrar(acao, det){
+  S.auditoria.unshift({ts:new Date().toISOString(), usuario:S.cfg.usuario || '—', acao, det});
+  if (S.auditoria.length > 2000) S.auditoria.length = 2000;
+}
+
+// =====================================================================
+// MOTOR DE CÁLCULO — fonte única para telas, relatórios, Excel e envio
+// =====================================================================
+function resumoEncargos(lista = S.encargos){
+  const g = {A:0, B:0, C:0};
+  lista.forEach(e => { if (g[e.g] !== undefined) g[e.g] += num(e.pct); });
+  const fgts = num((lista.find(e => e.fgts) || {}).pct);
+  const cFgts = lista.filter(e => e.g === 'C' && e.fgtsIncide).reduce((a, e) => a + num(e.pct), 0);
+  const D1 = g.A * g.B / 100, D2 = fgts * cFgts / 100;
+  return {A:g.A, B:g.B, C:g.C, D1, D2, D:D1 + D2, total:g.A + g.B + g.C + D1 + D2, incHE:g.A + g.B + D1};
+}
+function baseDe(fn){ return S.bases.find(b => b.id === fn.baseId) || null; }
+function itensDe(fn){ if (Array.isArray(fn.itens)) return fn.itens; const b = baseDe(fn); return b ? b.modelo : []; }
+function itemMensal(it){
+  const q = num(it.qtd, 1), v = num(it.valor);
+  if (it.per === 'diario') return v * q * num(it.dias, num(S.cfg.diasMes, 22));
+  if (it.per === 'unitario') return v * q / Math.max(1, num(it.vida, 1));
+  return v * q;
+}
+function fatorRegime(it, reg){ return reg === 'fabrica' ? num(S.cfg.fabrica[it.regra || 'int'], 100) / 100 : 1; }
+function horasProdutivas(){ return Math.max(1, num(S.cfg.horasMes, 220) * num(S.cfg.produtividade, 80) / 100 - num(S.cfg.horasNaoProd, 0)); }
+
+function calcular(fn, reg = 'campo'){
+  const c = S.cfg;
+  const sal = num(fn.salario);
+  const peric = fn.peric ? sal * num(c.pericPct, 30) / 100 : 0;
+  const outros = num(fn.outrosAdic);
+  const rem = sal + peric + outros;
+  const E = resumoEncargos();
+  const enc = rem * E.total / 100;
+  const itens = itensDe(fn).map(it => { const m = itemMensal(it), f = fatorRegime(it, reg); return {...it, mensal:m, fator:f, custo:m * f}; });
+  const custoItens = itens.reduce((a, x) => a + x.custo, 0);
+  const custoMes = rem + enc + custoItens;
+  const hp = horasProdutivas();
+  const hh = custoMes / hp;
+  // Horas extras e noturno: custo marginal da hora — só a parte que varia com a hora
+  // (salário-hora × adicional, reflexo no DSR e encargos que incidem). Os custos fixos
+  // do mês (alimentação, EPI etc.) não se repetem por hora extra.
+  const hMes = num(c.horasMes, 220);
+  const salHora = rem / hMes;
+  const kEnc = 1 + E.incHE / 100;
+  const kDsr = 1 + num(c.dsrHE, 0) / 100;
+  const he50 = salHora * 1.5 * kDsr * kEnc;
+  const he100 = salHora * 2 * kDsr * kEnc;
+  const kRed = c.horaReduzida ? 60 / 52.5 : 1;
+  const adNot = salHora * num(c.noturnoPct, 20) / 100 * kRed * kEnc;
+  return {reg, sal, peric, outros, rem, E, enc, itens, custoItens, custoMes, hp, hh, salHora, kEnc, kDsr, kRed, he50, he100, adNot, noturna:hh + adNot};
+}
+function bdiPct(b = S.cfg.bdi){
+  const soma = (num(b.ac) + num(b.ad) + num(b.df) + num(b.r) + num(b.l)) / 100;
+  const i = Math.min(num(b.i) / 100, 0.9999);
+  return Math.max(0, ((1 + soma) / (1 - i) - 1) * 100);
+}
+function memoria(fn, r){
+  const c = S.cfg, L = [];
+  L.push('REMUNERAÇÃO');
+  L.push('  Salário-base ............................ ' + fmt(r.sal));
+  if (fn.peric) L.push('  Periculosidade ' + fmtN(c.pericPct, 0) + '% × salário-base ......... ' + fmt(r.peric));
+  if (r.outros) L.push('  Outros adicionais fixos ................. ' + fmt(r.outros));
+  L.push('  = Remuneração ........................... ' + fmt(r.rem));
+  L.push('');
+  L.push('ENCARGOS SOCIAIS (' + pct(r.E.total) + ' sobre a remuneração)');
+  L.push('  A ' + pct(r.E.A) + ' + B ' + pct(r.E.B) + ' + C ' + pct(r.E.C) + ' + D1 (A×B) ' + pct(r.E.D1) + ' + D2 ' + pct(r.E.D2));
+  L.push('  ' + fmt(r.rem) + ' × ' + pct(r.E.total) + ' = ' + fmt(r.enc));
+  L.push('');
+  L.push('CUSTOS DA FUNÇÃO — regime ' + (r.reg === 'fabrica' ? 'FÁBRICA' : 'CAMPO'));
+  r.itens.filter(i => i.custo || i.mensal).forEach(i => {
+    let base = fmt(i.valor);
+    if (i.per === 'diario') base += ' × ' + fmtN(num(i.dias, c.diasMes), 0) + ' dias';
+    if (i.per === 'unitario') base += ' ÷ ' + fmtN(num(i.vida, 1), 0) + ' meses';
+    if (num(i.qtd, 1) !== 1) base += ' × ' + fmtN(i.qtd, 2);
+    L.push('  ' + i.nome + ': ' + base + (i.fator !== 1 ? ' × ' + fmtN(i.fator * 100, 0) + '%' : '') + ' = ' + fmt(i.custo));
+  });
+  L.push('  = Custos da função ...................... ' + fmt(r.custoItens));
+  L.push('');
+  L.push('CUSTO MENSAL = ' + fmt(r.rem) + ' + ' + fmt(r.enc) + ' + ' + fmt(r.custoItens) + ' = ' + fmt(r.custoMes));
+  L.push('HORAS PRODUTIVAS = ' + fmtN(c.horasMes, 0) + ' h × ' + fmtN(c.produtividade, 0) + '%' + (num(c.horasNaoProd) ? ' − ' + fmtN(c.horasNaoProd, 0) + ' h' : '') + ' = ' + fmtN(r.hp, 1) + ' h');
+  L.push('HH NORMAL = ' + fmt(r.custoMes) + ' ÷ ' + fmtN(r.hp, 1) + ' h = ' + fmt(r.hh) + '/h');
+  L.push('');
+  L.push('HORAS EXTRAS E NOTURNO (custo marginal, sem repetir custos fixos)');
+  L.push('  Salário-hora = ' + fmt(r.rem) + ' ÷ ' + fmtN(c.horasMes, 0) + ' h = ' + fmt(r.salHora));
+  L.push('  Encargos que incidem (A + B + D1) = ' + pct(r.E.incHE) + ' · reflexo no DSR = ' + pct(c.dsrHE));
+  L.push('  HE 50%  = ' + fmt(r.salHora) + ' × 1,5 × ' + fmtN(r.kDsr, 4) + ' × ' + fmtN(r.kEnc, 4) + ' = ' + fmt(r.he50) + '/h');
+  L.push('  HE 100% = ' + fmt(r.salHora) + ' × 2,0 × ' + fmtN(r.kDsr, 4) + ' × ' + fmtN(r.kEnc, 4) + ' = ' + fmt(r.he100) + '/h');
+  L.push('  Adicional noturno = ' + fmt(r.salHora) + ' × ' + fmtN(c.noturnoPct, 0) + '%' + (c.horaReduzida ? ' × 60/52,5 (hora reduzida)' : '') + ' × ' + fmtN(r.kEnc, 4) + ' = ' + fmt(r.adNot));
+  L.push('  HH noturna = ' + fmt(r.hh) + ' + ' + fmt(r.adNot) + ' = ' + fmt(r.noturna) + '/h');
+  return L.join('\n');
+}
+
+// =====================================================================
+// VERSÕES
+// =====================================================================
+function registrarVersao(fn, motivo){
+  const rc = calcular(fn, 'campo'), rf = calcular(fn, 'fabrica');
+  S.versoes.unshift({id:uid(), fnId:fn.id, nome:fn.nome, versao:fn.versao || 1, data:new Date().toISOString(), usuario:S.cfg.usuario || '—',
+    salario:num(fn.salario), rem:rc.rem, hhCampo:rc.hh, hhFabrica:rf.hh, motivo:motivo || '', aprovadoPor:null, aprovadoEm:null});
+  if (S.versoes.length > 5000) S.versoes.length = 5000;
+}
+function novaVersao(fn, motivo){
+  fn.versao = (fn.versao || 1) + 1;
+  fn.atualizadoEm = new Date().toISOString();
+  registrarVersao(fn, motivo);
+}
+
+// =====================================================================
+// NAVEGAÇÃO
+// =====================================================================
+const PAGINAS = {
+  painel:['Painel','Visão geral do HH de custo por função'],
+  funcoes:['Funções','Cadastro de funções, salários e adicionais'],
+  composicao:['Composição','Custo detalhado e memória de cálculo por função'],
+  comparativo:['Comparativo','HH calculado × tabela 2026 do OrcaSystem'],
+  bases:['Convenções e reajustes','Bases por sindicato/UF, modelo de custos e reajustes'],
+  encargos:['Encargos e parâmetros','Encargos sociais, horas produtivas, regime fábrica e BDI'],
+  relatorios:['Relatórios','Interno (custo), comercial (com BDI) e detalhado — PDF e Excel'],
+  envio:['Enviar ao OrcaSystem','Atualiza a Mão de Obra do OrcaSystem (vale para orçamentos novos)'],
+  historico:['Histórico','Versões das funções e registro de alterações'],
+  config:['Configurações','Empresa, logos, tema e backup']
+};
+let pagina = 'painel';
+const RENDER = {};
+function ir(p){
+  if (!PAGINAS[p]) p = 'painel';
+  pagina = p;
+  document.querySelectorAll('.pg').forEach(x => x.classList.toggle('on', x.id === 'pg-' + p));
+  document.querySelectorAll('.nav').forEach(x => x.classList.toggle('on', x.dataset.pg === p));
+  $('tt').textContent = PAGINAS[p][0]; $('ts').textContent = PAGINAS[p][1];
+  $('side').classList.remove('open');
+  try { localStorage.setItem(KEY + '_pg', p); } catch (e) {}
+  render();
+}
+function render(){ try { RENDER[pagina](); } catch (e) { console.error(e); $('pg-' + pagina).innerHTML = '<div class="alert a-warn">Erro ao montar a tela: ' + esc(e.message) + '</div>'; } }
+document.querySelectorAll('.nav').forEach(n => n.addEventListener('click', () => ir(n.dataset.pg)));
+document.querySelectorAll('.ov').forEach(o => o.addEventListener('click', e => { if (e.target === o) o.classList.remove('on'); }));
+
+function funcoesOrdenadas(lista = S.funcoes){ return [...lista].sort((a, b) => (a.area || '').localeCompare(b.area || '', 'pt') || a.nome.localeCompare(b.nome, 'pt')); }
+function ativas(){ return S.funcoes.filter(f => f.status === 'ativo'); }
+const STATUS_BADGE = {ativo:'b-ok', rascunho:'b-warn', inativo:'b-bad'};
+
+// =====================================================================
+// PAINEL
+// =====================================================================
+RENDER.painel = () => {
+  const at = ativas();
+  const dados = at.map(f => ({f, c:calcular(f, 'campo'), fa:calcular(f, 'fabrica')}));
+  const med = k => dados.length ? dados.reduce((a, x) => a + x[k].hh, 0) / dados.length : 0;
+  const maior = dados.reduce((a, x) => (!a || x.c.hh > a.c.hh) ? x : a, null);
+  const E = resumoEncargos();
+  const max = Math.max(1, ...dados.map(x => x.c.hh));
+  const porArea = {};
+  dados.forEach(x => { const a = x.f.area || 'Sem área'; (porArea[a] = porArea[a] || []).push(x); });
+  $('pg-painel').innerHTML = `
+    <div class="kpis">
+      <div class="kpi"><div class="l">Funções ativas</div><div class="v">${at.length}</div><div class="s">${S.funcoes.length} cadastradas · ${S.bases.length} base(s)</div></div>
+      <div class="kpi" style="--k:var(--ok)"><div class="l">HH médio · Campo</div><div class="v">${fmt(med('c'))}</div><div class="s">custo por hora produtiva</div></div>
+      <div class="kpi" style="--k:var(--vio)"><div class="l">HH médio · Fábrica</div><div class="v">${fmt(med('fa'))}</div><div class="s">alimentação ${fmtN(S.cfg.fabrica.alim,0)}% · hospedagem ${fmtN(S.cfg.fabrica.hosp,0)}%</div></div>
+      <div class="kpi" style="--k:var(--warn)"><div class="l">Encargos sociais</div><div class="v">${pct(E.total)}</div><div class="s">÷ ${fmtN(horasProdutivas(),0)} h produtivas/mês</div></div>
+      <div class="kpi" style="--k:var(--bad)"><div class="l">Maior HH · Campo</div><div class="v">${maior ? fmt(maior.c.hh) : '—'}</div><div class="s">${maior ? esc(maior.f.nome) : '—'}</div></div>
+    </div>
+    <div class="card">
+      <div class="ch"><div><div class="ct">HH de custo por função</div><div class="cs">Funções ativas, agrupadas por área. BDI não incluso.</div></div>
+        <button class="btn" onclick="ir('relatorios')">▤ Relatórios</button></div>
+      ${dados.length ? `<div class="tw"><table>
+        <thead><tr><th>Função</th><th class="n">Remuneração</th><th class="n">Custo/mês (campo)</th><th class="n">HH Campo</th><th></th><th class="n">HH Fábrica</th><th class="n">Ref. 2026</th></tr></thead>
+        <tbody>${Object.keys(porArea).sort((a, b) => a.localeCompare(b, 'pt')).map(a => `<tr class="grp"><td colspan="7">${esc(a)}</td></tr>` +
+          porArea[a].sort((x, y) => x.f.nome.localeCompare(y.f.nome, 'pt')).map(x => `<tr style="cursor:pointer" onclick="abrirComposicao('${x.f.id}')">
+            <td>${esc(x.f.nome)}</td><td class="n">${fmt(x.c.rem)}</td><td class="n">${fmt(x.c.custoMes)}</td>
+            <td class="n" style="color:var(--ok)">${fmt(x.c.hh)}</td><td style="width:120px"><div class="bar"><i style="width:${(x.c.hh / max * 100).toFixed(1)}%"></i></div></td>
+            <td class="n" style="color:var(--vio)">${fmt(x.fa.hh)}</td><td class="n" style="color:var(--tx3)">${x.f.ref2026 ? fmt(x.f.ref2026) : '—'}</td></tr>`).join('')).join('')}
+        </tbody></table></div>` : '<div class="empty">Nenhuma função ativa.</div>'}
+    </div>`;
+};
+
+// =====================================================================
+// FUNÇÕES
+// =====================================================================
+const filtroFn = {busca:'', base:'', area:'', status:''};
+RENDER.funcoes = () => {
+  const areas = [...new Set(S.funcoes.map(f => f.area).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt'));
+  const f = filtroFn;
+  const lista = funcoesOrdenadas(S.funcoes.filter(x => (!f.busca || norm(x.nome).includes(norm(f.busca))) && (!f.base || x.baseId === f.base) && (!f.area || x.area === f.area) && (!f.status || x.status === f.status)));
+  $('pg-funcoes').innerHTML = `
+    <div class="card" style="padding:12px 14px">
+      <div class="fr" style="margin:0;align-items:flex-end">
+        <div class="f w2"><label class="l">Buscar</label><input id="ff-busca" value="${esc(f.busca)}" placeholder="Nome da função" oninput="filtroFn.busca=this.value;renderFnTabela()"></div>
+        <div class="f"><label class="l">Base</label><select onchange="filtroFn.base=this.value;render()"><option value="">Todas</option>${S.bases.map(b => `<option value="${b.id}" ${f.base === b.id ? 'selected' : ''}>${esc(b.nome)}</option>`).join('')}</select></div>
+        <div class="f"><label class="l">Área</label><select onchange="filtroFn.area=this.value;render()"><option value="">Todas</option>${areas.map(a => `<option ${f.area === a ? 'selected' : ''}>${esc(a)}</option>`).join('')}</select></div>
+        <div class="f"><label class="l">Status</label><select onchange="filtroFn.status=this.value;render()"><option value="">Todos</option>${['ativo','rascunho','inativo'].map(s => `<option value="${s}" ${f.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
+        <button class="btn bp" onclick="abrirFuncao()">+ Nova função</button>
+      </div>
+    </div>
+    <div class="tw" id="fn-tabela"></div>`;
+  renderFnTabela(lista);
+};
+function renderFnTabela(lista){
+  if (!lista) { const f = filtroFn; lista = funcoesOrdenadas(S.funcoes.filter(x => (!f.busca || norm(x.nome).includes(norm(f.busca))) && (!f.base || x.baseId === f.base) && (!f.area || x.area === f.area) && (!f.status || x.status === f.status))); }
+  const el = $('fn-tabela'); if (!el) return;
+  if (!lista.length) { el.innerHTML = '<div class="empty">Nenhuma função encontrada.</div>'; return; }
+  el.innerHTML = `<table><thead><tr><th>Função</th><th>Área</th><th>Base</th><th class="n">Salário</th><th>Peric.</th><th class="n">HH Campo</th><th class="n">HH Fábrica</th><th>Custos</th><th>Versão</th><th>Status</th><th></th></tr></thead><tbody>
+    ${lista.map(x => { const c = calcular(x, 'campo'), fa = calcular(x, 'fabrica'), b = baseDe(x); return `<tr>
+      <td><b style="font-weight:600">${esc(x.nome)}</b>${x.obs ? `<div class="hint">${esc(x.obs)}</div>` : ''}</td>
+      <td>${esc(x.area || '—')}</td><td style="font-size:12px">${b ? esc(b.nome) : '<span class="badge b-bad">sem base</span>'}</td>
+      <td class="n">${fmt(x.salario)}</td><td>${x.peric ? '<span class="badge b-warn">' + fmtN(S.cfg.pericPct, 0) + '%</span>' : '—'}</td>
+      <td class="n">${fmt(c.hh)}</td><td class="n">${fmt(fa.hh)}</td>
+      <td>${Array.isArray(x.itens) ? '<span class="badge b-vio">próprios</span>' : '<span class="badge b-pri">modelo</span>'}</td>
+      <td class="mono" style="color:var(--tx3)">v${x.versao || 1}</td><td><span class="badge ${STATUS_BADGE[x.status] || ''}">${esc(x.status)}</span></td>
+      <td style="white-space:nowrap"><button class="btn bs" onclick="abrirFuncao('${x.id}')">Editar</button>
+        <button class="btn bs" onclick="abrirComposicao('${x.id}')">Custos</button>
+        <button class="btn bs" title="Duplicar" onclick="duplicarFuncao('${x.id}')">⊕</button>
+        <button class="btn bs bd" title="Excluir" onclick="excluirFuncao('${x.id}')">✕</button></td></tr>`; }).join('')}
+  </tbody></table>`;
+}
+function abrirFuncao(id){
+  if (!S.bases.length) { toast('Cadastre uma convenção/base primeiro.', true); ir('bases'); return; }
+  const f = id ? S.funcoes.find(x => x.id === id) : null;
+  $('m-fn-t').textContent = f ? 'Editar função' : 'Nova função';
+  $('fn-id').value = f ? f.id : '';
+  $('fn-base').innerHTML = S.bases.map(b => `<option value="${b.id}">${esc(b.nome)}</option>`).join('');
+  $('dl-areas').innerHTML = [...new Set(S.funcoes.map(x => x.area).filter(Boolean))].map(a => `<option value="${esc(a)}">`).join('');
+  $('fn-nome').value = f ? f.nome : ''; $('fn-area').value = f ? (f.area || '') : '';
+  $('fn-base').value = f ? f.baseId : (filtroFn.base || S.bases[0].id);
+  $('fn-status').value = f ? f.status : 'ativo';
+  $('fn-sal').value = f ? f.salario : ''; $('fn-outros').value = f ? (f.outrosAdic || 0) : 0;
+  $('fn-peric').checked = f ? !!f.peric : true; $('fn-peric-pct').textContent = fmtN(S.cfg.pericPct, 0);
+  $('fn-ref').value = f && f.ref2026 ? f.ref2026 : ''; $('fn-obs').value = f ? (f.obs || '') : ''; $('fn-motivo').value = '';
+  abrirModal('m-fn'); setTimeout(() => $('fn-nome').focus(), 50);
+}
+function salvarFuncao(){
+  const nome = $('fn-nome').value.trim(), sal = num($('fn-sal').value, NaN);
+  if (!nome) return toast('Informe o nome da função.', true);
+  if (!(sal > 0)) return toast('Informe um salário-base maior que zero.', true);
+  const id = $('fn-id').value;
+  const dup = S.funcoes.find(x => x.id !== id && norm(x.nome) === norm(nome) && x.baseId === $('fn-base').value);
+  if (dup) return toast('Já existe uma função com esse nome nesta base.', true);
+  const dados = {nome, area:$('fn-area').value.trim(), baseId:$('fn-base').value, status:$('fn-status').value, salario:sal,
+    outrosAdic:num($('fn-outros').value), peric:$('fn-peric').checked, ref2026:num($('fn-ref').value) || null, obs:$('fn-obs').value.trim()};
+  const motivo = $('fn-motivo').value.trim();
+  if (id) {
+    const f = S.funcoes.find(x => x.id === id); if (!f) return;
+    const mudouCusto = f.salario !== dados.salario || f.peric !== dados.peric || num(f.outrosAdic) !== dados.outrosAdic || f.baseId !== dados.baseId;
+    const antes = fmt(f.salario);
+    Object.assign(f, dados);
+    if (mudouCusto) { novaVersao(f, motivo || 'Edição da função'); registrar('Função alterada', nome + ' · salário ' + antes + ' → ' + fmt(sal) + (motivo ? ' · ' + motivo : '')); }
+    else { f.atualizadoEm = new Date().toISOString(); registrar('Função alterada', nome + ' (dados cadastrais)'); }
+  } else {
+    const f = {id:uid(), ...dados, itens:null, versao:1, criadoEm:new Date().toISOString(), atualizadoEm:new Date().toISOString()};
+    S.funcoes.push(f); registrarVersao(f, motivo || 'Função criada'); registrar('Função criada', nome);
+  }
+  salvar(); fecharModal('m-fn'); render(); toast('Função salva.');
+}
+function duplicarFuncao(id){
+  const src = S.funcoes.find(x => x.id === id); if (!src) return;
+  let nome = src.nome + ' (cópia)', k = 2;
+  while (S.funcoes.some(x => norm(x.nome) === norm(nome) && x.baseId === src.baseId)) nome = src.nome + ' (cópia ' + k++ + ')';
+  const f = {...clone(src), id:uid(), nome, status:'rascunho', versao:1, criadoEm:new Date().toISOString(), atualizadoEm:new Date().toISOString()};
+  if (Array.isArray(f.itens)) f.itens.forEach(i => i.id = uid());
+  S.funcoes.push(f); registrarVersao(f, 'Duplicada de ' + src.nome); registrar('Função duplicada', src.nome + ' → ' + nome);
+  salvar(); render(); toast('Função duplicada como rascunho.');
+}
+function excluirFuncao(id){
+  const f = S.funcoes.find(x => x.id === id); if (!f) return;
+  if (!confirm('Excluir a função "' + f.nome + '"?\n\nO histórico de versões dela continua guardado.')) return;
+  S.funcoes = S.funcoes.filter(x => x.id !== id);
+  registrar('Função excluída', f.nome + ' · salário ' + fmt(f.salario)); salvar(); render(); toast('Função excluída.');
+}
+
+// =====================================================================
+// EDITOR DE ITENS DE CUSTO (modelo da base ou itens próprios da função)
+// =====================================================================
+function listaAlvo(alvo){
+  const [tipo, id] = alvo.split(':');
+  if (tipo === 'base') { const b = S.bases.find(x => x.id === id); return b ? b.modelo : null; }
+  const f = S.funcoes.find(x => x.id === id); return f && Array.isArray(f.itens) ? f.itens : null;
+}
+function tabelaItens(lista, alvo, editavel){
+  const cf = S.cfg.fabrica;
+  let tc = 0, tf = 0;
+  const linhas = Object.keys(CATS).map(cat => {
+    const itens = lista.map((it, i) => ({it, i})).filter(x => (x.it.cat || 'outros') === cat);
+    if (!itens.length && !editavel) return '';
+    return `<tr class="grp"><td colspan="${editavel ? 10 : 7}">${CATS[cat]}</td></tr>` + itens.map(({it, i}) => {
+      const m = itemMensal(it), mf = m * num(cf[it.regra || 'int'], 100) / 100; tc += m; tf += mf;
+      if (!editavel) return `<tr><td>${esc(it.nome)}</td><td class="n">${fmt(it.valor)}</td><td>${PERIODOS[it.per] || 'Mensal'}</td><td class="n">${fmtN(num(it.qtd, 1), 2)}</td><td>${REGRAS[it.regra || 'int']}</td><td class="n">${fmt(m)}</td><td class="n">${fmt(mf)}</td></tr>`;
+      const ch = (campo) => `onchange="alterarItem('${alvo}',${i},'${campo}',this.${campo === 'nome' || campo === 'per' || campo === 'regra' || campo === 'cat' ? 'value' : 'value'})"`;
+      const extra = it.per === 'diario' ? `<input class="num" type="number" min="0" step="1" value="${esc(it.dias ?? '')}" placeholder="${fmtN(S.cfg.diasMes, 0)}" title="Dias no mês (vazio = padrão)" ${ch('dias')}>`
+        : it.per === 'unitario' ? `<input class="num" type="number" min="1" step="1" value="${esc(it.vida ?? 1)}" title="Vida útil em meses" ${ch('vida')}>` : '<span class="hint">—</span>';
+      return `<tr>
+        <td><input value="${esc(it.nome)}" ${ch('nome')}></td>
+        <td><select ${ch('cat')}>${Object.entries(CATS).map(([k, v]) => `<option value="${k}" ${it.cat === k ? 'selected' : ''}>${v}</option>`).join('')}</select></td>
+        <td><input class="num" type="number" min="0" step="0.01" value="${num(it.valor)}" ${ch('valor')}></td>
+        <td><select ${ch('per')}>${Object.entries(PERIODOS).map(([k, v]) => `<option value="${k}" ${(it.per || 'mensal') === k ? 'selected' : ''}>${v}</option>`).join('')}</select></td>
+        <td>${extra}</td>
+        <td><input class="num" type="number" min="0" step="0.01" value="${num(it.qtd, 1)}" style="max-width:70px" ${ch('qtd')}></td>
+        <td><select ${ch('regra')}>${Object.entries(REGRAS).map(([k, v]) => `<option value="${k}" ${(it.regra || 'int') === k ? 'selected' : ''}>${v} (${fmtN(cf[k], 0)}%)</option>`).join('')}</select></td>
+        <td class="n">${fmt(m)}</td><td class="n">${fmt(mf)}</td>
+        <td><button class="btn bs bd" onclick="removerItem('${alvo}',${i})">✕</button></td></tr>`;
+    }).join('') + (editavel ? `<tr><td colspan="10"><button class="btn bs" onclick="adicionarItem('${alvo}','${cat}')">+ item em ${CATS[cat]}</button></td></tr>` : '');
+  }).join('');
+  const cab = editavel ? '<th>Descrição</th><th>Categoria</th><th class="n">Valor</th><th>Período</th><th>Dias / vida</th><th class="n">Qtd</th><th>Regra fábrica</th><th class="n">Mensal campo</th><th class="n">Mensal fábrica</th><th></th>'
+    : '<th>Descrição</th><th class="n">Valor</th><th>Período</th><th class="n">Qtd</th><th>Regra fábrica</th><th class="n">Mensal campo</th><th class="n">Mensal fábrica</th>';
+  return `<div class="tw"><table><thead><tr>${cab}</tr></thead><tbody>${linhas}
+    <tr class="tot"><td colspan="${editavel ? 7 : 5}">Total mensal</td><td class="n">${fmt(tc)}</td><td class="n">${fmt(tf)}</td>${editavel ? '<td></td>' : ''}</tr></tbody></table></div>`;
+}
+function alterarItem(alvo, i, campo, valor){
+  const l = listaAlvo(alvo); if (!l || !l[i]) return;
+  const numerico = ['valor','qtd','dias','vida'].includes(campo);
+  if (numerico) l[i][campo] = (campo === 'dias' && valor === '') ? null : num(valor, campo === 'qtd' || campo === 'vida' ? 1 : 0);
+  else l[i][campo] = valor;
+  aposAlterarCustos(alvo, 'Item "' + l[i].nome + '" · ' + campo + ' = ' + valor);
+}
+function adicionarItem(alvo, cat){ const l = listaAlvo(alvo); if (!l) return; l.push({id:uid(), cat, nome:'Novo item', valor:0, per:'mensal', qtd:1, regra:'int'}); aposAlterarCustos(alvo, 'Item incluído'); }
+function removerItem(alvo, i){ const l = listaAlvo(alvo); if (!l || !l[i]) return; if (!confirm('Remover o item "' + l[i].nome + '"?')) return; const n = l[i].nome; l.splice(i, 1); aposAlterarCustos(alvo, 'Item removido: ' + n); }
+// Alterações de custo geram versão (agrupadas: no máximo uma por função a cada 10 min)
+const _ultVersao = {};
+function aposAlterarCustos(alvo, det){
+  const [tipo, id] = alvo.split(':');
+  const afetadas = tipo === 'base' ? S.funcoes.filter(f => f.baseId === id && !Array.isArray(f.itens)) : S.funcoes.filter(f => f.id === id);
+  const agora = Date.now();
+  afetadas.forEach(f => { if (!_ultVersao[f.id] || agora - _ultVersao[f.id] > 600000) { novaVersao(f, tipo === 'base' ? 'Modelo de custos da base alterado' : 'Custos da função alterados'); _ultVersao[f.id] = agora; } else registrarVersaoAtualiza(f); });
+  const nomeAlvo = tipo === 'base' ? 'Base ' + (S.bases.find(b => b.id === id) || {}).nome : 'Função ' + (S.funcoes.find(f => f.id === id) || {}).nome;
+  registrar('Custos alterados', nomeAlvo + ' · ' + det);
+  salvar(); render();
+}
+// Atualiza os valores da última versão (mesma sessão de edição) em vez de criar outra
+function registrarVersaoAtualiza(f){
+  const v = S.versoes.find(x => x.fnId === f.id && x.versao === f.versao); if (!v) return registrarVersao(f, 'Custos alterados');
+  const rc = calcular(f, 'campo'), rf = calcular(f, 'fabrica'); v.hhCampo = rc.hh; v.hhFabrica = rf.hh; v.rem = rc.rem; v.salario = num(f.salario); v.data = new Date().toISOString();
+}
+
+// =====================================================================
+// COMPOSIÇÃO
+// =====================================================================
+let compSel = null, compReg = 'campo', compBusca = '';
+function abrirComposicao(id){ compSel = id; ir('composicao'); }
+RENDER.composicao = () => {
+  if (!compSel || !S.funcoes.some(f => f.id === compSel)) compSel = (funcoesOrdenadas(ativas())[0] || funcoesOrdenadas()[0] || {}).id || null;
+  const lista = funcoesOrdenadas(S.funcoes.filter(f => !compBusca || norm(f.nome).includes(norm(compBusca))));
+  $('pg-composicao').innerHTML = `<div class="split">
+    <div class="card" style="margin:0"><input placeholder="Buscar função" value="${esc(compBusca)}" oninput="compBusca=this.value;renderCompLista()" style="margin-bottom:10px"><div class="list" id="comp-lista"></div></div>
+    <div id="comp-det"></div></div>`;
+  renderCompLista(lista); renderCompDetalhe();
+};
+function renderCompLista(lista){
+  lista = lista || funcoesOrdenadas(S.funcoes.filter(f => !compBusca || norm(f.nome).includes(norm(compBusca))));
+  $('comp-lista').innerHTML = lista.length ? lista.map(f => `<div class="li ${f.id === compSel ? 'on' : ''}" onclick="compSel='${f.id}';renderCompLista();renderCompDetalhe()"><b>${esc(f.nome)}</b><small>${esc(f.area || '—')} · ${fmt(calcular(f).hh)}/h${f.status !== 'ativo' ? ' · ' + esc(f.status) : ''}</small></div>`).join('') : '<div class="empty">Nada encontrado.</div>';
+}
+function renderCompDetalhe(){
+  const el = $('comp-det'); const f = S.funcoes.find(x => x.id === compSel);
+  if (!f) { el.innerHTML = '<div class="card empty">Selecione uma função.</div>'; return; }
+  const r = calcular(f, compReg), rc = calcular(f, 'campo'), rf = calcular(f, 'fabrica'), b = baseDe(f);
+  const proprios = Array.isArray(f.itens);
+  const dif = f.ref2026 ? (rc.hh / f.ref2026 - 1) * 100 : null;
+  el.innerHTML = `
+    <div class="card">
+      <div class="ch">
+        <div><div class="ct" style="font-size:17px">${esc(f.nome)}</div><div class="cs">${esc(f.area || '—')} · ${b ? esc(b.nome) : 'sem base'} · v${f.versao || 1} · <span class="badge ${STATUS_BADGE[f.status]}">${esc(f.status)}</span></div></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><div class="seg"><button class="${compReg === 'campo' ? 'on' : ''}" onclick="compReg='campo';renderCompDetalhe()">Campo</button><button class="${compReg === 'fabrica' ? 'on' : ''}" onclick="compReg='fabrica';renderCompDetalhe()">Fábrica</button></div>
+          <button class="btn" onclick="abrirFuncao('${f.id}')">Editar função</button></div>
+      </div>
+      <div class="res">
+        <div><div class="l">HH normal · ${compReg === 'fabrica' ? 'Fábrica' : 'Campo'}</div><div class="v" style="color:var(--pri)">${fmt(r.hh)}</div><div class="s">${fmt(r.custoMes)}/mês ÷ ${fmtN(r.hp, 0)} h</div></div>
+        <div><div class="l">HE 50%</div><div class="v" style="color:var(--warn)">${fmt(r.he50)}</div><div class="s">custo marginal da hora</div></div>
+        <div><div class="l">HE 100%</div><div class="v" style="color:var(--bad)">${fmt(r.he100)}</div><div class="s">custo marginal da hora</div></div>
+        <div><div class="l">HH noturna</div><div class="v" style="color:var(--vio)">${fmt(r.noturna)}</div><div class="s">HH normal + adicional ${fmtN(S.cfg.noturnoPct, 0)}%</div></div>
+      </div>
+      <div class="hint" style="margin-top:10px">Campo ${fmt(rc.hh)}/h · Fábrica ${fmt(rf.hh)}/h${f.ref2026 ? ` · Tabela 2026 do OrcaSystem ${fmt(f.ref2026)}/h (<b class="${dif > 0 ? 'up' : 'down'}">${dif > 0 ? '+' : ''}${fmtN(dif, 1)}%</b>)` : ''} · valores de custo, sem BDI.</div>
+    </div>
+    <div class="g2">
+      <div class="card"><div class="ct" style="margin-bottom:12px">Remuneração e encargos</div>
+        <div class="tw"><table><tbody>
+          <tr><td>Salário-base</td><td class="n">${fmt(r.sal)}</td></tr>
+          <tr><td>Periculosidade ${f.peric ? fmtN(S.cfg.pericPct, 0) + '%' : '(não recebe)'}</td><td class="n">${fmt(r.peric)}</td></tr>
+          ${r.outros ? `<tr><td>Outros adicionais fixos</td><td class="n">${fmt(r.outros)}</td></tr>` : ''}
+          <tr class="tot"><td>Remuneração</td><td class="n">${fmt(r.rem)}</td></tr>
+          <tr><td>Encargos sociais ${pct(r.E.total)} <span class="hint">(A ${pct(r.E.A, 1)} · B ${pct(r.E.B, 1)} · C ${pct(r.E.C, 1)} · D ${pct(r.E.D, 1)})</span></td><td class="n">${fmt(r.enc)}</td></tr>
+          <tr><td>Custos da função (${compReg === 'fabrica' ? 'fábrica' : 'campo'})</td><td class="n">${fmt(r.custoItens)}</td></tr>
+          <tr class="tot"><td>Custo mensal</td><td class="n">${fmt(r.custoMes)}</td></tr>
+        </tbody></table></div></div>
+      <div class="card"><div class="ct" style="margin-bottom:6px">Simulador</div><div class="hint" style="margin-bottom:10px">Usa o mesmo cálculo da função; nada é gravado.</div>
+        <div class="fr"><div class="f"><label class="l">Salário-base simulado</label><input id="sim-sal" type="number" step="50" value="${num(f.salario)}" oninput="simular()"></div>
+          <div class="f"><label class="l">Reajuste (%)</label><input id="sim-pct" type="number" step="0.5" value="0" oninput="simular()"></div></div>
+        <div id="sim-out"></div></div>
+    </div>
+    <div class="card">
+      <div class="ch"><div><div class="ct">Custos da função</div><div class="cs">${proprios ? 'Esta função tem custos próprios.' : 'Usando o modelo de custos da base ' + (b ? esc(b.nome) : '') + '. Para mudar só esta função, personalize.'}</div></div>
+        ${proprios ? `<button class="btn" onclick="voltarModelo('${f.id}')">↺ Voltar ao modelo da base</button>` : `<button class="btn bp" onclick="personalizar('${f.id}')">Personalizar custos desta função</button>`}</div>
+      ${tabelaItens(itensDe(f), 'fn:' + f.id, proprios)}
+    </div>
+    <div class="card"><div class="ch"><div class="ct">Memória de cálculo · ${compReg === 'fabrica' ? 'Fábrica' : 'Campo'}</div><button class="btn bs" onclick="copiarMemoria()">Copiar</button></div><div class="memo" id="memo">${esc(memoria(f, r))}</div></div>`;
+  simular();
+}
+function simular(){
+  const f = S.funcoes.find(x => x.id === compSel); const out = $('sim-out'); if (!f || !out) return;
+  const sal = num($('sim-sal').value) * (1 + num($('sim-pct').value) / 100);
+  const a = calcular(f, compReg), s = calcular({...f, salario:sal}, compReg);
+  const d = a.hh ? (s.hh / a.hh - 1) * 100 : 0;
+  out.innerHTML = `<div class="tw"><table><thead><tr><th></th><th class="n">Atual</th><th class="n">Simulado</th></tr></thead><tbody>
+    <tr><td>Salário-base</td><td class="n">${fmt(a.sal)}</td><td class="n">${fmt(s.sal)}</td></tr>
+    <tr><td>Custo mensal</td><td class="n">${fmt(a.custoMes)}</td><td class="n">${fmt(s.custoMes)}</td></tr>
+    <tr class="tot"><td>HH normal</td><td class="n">${fmt(a.hh)}</td><td class="n">${fmt(s.hh)} <span class="${d > 0 ? 'up' : 'down'}">(${d > 0 ? '+' : ''}${fmtN(d, 1)}%)</span></td></tr>
+    <tr><td>HE 50%</td><td class="n">${fmt(a.he50)}</td><td class="n">${fmt(s.he50)}</td></tr></tbody></table></div>`;
+}
+function copiarMemoria(){ const t = $('memo').textContent; (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast('Memória copiada.'), () => toast('Não foi possível copiar.', true)); }
+function personalizar(id){
+  const f = S.funcoes.find(x => x.id === id); if (!f) return;
+  f.itens = clone(itensDe(f)).map(i => ({...i, id:uid()}));
+  registrar('Custos personalizados', f.nome + ' passou a ter custos próprios (cópia do modelo)'); salvar(); render();
+}
+function voltarModelo(id){
+  const f = S.funcoes.find(x => x.id === id); if (!f) return;
+  if (!confirm('Descartar os custos próprios de "' + f.nome + '" e voltar a usar o modelo da base?')) return;
+  f.itens = null; novaVersao(f, 'Voltou ao modelo de custos da base'); registrar('Custos', f.nome + ' voltou ao modelo da base'); salvar(); render();
+}
+
+// =====================================================================
+// COMPARATIVO
+// =====================================================================
+RENDER.comparativo = () => {
+  const lista = funcoesOrdenadas(ativas()).map(f => ({f, c:calcular(f, 'campo'), fa:calcular(f, 'fabrica')}));
+  const com = lista.filter(x => x.f.ref2026);
+  const media = com.length ? com.reduce((a, x) => a + (x.c.hh / x.f.ref2026 - 1) * 100, 0) / com.length : 0;
+  $('pg-comparativo').innerHTML = `
+    <div class="alert a-info">A tabela 2026 do OrcaSystem usa <b>remuneração × 2 (encargos 100%) ÷ 176 h</b> e não tem custos de alimentação, hospedagem, EPI etc. separados. O HH Composer detalha encargos (${pct(resumoEncargos().total)}) e custos por regime. Diferença média no regime campo: <b class="${media > 0 ? 'up' : 'down'}">${media > 0 ? '+' : ''}${fmtN(media, 1)}%</b>.</div>
+    <div class="tw"><table><thead><tr><th>Função</th><th>Área</th><th class="n">Remuneração</th><th class="n">Tabela 2026</th><th class="n">HH Campo</th><th class="n">Δ Campo</th><th class="n">HH Fábrica</th><th class="n">Δ Fábrica</th></tr></thead><tbody>
+    ${lista.map(x => { const r = x.f.ref2026; const dc = r ? (x.c.hh / r - 1) * 100 : null, df = r ? (x.fa.hh / r - 1) * 100 : null;
+      const d = v => v === null ? '—' : `<span class="${v > 0 ? 'up' : 'down'}">${v > 0 ? '+' : ''}${fmtN(v, 1)}%</span>`;
+      return `<tr><td>${esc(x.f.nome)}</td><td>${esc(x.f.area || '—')}</td><td class="n">${fmt(x.c.rem)}</td><td class="n">${r ? fmt(r) : '—'}</td><td class="n">${fmt(x.c.hh)}</td><td class="n">${d(dc)}</td><td class="n">${fmt(x.fa.hh)}</td><td class="n">${d(df)}</td></tr>`; }).join('')}
+    </tbody></table></div>`;
+};
+
+// =====================================================================
+// BASES / CONVENÇÕES / REAJUSTES
+// =====================================================================
+let baseSel = null;
+RENDER.bases = () => {
+  if (!baseSel || !S.bases.some(b => b.id === baseSel)) baseSel = (S.bases[0] || {}).id || null;
+  const b = S.bases.find(x => x.id === baseSel);
+  const nFn = id => S.funcoes.filter(f => f.baseId === id).length;
+  $('pg-bases').innerHTML = `<div class="split">
+    <div class="card" style="margin:0"><div class="ch" style="margin-bottom:10px"><div class="ct">Convenções / bases</div><button class="btn bs bp" onclick="novaBase()">+ Nova</button></div>
+      <div class="list">${S.bases.map(x => `<div class="li ${x.id === baseSel ? 'on' : ''}" onclick="baseSel='${x.id}';render()"><b>${esc(x.nome)}</b><small>${esc(x.uf || '—')} · data-base ${esc(x.dataBase || '—')} · ${nFn(x.id)} funções</small></div>`).join('') || '<div class="empty">Nenhuma base.</div>'}</div></div>
+    <div>${b ? detalheBase(b) : '<div class="card empty">Cadastre uma convenção/base.</div>'}</div></div>`;
+};
+function detalheBase(b){
+  const fns = S.funcoes.filter(f => f.baseId === b.id);
+  const ult = (b.reajustes || []).find(r => !r.desfeito);
+  return `
+    <div class="card"><div class="ch"><div class="ct">Dados da base</div><button class="btn bs bd" onclick="excluirBase('${b.id}')">Excluir base</button></div>
+      <div class="fr"><div class="f w2"><label class="l">Nome</label><input value="${esc(b.nome)}" onchange="alterarBase('${b.id}','nome',this.value)"></div>
+        <div class="f"><label class="l">UF</label><input value="${esc(b.uf || '')}" maxlength="2" onchange="alterarBase('${b.id}','uf',this.value.toUpperCase())"></div>
+        <div class="f"><label class="l">Data-base (mês)</label><input type="month" value="${esc(b.dataBase || '')}" onchange="alterarBase('${b.id}','dataBase',this.value)"></div></div>
+      <div class="fr"><div class="f w2"><label class="l">Sindicato / convenção</label><input value="${esc(b.sindicato || '')}" onchange="alterarBase('${b.id}','sindicato',this.value)"></div>
+        <div class="f w2"><label class="l">Observações</label><input value="${esc(b.obs || '')}" onchange="alterarBase('${b.id}','obs',this.value)"></div></div>
+      <div class="hint">${fns.length} funções nesta base · ${fns.filter(f => !Array.isArray(f.itens)).length} usam o modelo de custos abaixo.</div></div>
+    <div class="card"><div class="ch"><div><div class="ct">Reajuste salarial (dissídio)</div><div class="cs">Aplica sobre o salário-base das funções desta base. Fica registrado e pode ser desfeito.</div></div></div>
+      <div class="fr" style="align-items:flex-end"><div class="f"><label class="l">Índice (%)</label><input id="rj-pct" type="number" step="0.01"></div>
+        <div class="f w2"><label class="l">Descrição</label><input id="rj-desc" placeholder="Ex.: Dissídio 2026 – Metalúrgicos SP"></div>
+        <div class="f"><label class="l">Aplicar em</label><select id="rj-alvo"><option value="ativo">Funções ativas</option><option value="todas">Todas as funções da base</option></select></div>
+        <button class="btn bp" onclick="aplicarReajuste('${b.id}')">Aplicar</button></div>
+      ${(b.reajustes || []).length ? `<div class="tw"><table><thead><tr><th>Data</th><th>Descrição</th><th class="n">Índice</th><th class="n">Funções</th><th>Usuário</th><th></th></tr></thead><tbody>
+        ${b.reajustes.map(r => `<tr style="${r.desfeito ? 'opacity:.5;text-decoration:line-through' : ''}"><td>${dataHoraBR(r.data)}</td><td>${esc(r.desc)}</td><td class="n">${pct(r.pct)}</td><td class="n">${r.antes.length}</td><td>${esc(r.usuario)}</td>
+          <td>${r === ult ? `<button class="btn bs" onclick="desfazerReajuste('${b.id}','${r.id}')">Desfazer</button>` : (r.desfeito ? '<span class="hint">desfeito</span>' : '')}</td></tr>`).join('')}</tbody></table></div>` : '<div class="hint">Nenhum reajuste aplicado.</div>'}</div>
+    <div class="card"><div class="ch"><div><div class="ct">Modelo de custos da base</div><div class="cs">Usado por todas as funções da base que não têm custos próprios. Valores iniciais são exemplos do HH Composer v4.4 — revise.</div></div></div>
+      ${tabelaItens(b.modelo, 'base:' + b.id, true)}</div>`;
+}
+function novaBase(){
+  const nome = prompt('Nome da nova convenção/base (ex.: MG – Construção Pesada):'); if (!nome || !nome.trim()) return;
+  const modelo = clone((S.bases[0] || {}).modelo || MODELO_PADRAO).map(i => ({qtd:1, ...i, id:uid()}));
+  const b = {id:uid(), nome:nome.trim(), uf:'', sindicato:'', dataBase:hoje().slice(0, 7), obs:'', modelo, reajustes:[]};
+  S.bases.push(b); baseSel = b.id; registrar('Base criada', b.nome); salvar(); render();
+}
+function alterarBase(id, campo, valor){
+  const b = S.bases.find(x => x.id === id); if (!b) return;
+  registrar('Base alterada', b.nome + ' · ' + campo + ': ' + (b[campo] || '—') + ' → ' + valor);
+  b[campo] = valor; salvar(); if (campo === 'nome') render();
+}
+function excluirBase(id){
+  const b = S.bases.find(x => x.id === id); if (!b) return;
+  if (S.funcoes.some(f => f.baseId === id)) return toast('Mova ou exclua as funções desta base antes de excluí-la.', true);
+  if (!confirm('Excluir a base "' + b.nome + '"?')) return;
+  S.bases = S.bases.filter(x => x.id !== id); registrar('Base excluída', b.nome); salvar(); render();
+}
+function aplicarReajuste(id){
+  const b = S.bases.find(x => x.id === id); if (!b) return;
+  const p = num($('rj-pct').value, NaN), desc = $('rj-desc').value.trim() || 'Reajuste';
+  if (!isFinite(p) || p === 0) return toast('Informe o índice do reajuste.', true);
+  const alvo = $('rj-alvo').value;
+  const fns = S.funcoes.filter(f => f.baseId === id && (alvo === 'todas' || f.status === 'ativo'));
+  if (!fns.length) return toast('Nenhuma função para reajustar.', true);
+  if (!confirm('Aplicar ' + pct(p) + ' sobre o salário-base de ' + fns.length + ' função(ões) da base "' + b.nome + '"?')) return;
+  const r = {id:uid(), data:new Date().toISOString(), pct:p, desc, usuario:S.cfg.usuario, antes:fns.map(f => ({id:f.id, salario:f.salario})), desfeito:false};
+  fns.forEach(f => { f.salario = Math.round(f.salario * (1 + p / 100) * 100) / 100; novaVersao(f, desc + ' (' + pct(p) + ')'); });
+  b.reajustes = b.reajustes || []; b.reajustes.unshift(r);
+  registrar('Reajuste aplicado', b.nome + ' · ' + desc + ' · ' + pct(p) + ' · ' + fns.length + ' funções');
+  salvar(); render(); toast('Reajuste aplicado em ' + fns.length + ' funções.');
+}
+function desfazerReajuste(bid, rid){
+  const b = S.bases.find(x => x.id === bid); const r = b && b.reajustes.find(x => x.id === rid); if (!r) return;
+  if (!confirm('Desfazer o reajuste "' + r.desc + '"? Os salários voltam aos valores anteriores a ele.')) return;
+  r.antes.forEach(a => { const f = S.funcoes.find(x => x.id === a.id); if (f) { f.salario = a.salario; novaVersao(f, 'Reajuste desfeito: ' + r.desc); } });
+  r.desfeito = true; registrar('Reajuste desfeito', b.nome + ' · ' + r.desc); salvar(); render(); toast('Reajuste desfeito.');
+}
+
+// =====================================================================
+// ENCARGOS E PARÂMETROS
+// =====================================================================
+RENDER.encargos = () => {
+  const E = resumoEncargos(), c = S.cfg;
+  const grupo = g => `<tr class="grp"><td colspan="3">${GRUPOS[g]}</td></tr>` + S.encargos.map((e, i) => ({e, i})).filter(x => x.e.g === g).map(({e, i}) => `<tr>
+      <td><input value="${esc(e.nome)}" onchange="alterarEncargo(${i},'nome',this.value)"></td>
+      <td><input class="num" type="number" step="0.01" min="0" value="${num(e.pct)}" onchange="alterarEncargo(${i},'pct',this.value)"></td>
+      <td><button class="btn bs bd" onclick="removerEncargo(${i})" ${e.fgts ? 'disabled title="O FGTS é usado no cálculo do grupo D"' : ''}>✕</button></td></tr>`).join('') +
+    `<tr><td colspan="3"><button class="btn bs" onclick="adicionarEncargo('${g}')">+ encargo no grupo ${g}</button></td></tr><tr class="tot"><td>Subtotal ${g}</td><td class="n">${pct(E[g])}</td><td></td></tr>`;
+  const campo = (k, label, desc, step = 1) => `<div class="fr" style="align-items:center"><div class="f w2"><b style="font-size:13px">${label}</b>${desc ? `<span class="hint">${desc}</span>` : ''}</div><div class="f"><input type="number" step="${step}" min="0" value="${num(c[k])}" onchange="alterarCfg('${k}',this.value)"></div></div>`;
+  $('pg-encargos').innerHTML = `<div class="g2">
+    <div class="card"><div class="ch"><div><div class="ct">Encargos sociais</div><div class="cs">Lucro Real · montagem industrial · valores de referência — conferir com a contabilidade</div></div>
+      <button class="btn bs" onclick="restaurarEncargos()">↺ Padrão</button></div>
+      <div class="tw"><table><thead><tr><th>Encargo</th><th class="n">%</th><th></th></tr></thead><tbody>
+        ${grupo('A')}${grupo('B')}${grupo('C')}
+        <tr class="grp"><td colspan="3">Grupo D — reincidências (calculado)</td></tr>
+        <tr><td>D1 · Grupo A sobre o grupo B (${pct(E.A)} × ${pct(E.B)})</td><td class="n">${pct(E.D1)}</td><td></td></tr>
+        <tr><td>D2 · FGTS sobre aviso prévio indenizado</td><td class="n">${pct(E.D2)}</td><td></td></tr>
+        <tr class="tot"><td style="font-size:14px">TOTAL DE ENCARGOS</td><td class="n" style="font-size:14px;color:var(--pri)">${pct(E.total)}</td><td></td></tr>
+      </tbody></table></div></div>
+    <div>
+      <div class="card"><div class="ct" style="margin-bottom:12px">Horas e adicionais</div>
+        ${campo('horasMes', 'Jornada contratual (h/mês)', 'Base do salário-hora (220 h)')}
+        ${campo('produtividade', 'Produtividade (%)', 'Horas produtivas = jornada × produtividade')}
+        ${campo('horasNaoProd', 'Horas não produtivas (h/mês)', 'Treinamentos, DDS etc. descontados das horas produtivas')}
+        <div class="alert a-info" style="margin:0 0 12px">Horas produtivas: <b>${fmtN(horasProdutivas(), 1)} h/mês</b> — o custo mensal é dividido por elas.</div>
+        ${campo('diasMes', 'Dias por mês (itens diários)', 'Padrão dos itens em período diário', 1)}
+        ${campo('pericPct', 'Periculosidade (%)', 'NR-16, sobre o salário-base', 0.5)}
+        ${campo('noturnoPct', 'Adicional noturno (%)', '', 0.5)}
+        <div class="fr" style="align-items:center"><div class="f w2"><b style="font-size:13px">Hora noturna reduzida (52 min 30 s)</b></div><div class="f"><select onchange="alterarCfg('horaReduzida',this.value==='1')"><option value="1" ${c.horaReduzida ? 'selected' : ''}>Sim</option><option value="0" ${!c.horaReduzida ? 'selected' : ''}>Não</option></select></div></div>
+        ${campo('dsrHE', 'Reflexo das horas extras no DSR (%)', '1/6 ≈ 16,67%', 0.01)}</div>
+      <div class="card"><div class="ct" style="margin-bottom:6px">Regime fábrica</div><div class="hint" style="margin-bottom:12px">Percentual de cada tipo de custo que entra no regime fábrica (campo = 100%).</div>
+        ${Object.entries(REGRAS).map(([k, v]) => `<div class="fr" style="align-items:center"><div class="f w2"><b style="font-size:13px">${v}</b></div><div class="f"><input type="number" min="0" max="100" step="1" value="${num(c.fabrica[k], 100)}" onchange="alterarFabrica('${k}',this.value)"></div></div>`).join('')}</div>
+      <div class="card"><div class="ct" style="margin-bottom:6px">BDI do relatório comercial</div>
+        <div class="hint" style="margin-bottom:12px">Mesma fórmula do OrcaSystem: (1 + AC + AD + DF + R + L) ÷ (1 − I) − 1. Origem: ${esc(c.bdi.origem || '—')}. Atualize carregando o backup do OrcaSystem na tela Enviar.</div>
+        <div class="fr">${[['ac','AC'],['ad','AD'],['df','DF'],['r','R'],['l','Lucro'],['i','Impostos']].map(([k, l]) => `<div class="f" style="min-width:80px"><label class="l">${l} %</label><input type="number" step="0.01" value="${num(c.bdi[k])}" onchange="alterarBdi('${k}',this.value)"></div>`).join('')}</div>
+        <div class="alert a-info" style="margin:0">BDI resultante: <b>${pct(bdiPct())}</b> · aplicado só no relatório comercial — o HH enviado ao OrcaSystem é sempre de custo.</div></div>
+    </div></div>`;
+};
+function alterarEncargo(i, campo, v){ const e = S.encargos[i]; if (!e) return; const antes = e[campo]; e[campo] = campo === 'pct' ? num(v) : v; registrar('Encargo alterado', e.nome + ' · ' + campo + ': ' + antes + ' → ' + e[campo]); marcarVersoesGlobais('Encargos alterados'); salvar(); render(); }
+function adicionarEncargo(g){ const nome = prompt('Nome do encargo:'); if (!nome || !nome.trim()) return; S.encargos.push({id:uid(), g, nome:nome.trim(), pct:0}); registrar('Encargo incluído', nome + ' (grupo ' + g + ')'); salvar(); render(); }
+function removerEncargo(i){ const e = S.encargos[i]; if (!e || e.fgts) return; if (!confirm('Remover o encargo "' + e.nome + '"?')) return; S.encargos.splice(i, 1); registrar('Encargo removido', e.nome); marcarVersoesGlobais('Encargos alterados'); salvar(); render(); }
+function restaurarEncargos(){ if (!confirm('Voltar todos os encargos aos valores de referência?')) return; S.encargos = clone(ENCARGOS_PADRAO); registrar('Encargos', 'Restaurados os valores de referência'); marcarVersoesGlobais('Encargos restaurados'); salvar(); render(); }
+function alterarCfg(k, v){ const antes = S.cfg[k]; S.cfg[k] = typeof v === 'boolean' ? v : num(v); registrar('Parâmetro alterado', k + ': ' + antes + ' → ' + S.cfg[k]); marcarVersoesGlobais('Parâmetros alterados'); salvar(); render(); }
+function alterarFabrica(k, v){ const antes = S.cfg.fabrica[k]; S.cfg.fabrica[k] = Math.min(100, Math.max(0, num(v, 100))); registrar('Regime fábrica', REGRAS[k] + ': ' + antes + '% → ' + S.cfg.fabrica[k] + '%'); marcarVersoesGlobais('Regras do regime fábrica alteradas'); salvar(); render(); }
+function alterarBdi(k, v){ S.cfg.bdi[k] = num(v); S.cfg.bdi.origem = 'Editado manualmente em ' + dataBR(hoje()); registrar('BDI comercial', k + ' = ' + num(v)); salvar(); render(); }
+// Mudança global (encargo/parâmetro) muda o HH de todas as funções: registra uma versão por função, agrupada por 10 min
+let _ultGlobal = 0;
+function marcarVersoesGlobais(motivo){
+  const agora = Date.now();
+  if (agora - _ultGlobal > 600000) { S.funcoes.forEach(f => novaVersao(f, motivo)); _ultGlobal = agora; }
+  else S.funcoes.forEach(f => registrarVersaoAtualiza(f));
+}
+
+// =====================================================================
+// RELATÓRIOS (PDF via impressão e Excel)
+// =====================================================================
+const rel = {tipo:'interno', base:'', regime:'ambos', area:'', cliente:'', obs:'', validade:'30 dias', fnDet:''};
+RENDER.relatorios = () => {
+  const areas = [...new Set(ativas().map(f => f.area).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt'));
+  $('pg-relatorios').innerHTML = `
+    <div class="card"><div class="ct" style="margin-bottom:12px">Opções</div>
+      <div class="fr">
+        <div class="f"><label class="l">Tipo</label><select onchange="rel.tipo=this.value;render()">
+          <option value="interno" ${rel.tipo === 'interno' ? 'selected' : ''}>Interno — HH de custo</option>
+          <option value="comercial" ${rel.tipo === 'comercial' ? 'selected' : ''}>Comercial — HH com BDI (${pct(bdiPct())})</option>
+          <option value="detalhado" ${rel.tipo === 'detalhado' ? 'selected' : ''}>Detalhado — composição de uma função</option></select></div>
+        ${rel.tipo === 'detalhado' ? `<div class="f w2"><label class="l">Função</label><select onchange="rel.fnDet=this.value;render()">${funcoesOrdenadas().map(f => `<option value="${f.id}" ${rel.fnDet === f.id ? 'selected' : ''}>${esc(f.nome)}</option>`).join('')}</select></div>`
+        : `<div class="f"><label class="l">Base</label><select onchange="rel.base=this.value;render()"><option value="">Todas</option>${S.bases.map(b => `<option value="${b.id}" ${rel.base === b.id ? 'selected' : ''}>${esc(b.nome)}</option>`).join('')}</select></div>
+          <div class="f"><label class="l">Área</label><select onchange="rel.area=this.value;render()"><option value="">Todas</option>${areas.map(a => `<option ${rel.area === a ? 'selected' : ''}>${esc(a)}</option>`).join('')}</select></div>`}
+        <div class="f"><label class="l">Regime</label><select onchange="rel.regime=this.value;render()"><option value="ambos" ${rel.regime === 'ambos' ? 'selected' : ''}>Campo e fábrica</option><option value="campo" ${rel.regime === 'campo' ? 'selected' : ''}>Campo</option><option value="fabrica" ${rel.regime === 'fabrica' ? 'selected' : ''}>Fábrica</option></select></div>
+      </div>
+      ${rel.tipo === 'comercial' ? `<div class="fr"><div class="f w2"><label class="l">Cliente</label><input value="${esc(rel.cliente)}" onchange="rel.cliente=this.value;renderPreview()"></div>
+        <div class="f"><label class="l">Validade</label><input value="${esc(rel.validade)}" onchange="rel.validade=this.value;renderPreview()"></div>
+        <div class="f" style="max-width:220px"><label class="l">Logo do cliente</label><div class="logo-box" onclick="carregarLogo('cliente')" style="min-height:38px;padding:4px">${S.logos.cliente ? `<img src="${S.logos.cliente}" style="max-height:30px">` : 'Clique para enviar'}</div></div></div>` : ''}
+      <div class="fr"><div class="f"><label class="l">Observações</label><input value="${esc(rel.obs)}" onchange="rel.obs=this.value;renderPreview()" placeholder="Aparecem nas notas do relatório"></div></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn bp" onclick="imprimirRelatorio()">⎙ PDF / Imprimir</button><button class="btn bo" onclick="exportarExcel()">⬇ Excel</button>
+        ${!S.logos.empresa ? '<span class="hint" style="align-self:center">Dica: envie o logo da INNOVA em Configurações.</span>' : ''}</div>
+    </div>
+    <div class="card" style="background:#fff;color:#222;overflow-x:auto" id="rel-prev"></div>`;
+  renderPreview();
+};
+function linhasRelatorio(){
+  return funcoesOrdenadas(ativas().filter(f => (!rel.base || f.baseId === rel.base) && (!rel.area || f.area === rel.area))).map(f => ({f, c:calcular(f, 'campo'), fa:calcular(f, 'fabrica')}));
+}
+function documentoRelatorio(){
+  const k = rel.tipo === 'comercial' ? 1 + bdiPct() / 100 : 1;
+  const regs = rel.regime === 'ambos' ? ['campo','fabrica'] : [rel.regime];
+  const nomeReg = r => r === 'fabrica' ? 'Fábrica' : 'Campo';
+  let titulo, assunto, corpo;
+  if (rel.tipo === 'detalhado') {
+    const f = S.funcoes.find(x => x.id === rel.fnDet) || funcoesOrdenadas()[0];
+    if (!f) return {titulo:'—', assunto:'', corpo:'<p>Nenhuma função.</p>'};
+    rel.fnDet = f.id;
+    titulo = 'COMPOSIÇÃO DE CUSTO DA HORA-HOMEM'; assunto = f.nome + ' · ' + ((baseDe(f) || {}).nome || '');
+    corpo = regs.map(reg => { const r = calcular(f, reg); return `<h3>Regime ${nomeReg(reg)}</h3>
+      <table><thead><tr><th>Componente</th><th class="n">Valor mensal</th><th class="n">% do custo</th></tr></thead><tbody>
+      <tr><td>Salário-base</td><td class="n">${fmt(r.sal)}</td><td class="n">${pct(r.sal / r.custoMes * 100, 1)}</td></tr>
+      ${r.peric ? `<tr><td>Periculosidade ${fmtN(S.cfg.pericPct, 0)}%</td><td class="n">${fmt(r.peric)}</td><td class="n">${pct(r.peric / r.custoMes * 100, 1)}</td></tr>` : ''}
+      ${r.outros ? `<tr><td>Outros adicionais</td><td class="n">${fmt(r.outros)}</td><td class="n">${pct(r.outros / r.custoMes * 100, 1)}</td></tr>` : ''}
+      <tr><td>Encargos sociais (${pct(r.E.total)})</td><td class="n">${fmt(r.enc)}</td><td class="n">${pct(r.enc / r.custoMes * 100, 1)}</td></tr>
+      ${r.itens.filter(i => i.custo).map(i => `<tr><td>${esc(i.nome)}${i.fator !== 1 ? ` <small>(${fmtN(i.fator * 100, 0)}% no regime fábrica)</small>` : ''}</td><td class="n">${fmt(i.custo)}</td><td class="n">${pct(i.custo / r.custoMes * 100, 1)}</td></tr>`).join('')}
+      <tr class="tot"><td>CUSTO MENSAL</td><td class="n">${fmt(r.custoMes)}</td><td class="n">100,0%</td></tr>
+      <tr><td>÷ Horas produtivas (${fmtN(S.cfg.horasMes, 0)} h × ${fmtN(S.cfg.produtividade, 0)}%${num(S.cfg.horasNaoProd) ? ' − ' + fmtN(S.cfg.horasNaoProd, 0) + ' h' : ''})</td><td class="n">${fmtN(r.hp, 1)} h</td><td></td></tr>
+      <tr class="tot"><td>HH NORMAL</td><td class="n">${fmt(r.hh)}/h</td><td></td></tr>
+      <tr><td>HE 50% (custo marginal)</td><td class="n">${fmt(r.he50)}/h</td><td></td></tr>
+      <tr><td>HE 100% (custo marginal)</td><td class="n">${fmt(r.he100)}/h</td><td></td></tr>
+      <tr><td>HH noturna</td><td class="n">${fmt(r.noturna)}/h</td><td></td></tr></tbody></table>`; }).join('') +
+      `<h3>Memória de cálculo — ${nomeReg(regs[0])}</h3><pre>${esc(memoria(f, calcular(f, regs[0])))}</pre>`;
+  } else {
+    const L = linhasRelatorio();
+    const com = rel.tipo === 'comercial';
+    titulo = com ? 'TABELA DE PREÇOS DE HORA-HOMEM' : 'TABELA DE CUSTO DE HORA-HOMEM';
+    assunto = (com && rel.cliente ? 'Cliente: ' + rel.cliente + ' · ' : '') + (rel.base ? (S.bases.find(b => b.id === rel.base) || {}).nome : 'Todas as bases') + (rel.area ? ' · ' + rel.area : '');
+    const cols = regs.map(r => `<th class="n">HH ${nomeReg(r)}</th><th class="n">HE 50%</th><th class="n">HE 100%</th><th class="n">Noturna</th>`).join('');
+    corpo = `<table><thead><tr><th>Função</th>${com ? '' : '<th class="n">Remuneração</th><th class="n">Custo/mês campo</th>'}${cols}</tr></thead><tbody>
+      ${(() => { let area = null; return L.map(x => { let h = ''; if (x.f.area !== area) { area = x.f.area; h = `<tr class="grp"><td colspan="${(com ? 1 : 3) + regs.length * 4}">${esc(area || 'Sem área')}</td></tr>`; }
+        return h + `<tr><td>${esc(x.f.nome)}</td>${com ? '' : `<td class="n">${fmt(x.c.rem)}</td><td class="n">${fmt(x.c.custoMes)}</td>`}${regs.map(r => { const v = r === 'fabrica' ? x.fa : x.c; return `<td class="n"><b>${fmt(v.hh * k)}</b></td><td class="n">${fmt(v.he50 * k)}</td><td class="n">${fmt(v.he100 * k)}</td><td class="n">${fmt(v.noturna * k)}</td>`; }).join('')}</tr>`; }).join(''); })()}
+      </tbody></table>
+      <div class="notas"><b>CONDIÇÕES E NOTAS</b><br>
+        ${com ? `• Valores por hora, com BDI de ${pct(bdiPct())} (impostos inclusos)${rel.validade ? ' · validade: ' + esc(rel.validade) : ''}.<br>` : `• Valores de CUSTO, sem BDI. Encargos sociais de ${pct(resumoEncargos().total)}; custo mensal dividido por ${fmtN(horasProdutivas(), 0)} h produtivas.<br>`}
+        • HH normal: jornada contratual de ${fmtN(S.cfg.horasMes, 0)} h/mês.<br>
+        • HE 50% / 100%: custo da hora extra (salário-hora com adicional, reflexo no DSR e encargos), sem repetir os custos fixos do mês.<br>
+        • Noturna: HH normal + adicional de ${fmtN(S.cfg.noturnoPct, 0)}%${S.cfg.horaReduzida ? ' com hora reduzida' : ''} (22h–5h).<br>
+        ${regs.includes('fabrica') ? `• Regime fábrica: alimentação ${fmtN(S.cfg.fabrica.alim, 0)}%, hospedagem ${fmtN(S.cfg.fabrica.hosp, 0)}%, mobilização ${fmtN(S.cfg.fabrica.mob, 0)}% dos valores de campo.<br>` : ''}
+        ${rel.obs ? '• ' + esc(rel.obs) + '<br>' : ''}</div>`;
+  }
+  return {titulo, assunto, corpo};
+}
+const CSS_REL = `
+  .rel{font-family:Arial,Helvetica,sans-serif;color:#222;font-size:10.5pt}
+  .rel table{width:100%;border-collapse:collapse;margin:8px 0}
+  .rel th,.rel td{border:1px solid #BFBFBF;padding:4px 7px;font-size:9.5pt;text-align:left}
+  .rel th{background:#E2EFDA;font-weight:700;color:#222;text-transform:none;letter-spacing:0;font-family:Arial,Helvetica,sans-serif;white-space:normal}
+  .rel td{color:#222}
+  .rel td.n,.rel th.n{font-family:Arial,Helvetica,sans-serif;font-size:9.5pt}
+  .rel .n{text-align:right;white-space:nowrap}
+  .rel tr.grp td{background:#F2F2F2;font-weight:700;text-transform:uppercase;font-size:8.5pt}
+  .rel tr.tot td{font-weight:700;background:#F2F2F2}
+  .rel h3{font-size:11pt;margin:16px 0 4px;text-transform:uppercase}
+  .rel pre{font-family:Consolas,monospace;font-size:8.5pt;white-space:pre-wrap;border:1px solid #BFBFBF;padding:8px}
+  .rel .cab{width:100%;border-collapse:collapse;margin:0 0 14px}
+  .rel .cab td{border:1px solid #BFBFBF;padding:5px 8px;vertical-align:middle}
+  .rel .cab .emp{font-size:20pt;font-weight:700;color:#375623;text-align:center}
+  .rel .cab img{max-height:46px;max-width:150px}
+  .rel .notas{margin-top:12px;font-size:9pt;line-height:1.7;border-left:4px solid #375623;padding:8px 12px;background:#F7FBF4}
+  .rel .rod{width:100%;border-collapse:collapse;margin-top:18px}
+  .rel .rod td{border:1px solid #BFBFBF;padding:5px 8px;font-size:9pt}
+`;
+function htmlRelatorio(){
+  const d = documentoRelatorio(), c = S.cfg;
+  const logoCli = rel.tipo === 'comercial' && S.logos.cliente ? `<img src="${S.logos.cliente}">` : '';
+  return `<div class="rel">
+    <table class="cab"><tr>
+      <td style="width:22%;text-align:center">${S.logos.empresa ? `<img src="${S.logos.empresa}">` : `<b>${esc(c.empresa)}</b>`}</td>
+      <td class="emp" colspan="2">${esc(c.empresa)}<div style="font-size:9pt;font-weight:400;color:#555">${esc(c.subtitulo || '')}</div></td>
+      <td style="width:18%;text-align:center">${logoCli}</td></tr>
+      <tr><td colspan="2"><b>${esc(d.titulo)}</b></td><td style="width:10%"><b>Data</b></td><td>${dataBR(hoje())}</td></tr>
+      <tr><td colspan="4" style="text-align:center"><b>ASSUNTO:</b> ${esc(d.assunto)}</td></tr></table>
+    ${d.corpo}
+    <table class="rod"><tr><td style="width:20%"><b>Elaborado por:</b></td><td>${esc(c.usuario || '')}</td><td style="width:12%"><b>Data</b></td><td style="width:16%">${dataBR(hoje())}</td></tr>
+      <tr><td><b>Aprovado por:</b></td><td></td><td><b>Data</b></td><td></td></tr></table>
+  </div>`;
+}
+function renderPreview(){ const el = $('rel-prev'); if (el) el.innerHTML = `<style>${CSS_REL}</style>` + htmlRelatorio(); }
+function imprimirRelatorio(){
+  const w = window.open('', '_blank'); if (!w) return toast('O navegador bloqueou a janela de impressão. Libere pop-ups para este site.', true);
+  const orient = rel.tipo !== 'detalhado' && rel.regime === 'ambos' ? 'landscape' : 'portrait';
+  w.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>${esc(documentoRelatorio().titulo)}</title><style>
+    @page{size:A4 ${orient};margin:14mm 12mm}*{-webkit-print-color-adjust:exact;print-color-adjust:exact;box-sizing:border-box}body{margin:0}${CSS_REL}
+    .rel tr{page-break-inside:avoid}</style></head><body>${htmlRelatorio()}</body></html>`);
+  w.document.close();
+  registrar('Relatório emitido', rel.tipo + ' · ' + rel.regime); salvar();
+  setTimeout(() => { w.focus(); w.print(); }, 500);
+}
+function exportarExcel(){
+  if (typeof XLSX === 'undefined') return toast('Biblioteca do Excel não carregou (sem internet?).', true);
+  const wb = XLSX.utils.book_new(), k = rel.tipo === 'comercial' ? 1 + bdiPct() / 100 : 1;
+  const r2 = v => Math.round(v * 100) / 100;
+  const L = rel.tipo === 'detalhado' ? funcoesOrdenadas(ativas()).map(f => ({f, c:calcular(f, 'campo'), fa:calcular(f, 'fabrica')})) : linhasRelatorio();
+  const cab = ['Área','Função','Base','Salário-base','Periculosidade','Remuneração','Encargos','Custos campo','Custo mensal campo','HH campo','HE 50%','HE 100%','HH noturna campo','Custos fábrica','Custo mensal fábrica','HH fábrica','HH noturna fábrica','Ref. tabela 2026'];
+  const aoa = [[(rel.tipo === 'comercial' ? 'Tabela de preços de HH (BDI ' + fmtN(bdiPct()) + '%)' : 'Tabela de custo de HH (sem BDI)') + ' — ' + S.cfg.empresa + ' — ' + dataBR(hoje())], [], cab];
+  L.forEach(x => aoa.push([x.f.area || '', x.f.nome, (baseDe(x.f) || {}).nome || '', r2(x.c.sal), r2(x.c.peric), r2(x.c.rem), r2(x.c.enc), r2(x.c.custoItens), r2(x.c.custoMes),
+    r2(x.c.hh * k), r2(x.c.he50 * k), r2(x.c.he100 * k), r2(x.c.noturna * k), r2(x.fa.custoItens), r2(x.fa.custoMes), r2(x.fa.hh * k), r2(x.fa.noturna * k), x.f.ref2026 || '']));
+  const ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = cab.map((_, i) => ({wch:i === 1 ? 38 : i < 3 ? 22 : 14}));
+  XLSX.utils.book_append_sheet(wb, ws, 'Tabela HH');
+  const det = [['Função','Regime','Componente','Valor','Período','Qtd','Fator regime','Valor mensal']];
+  L.forEach(x => [['Campo', x.c], ['Fábrica', x.fa]].forEach(([n, r]) => {
+    det.push([x.f.nome, n, 'Remuneração', r2(r.rem), 'Mensal', 1, 1, r2(r.rem)]);
+    det.push([x.f.nome, n, 'Encargos sociais (' + fmtN(r.E.total) + '%)', r2(r.enc), 'Mensal', 1, 1, r2(r.enc)]);
+    r.itens.forEach(i => det.push([x.f.nome, n, i.nome, num(i.valor), PERIODOS[i.per] || 'Mensal', num(i.qtd, 1), i.fator, r2(i.custo)]));
+    det.push([x.f.nome, n, 'CUSTO MENSAL', '', '', '', '', r2(r.custoMes)]);
+    det.push([x.f.nome, n, 'HH (÷ ' + fmtN(r.hp, 1) + ' h)', '', '', '', '', r2(r.hh)]);
+  }));
+  const wd = XLSX.utils.aoa_to_sheet(det); wd['!cols'] = [{wch:38},{wch:9},{wch:40},{wch:12},{wch:10},{wch:6},{wch:11},{wch:14}];
+  XLSX.utils.book_append_sheet(wb, wd, 'Composição');
+  const E = resumoEncargos();
+  const enc = [['Grupo','Encargo','%']].concat(S.encargos.map(e => [e.g, e.nome, num(e.pct)]), [['D','D1 · A × B', r2(E.D1)], ['D','D2 · FGTS × aviso indenizado', r2(E.D2)], ['','TOTAL', r2(E.total)], [], ['Parâmetro','Valor'],
+    ['Jornada (h/mês)', S.cfg.horasMes], ['Produtividade (%)', S.cfg.produtividade], ['Horas não produtivas', S.cfg.horasNaoProd], ['Horas produtivas', r2(horasProdutivas())],
+    ['Periculosidade (%)', S.cfg.pericPct], ['Adicional noturno (%)', S.cfg.noturnoPct], ['Reflexo HE no DSR (%)', S.cfg.dsrHE], ['BDI comercial (%)', r2(bdiPct())]]);
+  const we = XLSX.utils.aoa_to_sheet(enc); we['!cols'] = [{wch:22},{wch:42},{wch:10}];
+  XLSX.utils.book_append_sheet(wb, we, 'Encargos e parâmetros');
+  XLSX.writeFile(wb, 'OrcaSystem_HH_' + rel.tipo + '_' + hoje() + '.xlsx');
+  registrar('Excel exportado', rel.tipo); salvar();
+}
+
+// =====================================================================
+// ENVIO AO ORCASYSTEM
+// =====================================================================
+// Etapa local: lê o backup do OrcaSystem, mescla os HH na tabela "profissionais"
+// e gera um arquivo só com essa chave para o "Restaurar Backup" do OrcaSystem.
+// (O Restaurar Backup troca por inteiro cada chave presente no arquivo — por isso
+// o arquivo sempre leva TODOS os profissionais já existentes.)
+let orcaBackup = null, envioSel = {}, envioReg = 'campo';
+RENDER.envio = () => {
+  const prof = orcaBackup ? (orcaBackup.profissionais || []) : [];
+  const porNome = {}; prof.forEach(p => porNome[norm(p.func)] = p);
+  const nomeEnvio = f => envioReg === 'fabrica' ? f.nome + ' (Fábrica)' : f.nome;
+  const lista = funcoesOrdenadas(ativas()).map(f => { const r = calcular(f, envioReg); const p = porNome[norm(nomeEnvio(f))]; return {f, r, p, novo:Math.round(r.hh * 100) / 100}; });
+  lista.forEach(x => { if (envioSel[x.f.id] === undefined) envioSel[x.f.id] = true; });
+  const nSel = lista.filter(x => envioSel[x.f.id]).length;
+  $('pg-envio').innerHTML = `
+    <div class="card"><div class="ct" style="margin-bottom:10px">1 · Carregar o backup do OrcaSystem</div>
+      <div class="hint" style="margin-bottom:10px">No OrcaSystem: Configurações → <b>Fazer Backup (Exportar JSON)</b>. Carregue aqui o arquivo gerado. Ele é usado para conferir os valores atuais e manter todos os profissionais já cadastrados. Nada é enviado para a internet.</div>
+      <button class="btn bp" onclick="carregarBackupOrca()">Carregar backup do OrcaSystem</button>
+      ${orcaBackup ? `<span class="hint" style="margin-left:10px">✓ ${esc(orcaBackup._arquivo)} · ${prof.length} profissionais · BDI das Preferências lido: ${pct(bdiPct())}</span>` : ''}</div>
+    <div class="card"><div class="ch"><div><div class="ct">2 · Conferir os valores</div><div class="cs">Atualiza o cadastro de Mão de Obra. Itens de orçamentos já lançados guardam o próprio valor — só orçamentos novos usam o novo HH.</div></div>
+      <div class="seg"><button class="${envioReg === 'campo' ? 'on' : ''}" onclick="envioReg='campo';render()">Campo</button><button class="${envioReg === 'fabrica' ? 'on' : ''}" onclick="envioReg='fabrica';render()">Fábrica</button></div></div>
+      ${envioReg === 'fabrica' ? '<div class="alert a-info">No regime fábrica cada função vai como “Nome (Fábrica)”, ao lado da versão de campo.</div>' : ''}
+      <div class="tw"><table><thead><tr><th><input type="checkbox" ${nSel === lista.length ? 'checked' : ''} onchange="Object.keys(envioSel).forEach(k=>envioSel[k]=this.checked);render()"></th><th>Profissional no OrcaSystem</th><th class="n">Valor atual</th><th class="n">Novo HH</th><th class="n">Δ</th><th>Situação</th></tr></thead><tbody>
+      ${lista.map(x => { const d = x.p && x.p.valor ? (x.novo / x.p.valor - 1) * 100 : null; return `<tr><td><input type="checkbox" ${envioSel[x.f.id] ? 'checked' : ''} onchange="envioSel['${x.f.id}']=this.checked;render()"></td>
+        <td>${esc(nomeEnvio(x.f))}</td><td class="n">${x.p ? fmt(x.p.valor) : '—'}</td><td class="n"><b>${fmt(x.novo)}</b></td>
+        <td class="n">${d === null ? '—' : `<span class="${d > 0 ? 'up' : 'down'}">${d > 0 ? '+' : ''}${fmtN(d, 1)}%</span>`}</td>
+        <td>${!orcaBackup ? '<span class="hint">carregue o backup</span>' : x.p ? '<span class="badge b-warn">atualiza</span>' : '<span class="badge b-pri">novo</span>'}</td></tr>`; }).join('')}
+      </tbody></table></div></div>
+    <div class="card"><div class="ct" style="margin-bottom:10px">3 · Gerar o arquivo e restaurar no OrcaSystem</div>
+      <div class="hint" style="margin-bottom:10px">Gera <b>profissionais_orcasystem_hh_${hoje()}.json</b> só com a tabela de profissionais. No OrcaSystem: Configurações → <b>Restaurar Backup</b> → escolha esse arquivo. O OrcaSystem faz backup automático antes e só troca os profissionais.</div>
+      <button class="btn bp" ${!orcaBackup || !nSel ? 'disabled' : ''} onclick="gerarEnvio()">Gerar arquivo (${nSel} profissionais)</button></div>
+    ${S.envios.length ? `<div class="card"><div class="ct" style="margin-bottom:10px">Envios anteriores</div><div class="tw"><table><thead><tr><th>Data</th><th>Usuário</th><th>Regime</th><th class="n">Atualizados</th><th class="n">Novos</th></tr></thead><tbody>
+      ${S.envios.slice(0, 20).map(e => `<tr><td>${dataHoraBR(e.data)}</td><td>${esc(e.usuario)}</td><td>${esc(e.regime)}</td><td class="n">${e.atualizados}</td><td class="n">${e.novos}</td></tr>`).join('')}</tbody></table></div></div>` : ''}`;
+};
+async function carregarBackupOrca(){
+  const file = await escolherArquivo('.json'); if (!file) return;
+  try {
+    const d = JSON.parse(await lerTexto(file));
+    if (!Array.isArray(d.profissionais)) return toast('Esse arquivo não tem a tabela "profissionais" — é o backup do OrcaSystem?', true);
+    orcaBackup = {_arquivo:file.name, profissionais:d.profissionais};
+    const cfg = d.empresa_cfg || {};
+    if (cfg && (cfg.bdi_ac !== undefined || cfg.lucro !== undefined)) {
+      S.cfg.bdi = {ac:num(cfg.bdi_ac), ad:num(cfg.bdi_ad), df:num(cfg.bdi_df), r:num(cfg.bdi_r), l:num(cfg.lucro), i:num(cfg.imp_padrao), origem:'Preferências do OrcaSystem (backup ' + file.name + ')'};
+      registrar('BDI comercial', 'Lido do backup do OrcaSystem: ' + pct(bdiPct()));
+    }
+    salvar(); render(); toast('Backup lido: ' + d.profissionais.length + ' profissionais.');
+  } catch (e) { toast('Arquivo inválido: ' + e.message, true); }
+}
+function gerarEnvio(){
+  if (!orcaBackup) return;
+  const lista = clone(orcaBackup.profissionais);
+  const porNome = {}; lista.forEach(p => porNome[norm(p.func)] = p);
+  let proxId = lista.length ? Math.max(...lista.map(p => num(p.id))) + 1 : 1;
+  const dt = hoje(); let atualizados = 0, novos = 0;
+  funcoesOrdenadas(ativas()).filter(f => envioSel[f.id]).forEach(f => {
+    const r = calcular(f, envioReg), valor = Math.round(r.hh * 100) / 100;
+    const nome = envioReg === 'fabrica' ? f.nome + ' (Fábrica)' : f.nome;
+    const obs = 'OrcaSystem HH v' + (f.versao || 1) + ' · ' + dataBR(dt) + ' · regime ' + (envioReg === 'fabrica' ? 'fábrica' : 'campo') + ' · remuneração ' + fmt(r.rem) + '/mês · encargos ' + pct(r.E.total) + ' · ÷ ' + fmtN(r.hp, 0) + ' h';
+    const p = porNome[norm(nome)];
+    if (p) {
+      const antes = p.valor;
+      // Mesmo padrão do OrcaSystem para trocar o valor de tabela: valor e valor original iguais, reajustes zerados
+      p.valor = valor; p.valorOriginal = valor; p.dataInclusao = dt; p.reajustes = []; p.unidade = p.unidade || 'HORA';
+      p.obs = obs + ' · valor anterior ' + fmt(antes) + '/h'; p.origem = 'orcasystem-hh'; p.hhId = f.id; atualizados++;
+    } else {
+      lista.push({id:proxId++, func:nome, valor, valorOriginal:valor, dataInclusao:dt, reajustes:[], unidade:'HORA', obs, origem:'orcasystem-hh', hhId:f.id}); novos++;
+    }
+  });
+  baixar('profissionais_orcasystem_hh_' + dt + '.json', JSON.stringify({profissionais:lista}, null, 2), 'application/json');
+  S.envios.unshift({data:new Date().toISOString(), usuario:S.cfg.usuario, regime:envioReg, atualizados, novos});
+  registrar('Envio ao OrcaSystem', atualizados + ' atualizados, ' + novos + ' novos (regime ' + envioReg + ')');
+  salvar(); render(); toast('Arquivo gerado: ' + atualizados + ' atualizados, ' + novos + ' novos.');
+}
+
+// =====================================================================
+// HISTÓRICO
+// =====================================================================
+let histAba = 'versoes', histBusca = '';
+RENDER.historico = () => {
+  const vs = S.versoes.filter(v => !histBusca || norm(v.nome).includes(norm(histBusca))).slice(0, 400);
+  const au = S.auditoria.filter(a => !histBusca || norm(a.acao + ' ' + a.det).includes(norm(histBusca))).slice(0, 400);
+  $('pg-historico').innerHTML = `
+    <div class="card" style="padding:12px 14px"><div class="fr" style="margin:0;align-items:center">
+      <div class="seg"><button class="${histAba === 'versoes' ? 'on' : ''}" onclick="histAba='versoes';render()">Versões das funções</button><button class="${histAba === 'audit' ? 'on' : ''}" onclick="histAba='audit';render()">Registro de alterações</button></div>
+      <div class="f w2"><input placeholder="Filtrar" value="${esc(histBusca)}" onchange="histBusca=this.value;render()"></div></div></div>
+    ${histAba === 'versoes' ? `<div class="tw"><table><thead><tr><th>Data</th><th>Função</th><th>Versão</th><th class="n">Salário</th><th class="n">HH Campo</th><th class="n">HH Fábrica</th><th>Motivo</th><th>Usuário</th><th>Aprovação</th></tr></thead><tbody>
+      ${vs.map(v => `<tr><td style="white-space:nowrap">${dataHoraBR(v.data)}</td><td>${esc(v.nome)}</td><td class="mono">v${v.versao}</td><td class="n">${fmt(v.salario)}</td><td class="n">${fmt(v.hhCampo)}</td><td class="n">${fmt(v.hhFabrica)}</td>
+        <td style="font-size:12px">${esc(v.motivo)}</td><td style="font-size:12px">${esc(v.usuario)}</td>
+        <td>${v.aprovadoPor ? `<span class="badge b-ok" title="${dataHoraBR(v.aprovadoEm)}">${esc(v.aprovadoPor)}</span>` : `<button class="btn bs" onclick="aprovarVersao('${v.id}')">Aprovar</button>`}</td></tr>`).join('') || '<tr><td colspan="9" class="empty">Sem versões.</td></tr>'}
+      </tbody></table></div><div class="hint" style="margin-top:8px">A aprovação é opcional: registra quem conferiu a versão.</div>`
+    : `<div class="tw"><table><thead><tr><th>Data</th><th>Usuário</th><th>Ação</th><th>Detalhe</th></tr></thead><tbody>
+      ${au.map(a => `<tr><td style="white-space:nowrap">${dataHoraBR(a.ts)}</td><td style="font-size:12px">${esc(a.usuario)}</td><td>${esc(a.acao)}</td><td style="font-size:12px">${esc(a.det)}</td></tr>`).join('') || '<tr><td colspan="4" class="empty">Sem registros.</td></tr>'}
+      </tbody></table></div>`}`;
+};
+function aprovarVersao(id){
+  const v = S.versoes.find(x => x.id === id); if (!v) return;
+  v.aprovadoPor = S.cfg.usuario || '—'; v.aprovadoEm = new Date().toISOString();
+  registrar('Versão aprovada', v.nome + ' v' + v.versao); salvar(); render();
+}
+
+// =====================================================================
+// CONFIGURAÇÕES
+// =====================================================================
+RENDER.config = () => {
+  const c = S.cfg;
+  let tam = 0; try { tam = (localStorage.getItem(KEY) || '').length; } catch (e) {}
+  $('pg-config').innerHTML = `<div class="g2">
+    <div class="card"><div class="ct" style="margin-bottom:12px">Empresa</div>
+      <div class="fr"><div class="f"><label class="l">Nome</label><input value="${esc(c.empresa)}" onchange="S.cfg.empresa=this.value;salvar();aplicarMarca()"></div>
+        <div class="f"><label class="l">Subtítulo</label><input value="${esc(c.subtitulo || '')}" onchange="S.cfg.subtitulo=this.value;salvar()"></div></div>
+      <div class="fr"><div class="f"><label class="l">Seu nome (aparece no histórico e nos relatórios)</label><input value="${esc(c.usuario || '')}" onchange="S.cfg.usuario=this.value;salvar()"></div></div>
+      <div class="fr"><div class="f"><label class="l">Logo da empresa</label><div class="logo-box" onclick="carregarLogo('empresa')">${S.logos.empresa ? `<img src="${S.logos.empresa}">` : 'Clique para enviar (PNG/JPG)'}</div>
+        ${S.logos.empresa ? `<button class="btn bs bd" style="margin-top:6px" onclick="S.logos.empresa=null;salvar();aplicarMarca();render()">Remover logo</button>` : ''}</div>
+        <div class="f"><label class="l">Logo do cliente (relatório comercial)</label><div class="logo-box" onclick="carregarLogo('cliente')">${S.logos.cliente ? `<img src="${S.logos.cliente}">` : 'Clique para enviar'}</div>
+        ${S.logos.cliente ? `<button class="btn bs bd" style="margin-top:6px" onclick="S.logos.cliente=null;salvar();render()">Remover logo</button>` : ''}</div></div>
+      <div class="fr" style="align-items:center"><div class="f w2"><b style="font-size:13px">Tema</b></div><div class="f"><select onchange="S.cfg.tema=this.value;salvar();aplicarTema()"><option value="dark" ${c.tema !== 'light' ? 'selected' : ''}>Escuro</option><option value="light" ${c.tema === 'light' ? 'selected' : ''}>Claro</option></select></div></div></div>
+    <div><div class="card"><div class="ct" style="margin-bottom:10px">Backup</div>
+      <div class="hint" style="margin-bottom:10px">Os dados ficam neste navegador (${fmtN(tam / 1024, 0)} KB). Exporte um backup com frequência até a versão em nuvem ser ativada.</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn bp" onclick="exportarBackup()">⬇ Exportar backup</button><button class="btn" onclick="importarBackup()">⬆ Restaurar backup</button><button class="btn bd" onclick="limparDados()">Apagar todos os dados</button></div></div>
+      <div class="card"><div class="ct" style="margin-bottom:8px">Acesso e nuvem</div>
+        <div class="hint">Versão local, sem login. A próxima etapa liga o sistema ao Supabase do OrcaSystem: login com e-mail e recuperação de senha, perfis (Administrador, Orçamentista, Consulta, Aprovador) e envio direto para a Mão de Obra, sem arquivo.</div></div></div></div>`;
+};
+async function carregarLogo(qual){
+  const file = await escolherArquivo('image/*'); if (!file) return;
+  try { S.logos[qual] = await lerImagem(file); salvar(); aplicarMarca(); render(); toast('Logo carregado.'); }
+  catch (e) { toast('Não foi possível ler a imagem.', true); }
+}
+function exportarBackup(){
+  baixar('orcasystem_hh_backup_' + hoje() + '.json', JSON.stringify({...S, _app:'OrcaSystem HH', _exportadoEm:new Date().toISOString()}, null, 2), 'application/json');
+  registrar('Backup exportado', ''); salvar();
+}
+async function importarBackup(){
+  const file = await escolherArquivo('.json'); if (!file) return;
+  try {
+    const d = JSON.parse(await lerTexto(file));
+    if (d._app !== 'OrcaSystem HH' || !Array.isArray(d.funcoes) || !Array.isArray(d.bases)) return toast('Esse arquivo não é um backup do OrcaSystem HH.', true);
+    if (!confirm('Substituir todos os dados atuais pelos do arquivo "' + file.name + '" (' + d.funcoes.length + ' funções)?\n\nAntes disso será baixado um backup do estado atual.')) return;
+    exportarBackup();
+    delete d._app; delete d._exportadoEm;
+    S = migrar(d); registrar('Backup restaurado', file.name); salvar(); aplicarTema(); aplicarMarca(); render(); toast('Backup restaurado.');
+  } catch (e) { toast('Arquivo inválido: ' + e.message, true); }
+}
+function limparDados(){
+  if (!confirm('Apagar TODAS as funções, bases, histórico e configurações deste navegador?\n\nAntes disso será baixado um backup.')) return;
+  if (prompt('Para confirmar, digite APAGAR') !== 'APAGAR') return;
+  exportarBackup();
+  S = estadoPadrao(); S.semeado = true; S.bases.push({id:uid(), nome:'Base padrão', uf:'', sindicato:'', dataBase:hoje().slice(0, 7), obs:'', modelo:MODELO_PADRAO.map(i => ({id:uid(), qtd:1, ...i})), reajustes:[]});
+  registrar('Dados apagados', 'Sistema reiniciado sem funções'); salvar(); render(); toast('Dados apagados.');
+}
+
+// =====================================================================
+// TEMA E MARCA
+// =====================================================================
+function aplicarTema(){ document.body.classList.toggle('light', S.cfg.tema === 'light'); }
+function toggleTema(){ S.cfg.tema = S.cfg.tema === 'light' ? 'dark' : 'light'; salvar(); aplicarTema(); }
+function aplicarMarca(){
+  const img = $('brand-logo');
+  if (S.logos.empresa) { img.src = S.logos.empresa; img.style.display = 'block'; } else img.style.display = 'none';
+  $('brand-sub').textContent = (S.cfg.empresa || '') + ' · custo da hora-homem';
+}
+
+// =====================================================================
+// INÍCIO
+// =====================================================================
+carregar();
+aplicarTema();
+aplicarMarca();
+let pgIni = 'painel'; try { pgIni = localStorage.getItem(KEY + '_pg') || 'painel'; } catch (e) {}
+ir(pgIni);
+</script>
+</body>
+</html>
