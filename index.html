@@ -1418,7 +1418,7 @@ tr:hover td { background: rgba(79,110,247,0.05); }
                   <div class="field" style="margin-bottom:10px"><label>Prazo de Execução (dias)</label><input id="n-prazo" type="number" placeholder="30"></div>
                   <div class="field" style="margin-bottom:10px"><label>Faturamento</label>
                     <div class="custom-select"><select id="n-faturamento">
-                      <option>RTB SOLUÇÕES LTDA</option><option>DIRETO</option>
+                      <option>INNOVA HYDRO</option><option>DIRETO</option>
                     </select></div>
                   </div>
                   <div class="field"><label>Observações</label><textarea id="n-obs" rows="2" placeholder="Condições, prazos, etc..."></textarea></div>
@@ -2343,8 +2343,8 @@ tr:hover td { background: rgba(79,110,247,0.05); }
                 </div>
               </div>
               <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px;">
-                <div class="field"><label>Nome Fantasia</label><input id="cfg-nome" placeholder="Ex: RTB SOLUÇÕES LTDA" oninput="previewCfg()"></div>
-                <div class="field"><label>Razão Social</label><input id="cfg-razao" placeholder="Ex: RTB HYDRO LTDA" oninput="previewCfg()"></div>
+                <div class="field"><label>Nome Fantasia</label><input id="cfg-nome" placeholder="Ex: INNOVA HYDRO" oninput="previewCfg()"></div>
+                <div class="field"><label>Razão Social</label><input id="cfg-razao" placeholder="Ex: INNOVA HYDRO LTDA" oninput="previewCfg()"></div>
                 <div class="field"><label>CNPJ</label><input id="cfg-cnpj" placeholder="XX.XXX.XXX/XXXX-XX"></div>
               </div>
               <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px;">
@@ -2368,7 +2368,7 @@ tr:hover td { background: rgba(79,110,247,0.05); }
                 <div class="field"><label>Conta Corrente</label><input id="cfg-conta" placeholder="00000-0"></div>
               </div>
               <div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:16px;">
-                <div class="field"><label>Rodapé dos Documentos</label><input id="cfg-rodape" placeholder="Ex: RTB HYDRO — Soluções em Energia"></div>
+                <div class="field"><label>Rodapé dos Documentos</label><input id="cfg-rodape" placeholder="Ex: INNOVA HYDRO — Soluções em Energia"></div>
                 <div class="field"><label>Validade Padrão de Proposta</label>
                   <div class="custom-select"><select id="cfg-validade">
                     <option value="30">30 dias</option><option value="60" selected>60 dias</option>
@@ -2430,7 +2430,7 @@ tr:hover td { background: rgba(79,110,247,0.05); }
             </div>
             <div class="builder-panel-body">
               <div class="field" style="margin-bottom:12px"><label>E-mail para receber notificações</label>
-                <input id="notif-email" placeholder="vagner@rtbhydro.com.br" placeholder="e-mail de notificações">
+                <input id="notif-email" placeholder="vagner@innovahydro.com.br" placeholder="e-mail de notificações">
               </div>
               <div style="font-size:11px;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">Notificar quando:</div>
               <div id="notif-lista" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
@@ -2734,7 +2734,7 @@ tr:hover td { background: rgba(79,110,247,0.05); }
     <div class="modal-head"><h2>Novo Fornecedor</h2><button class="modal-close" onclick="closeModal('modal-fornecedor')">✕</button></div>
     <div class="modal-body">
       <div class="form-row">
-        <div class="field"><label>Empresa</label><input id="fo-nome" placeholder="RTB Soluções Ltda"></div>
+        <div class="field"><label>Empresa</label><input id="fo-nome" placeholder="INNOVA HYDRO"></div>
         <div class="field"><label>CNPJ</label><input id="fo-cnpj" placeholder="XX.XXX.XXX/XXXX-XX"></div>
       </div>
       <div class="form-row">
@@ -3027,7 +3027,7 @@ tr:hover td { background: rgba(79,110,247,0.05); }
         <div class="field"><label>Valor Total (R$)</label><input id="eo-valor" type="number" step="0.01"></div>
         <div class="field"><label>Faturamento</label>
           <div class="custom-select"><select id="eo-faturamento">
-            <option>RTB SOLUÇÕES LTDA</option><option>DIRETO</option>
+            <option>INNOVA HYDRO</option><option>DIRETO</option>
           </select></div>
         </div>
       </div>
@@ -3262,15 +3262,15 @@ function initDB() {
   }
   if (!DB.load('fornecedores')) {
     DB.save('fornecedores', [
-      {id:1,nome:'RTB Soluções Ltda',cnpj:'37.944.939/0001-14',cat:'Materiais Elétricos',contato:'Vagner',tel:'14-997493381',email:'vagner@rtbhydro.com.br',cidade:'Monte Mor',uf:'SP'},
+      {id:1,nome:'INNOVA HYDRO',cnpj:'37.944.939/0001-14',cat:'Materiais Elétricos',contato:'Vagner',tel:'14-997493381',email:'vagner@innovahydro.com.br',cidade:'Monte Mor',uf:'SP'},
       {id:2,nome:'Lumens Distribuidora',cnpj:'00.000.000/0001-00',cat:'Materiais Elétricos',contato:'João',tel:'(11) 99999-0002',email:'vendas@lumens.com.br',cidade:'Campinas',uf:'SP'},
       {id:3,nome:'NorteEPI Equipamentos',cnpj:'00.000.000/0002-00',cat:'EPI/EPC',contato:'Maria',tel:'(11) 99999-0003',email:'epi@norteepi.com',cidade:'São Paulo',uf:'SP'}
     ]);
   }
   if (!DB.load('orcamentos')) {
     DB.save('orcamentos', [
-      {id:1,cod:'ORC-2025-001',desc:'Sistema de Iluminação Torre do Elevador Peixes',cliente:'Aliança Geração de Energia AS.',local:'UHE Funil — Aliança',valor:360014.18,status:'aprovado',data:'2025-01-15',faturamento:'RTB SOLUÇÕES LTDA'},
-      {id:2,cod:'ORC-2025-002',desc:'Manutenção Preventiva Turbinas Unidade 1 e 2',cliente:'Aliança Geração de Energia AS.',local:'UHE Funil — Aliança',valor:185000,status:'elaboracao',data:'2025-02-20',faturamento:'RTB SOLUÇÕES LTDA'},
+      {id:1,cod:'ORC-2025-001',desc:'Sistema de Iluminação Torre do Elevador Peixes',cliente:'Aliança Geração de Energia AS.',local:'UHE Funil — Aliança',valor:360014.18,status:'aprovado',data:'2025-01-15',faturamento:'INNOVA HYDRO'},
+      {id:2,cod:'ORC-2025-002',desc:'Manutenção Preventiva Turbinas Unidade 1 e 2',cliente:'Aliança Geração de Energia AS.',local:'UHE Funil — Aliança',valor:185000,status:'elaboracao',data:'2025-02-20',faturamento:'INNOVA HYDRO'},
       {id:3,cod:'ORC-2025-003',desc:'Instalação Quadro Geral de Distribuição',cliente:'',local:'A definir',valor:75000,status:'elaboracao',data:'2025-03-01',faturamento:'DIRETO'}
     ]);
   }
@@ -3279,8 +3279,8 @@ function initDB() {
       {id:1,desc:'Cabo 10mm2 THHN Preto',cat:'Elétrico',unid:'m',valor:8.50,valorOriginal:8.50,dataInclusao:'2025-01-01',forn:'Lumens Distribuidora',obs:'NBR 14136',reajustes:[]},
       {id:2,desc:'Cabo 6mm2 THHN Amarelo',cat:'Elétrico',unid:'m',valor:5.20,valorOriginal:5.20,dataInclusao:'2025-01-01',forn:'Lumens Distribuidora',obs:'',reajustes:[]},
       {id:3,desc:'Disjuntor 70A 3P',cat:'Elétrico',unid:'Und',valor:185.00,valorOriginal:185.00,dataInclusao:'2025-01-01',forn:'Lumens Distribuidora',obs:'',reajustes:[]},
-      {id:4,desc:'Eletroduto PVC 3/4"',cat:'Elétrico',unid:'m',valor:4.80,valorOriginal:4.80,dataInclusao:'2025-01-01',forn:'RTB Soluções',obs:'',reajustes:[]},
-      {id:5,desc:'Parafuso 3/4" Inox',cat:'Mecânico',unid:'Pç',valor:1.20,valorOriginal:1.20,dataInclusao:'2025-01-01',forn:'RTB Soluções',obs:'Inox A4',reajustes:[]},
+      {id:4,desc:'Eletroduto PVC 3/4"',cat:'Elétrico',unid:'m',valor:4.80,valorOriginal:4.80,dataInclusao:'2025-01-01',forn:'INNOVA HYDRO',obs:'',reajustes:[]},
+      {id:5,desc:'Parafuso 3/4" Inox',cat:'Mecânico',unid:'Pç',valor:1.20,valorOriginal:1.20,dataInclusao:'2025-01-01',forn:'INNOVA HYDRO',obs:'Inox A4',reajustes:[]},
       {id:6,desc:'Tinta Epóxi Cinza 3,6L',cat:'Civil',unid:'Lata',valor:210.00,valorOriginal:210.00,dataInclusao:'2025-01-01',forn:'NorteEPI',obs:'Anticorrosiva',reajustes:[]},
       {id:7,desc:'EPI Capacete ABA TOTAL',cat:'EPI/EPC',unid:'Und',valor:45.00,valorOriginal:45.00,dataInclusao:'2025-01-01',forn:'NorteEPI',obs:'CA 27311',reajustes:[]},
       {id:8,desc:'EPI Cinto Seg. Paraquedista',cat:'EPI/EPC',unid:'Und',valor:320.00,valorOriginal:320.00,dataInclusao:'2025-01-01',forn:'NorteEPI',obs:'CA 31011',reajustes:[]}
@@ -3297,6 +3297,22 @@ function initDB() {
   _importarProfissionaisTabela2026();
   _atualizarProfissionaisExistentesTabela2026();
   _migrarOrcamentosRevisaoEmbutida();
+  _corrigirNomeInnova();
+}
+
+// Corrige o nome da empresa gravado com erro de digitação ("INNVOVA") para
+// "INNOVA" na configuração da empresa, nas opções de faturamento e no
+// faturamento dos orçamentos — tudo junto, para o select de faturamento
+// (que casa pelo texto) continuar encontrando a opção. Só grava a chave que
+// de fato mudou; depois da primeira vez não há mais o que trocar.
+function _corrigirNomeInnova() {
+  ['empresa_cfg', 'cats_faturamento', 'orcamentos'].forEach(function(k){
+    var v = DB.load(k);
+    if (v === null) return;
+    var antes = JSON.stringify(v);
+    var depois = antes.replace(/INNVOVA/g, 'INNOVA').replace(/Innvova/g, 'Innova');
+    if (depois !== antes) DB.save(k, JSON.parse(depois));
+  });
 }
 
 // Inclui na aba "Mão de Obra" os profissionais da planilha
@@ -4054,7 +4070,7 @@ function saveOrcamento() {
     local:document.getElementById('mo-local').value,
     valor:parseFloat(document.getElementById('mo-val').value)||0,
     status:document.getElementById('mo-status').value,
-    data:new Date().toISOString().split('T')[0], faturamento:'RTB SOLUÇÕES LTDA'
+    data:new Date().toISOString().split('T')[0], faturamento:getCfg().nome
   });
   DB.save('orcamentos', list); renderOrcamentos(); renderDashboard();
   closeModal('modal-orc'); addAtividade('Orçamento '+list[list.length-1].cod+' criado','#3d7ff5');
@@ -6516,7 +6532,7 @@ function buildOrgSVG(estiloForce) {
   if(logoEmp) {
     svg += '<image href="'+logoEmp+'" x="14" y="8" height="52" width="150" preserveAspectRatio="xMinYMid meet"/>';
   } else {
-    svg += '<text x="14" y="'+(HDR_H/2-6)+'" font-size="12" font-weight="800" fill="'+T.accent+'">'+escHtml(cfg.nome||'RTB SOLUÇÕES')+'</text>';
+    svg += '<text x="14" y="'+(HDR_H/2-6)+'" font-size="12" font-weight="800" fill="'+T.accent+'">'+escHtml(cfg.nome||'INNOVA HYDRO')+'</text>';
     svg += '<text x="14" y="'+(HDR_H/2+10)+'" font-size="9" fill="'+T.txt2+'">'+escHtml(cfg.segmento||'Engenharia')+'</text>';
   }
 
@@ -8072,7 +8088,7 @@ function gerarRelatorioFase() {
   if (!orc) { showToast('Selecione um orçamento antes de gerar o relatório','error'); return; }
 
   var cfgSaved = DB.load('empresa_cfg') || {};
-  var cfg = { nome: cfgSaved.nome || 'RTB SOLUÇÕES LTDA', cnpj: cfgSaved.cnpj || '—',
+  var cfg = { nome: cfgSaved.nome || 'INNOVA HYDRO', cnpj: cfgSaved.cnpj || '—',
                responsavel: cfgSaved.responsavel || '' };
   var logoEmp = DB.load('logo_empresa');
 
@@ -8332,8 +8348,8 @@ function gerarRelatorio(orcId) {
   // ── Dados da empresa (do banco salvo em Configurações) ──
   var cfgSaved = DB.load('empresa_cfg') || {};
   var cfg = {
-    nome:        cfgSaved.nome        || (document.getElementById('cfg-nome')  ||{}).value  || 'RTB SOLUÇÕES LTDA',
-    razao:       cfgSaved.razao       || (document.getElementById('cfg-razao') ||{}).value  || 'RTB HYDRO',
+    nome:        cfgSaved.nome        || (document.getElementById('cfg-nome')  ||{}).value  || 'INNOVA HYDRO',
+    razao:       cfgSaved.razao       || (document.getElementById('cfg-razao') ||{}).value  || 'INNOVA HYDRO',
     cnpj:        cfgSaved.cnpj        || (document.getElementById('cfg-cnpj')  ||{}).value  || '—',
     ie:          cfgSaved.ie          || '',
     end:         cfgSaved.end         || (document.getElementById('cfg-end')   ||{}).value  || '—',
@@ -9312,14 +9328,14 @@ function gerarRelatorio(orcId) {
 
 function gerarProposta(orcId) {
   var cfg = {
-    nome:   (document.getElementById('cfg-nome')   ||{value:'RTB SOLUÇÕES LTDA'}).value,
-    razao:  (document.getElementById('cfg-razao')  ||{value:'RTB HYDRO'}).value,
+    nome:   (document.getElementById('cfg-nome')   ||{value:'INNOVA HYDRO'}).value,
+    razao:  (document.getElementById('cfg-razao')  ||{value:'INNOVA HYDRO'}).value,
     cnpj:   (document.getElementById('cfg-cnpj')   ||{value:'37.944.939/0001-14'}).value,
     end:    (document.getElementById('cfg-end')    ||{value:'JOSÉ MALAQUIAS PAES Nº 120 - MONTE MOR - SP'}).value,
     tel:    (document.getElementById('cfg-tel')    ||{value:'14-997493381'}).value,
-    email:  (document.getElementById('cfg-email')  ||{value:'vagner@rtbhydro.com.br'}).value,
-    rodape: (document.getElementById('cfg-rodape') ||{value:'RTB HYDRO — Soluções em Energia'}).value,
-    site:   'rtbhydro.com.br'
+    email:  (document.getElementById('cfg-email')  ||{value:'vagner@innovahydro.com.br'}).value,
+    rodape: (document.getElementById('cfg-rodape') ||{value:'INNOVA HYDRO — Soluções em Energia'}).value,
+    site:   'innovahydro.com.br'
   };
 
   var list = DB.load('orcamentos') || [];
@@ -11348,12 +11364,12 @@ renderEditLists = function(orc) {
 
 // ══ COMPANY CONFIG — load/save all fields ══
 var CFG_DEFAULTS = {
-  nome:'RTB SOLUÇÕES LTDA', razao:'RTB HYDRO', cnpj:'37.944.939/0001-14',
-  ie:'465.092.394.112', tel:'(14) 99749-3381', email:'vagner@rtbhydro.com.br',
+  nome:'INNOVA HYDRO', razao:'INNOVA HYDRO', cnpj:'37.944.939/0001-14',
+  ie:'465.092.394.112', tel:'(14) 99749-3381', email:'vagner@innovahydro.com.br',
   end:'JOSÉ MALAQUIAS PAES Nº 120 - MONTE MOR - SP', cidade:'Monte Mor / SP',
-  cep:'13.190-005', site:'rtbhydro.com.br', segmento:'Montagem Eletromecânica',
+  cep:'13.190-005', site:'innovahydro.com.br', segmento:'Montagem Eletromecânica',
   responsavel:'Vagner Rodrigues', banco:'Itaú S/A', agencia:'6474', conta:'26717-3',
-  rodape:'RTB HYDRO — Soluções em Energia', validade:'60',
+  rodape:'INNOVA HYDRO — Soluções em Energia', validade:'60',
   imp_padrao:'27.5', taxa_padrao:'5', lucro:'5.7',
   bdi_ac:'0', bdi_ad:'0', bdi_df:'0', bdi_r:'0'
 };
@@ -11776,7 +11792,7 @@ var CAT_DEFAULTS = {
   unidade:    ['Und','Pç','m','m²','m³','kg','l','Verba','DIARIA','Hora','Lata','Caixa',
                'Balde','Galão','km','cm','cm²','Conj','Kit'],
   tipo_hora:  ['NORMAL','EX 50%','EX 75%','EX 100%','NOTURNO','SOBREAVISO'],
-  faturamento:['RTB SOLUÇÕES LTDA','DIRETO'],
+  faturamento:['INNOVA HYDRO','DIRETO'],
   status_orc: ['elaboracao','enviado','aprovado','pendente','perdido','cancelado']
 };
 
