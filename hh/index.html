@@ -926,21 +926,13 @@ function calcular(fn, reg = 'campo'){
   const custoMes = rem + enc + custoItens;
   const hp = horasProdutivas();
   const hh = custoMes / hp;
-  // Horas extras e noturno: custo marginal da hora — só a parte que varia com a hora
-  // (salário-hora × adicional, reflexo no DSR e encargos que incidem). Os custos fixos
-  // do mês (alimentação, EPI etc.) não se repetem por hora extra.
-  const hMes = num(c.horasMes, 220);
-  const salHora = rem / hMes;
-  const kEnc = 1 + E.incHE / 100;
-  const kDsr = 1 + num(c.dsrHE, 0) / 100;
-  const he50 = salHora * 1.5 * kDsr * kEnc;
-  const he100 = salHora * 2 * kDsr * kEnc;
-  const kRed = c.horaReduzida ? 60 / 52.5 : 1;
-  const adNot = salHora * num(c.noturnoPct, 20) / 100 * kRed * kEnc;
-  // HE 50% noturna (critério INNOVA): HH normal × (1,50 + adicional noturno) = HH × 1,70
-  const kNot = 1.5 + num(c.noturnoPct, 20) / 100;
-  const he50Not = hh * kNot;
-  return {reg, sal, peric, outros, rem, E, enc, itens, custoItens, custoMes, hp, hh, salHora, kEnc, kDsr, kRed, kNot, he50, he100, adNot, noturna:hh + adNot, he50Not};
+  // Horas extras e noturno (critério INNOVA): multiplicadores diretos sobre a hora normal
+  //   Noturna = HH × (1 + ad. noturno) · HE 50% = HH × 1,5 · HE 100% = HH × 2 · HE 50% noturna = HH × (1,5 + ad. noturno)
+  const pN = num(c.noturnoPct, 20) / 100;
+  const kNoturna = 1 + pN, kNot = 1.5 + pN;
+  const he50 = hh * 1.5, he100 = hh * 2, noturna = hh * kNoturna, he50Not = hh * kNot;
+  const salHora = rem / num(c.horasMes, 220);
+  return {reg, sal, peric, outros, rem, E, enc, itens, custoItens, custoMes, hp, hh, salHora, kNoturna, kNot, he50, he100, adNot:noturna - hh, noturna, he50Not};
 }
 function bdiPct(b = S.cfg.bdi){
   const soma = (num(b.ac) + num(b.ad) + num(b.df) + num(b.r) + num(b.l)) / 100;
@@ -973,14 +965,11 @@ function memoria(fn, r){
   L.push('HORAS PRODUTIVAS = ' + fmtN(c.horasMes, 0) + ' h × ' + fmtN(c.produtividade, 0) + '%' + (num(c.horasNaoProd) ? ' − ' + fmtN(c.horasNaoProd, 0) + ' h' : '') + ' = ' + fmtN(r.hp, 1) + ' h');
   L.push('HH NORMAL = ' + fmt(r.custoMes) + ' ÷ ' + fmtN(r.hp, 1) + ' h = ' + fmt(r.hh) + '/h');
   L.push('');
-  L.push('HORAS EXTRAS E NOTURNO (custo marginal, sem repetir custos fixos)');
-  L.push('  Salário-hora = ' + fmt(r.rem) + ' ÷ ' + fmtN(c.horasMes, 0) + ' h = ' + fmt(r.salHora));
-  L.push('  Encargos que incidem (A + B + D1) = ' + pct(r.E.incHE) + ' · reflexo no DSR = ' + pct(c.dsrHE));
-  L.push('  HE 50%  = ' + fmt(r.salHora) + ' × 1,5 × ' + fmtN(r.kDsr, 4) + ' × ' + fmtN(r.kEnc, 4) + ' = ' + fmt(r.he50) + '/h');
-  L.push('  HE 100% = ' + fmt(r.salHora) + ' × 2,0 × ' + fmtN(r.kDsr, 4) + ' × ' + fmtN(r.kEnc, 4) + ' = ' + fmt(r.he100) + '/h');
-  L.push('  Adicional noturno = ' + fmt(r.salHora) + ' × ' + fmtN(c.noturnoPct, 0) + '%' + (c.horaReduzida ? ' × 60/52,5 (hora reduzida)' : '') + ' × ' + fmtN(r.kEnc, 4) + ' = ' + fmt(r.adNot));
-  L.push('  HH noturna = ' + fmt(r.hh) + ' + ' + fmt(r.adNot) + ' = ' + fmt(r.noturna) + '/h');
-  L.push('  HE 50% noturna = HH normal ' + fmt(r.hh) + ' × ' + fmtN(r.kNot, 2) + ' (50% extra + ' + fmtN(c.noturnoPct, 0) + '% noturno) = ' + fmt(r.he50Not) + '/h');
+  L.push('HORAS EXTRAS E NOTURNO (sobre a hora normal)');
+  L.push('  Noturna        = ' + fmt(r.hh) + ' × ' + fmtN(r.kNoturna, 2) + ' (+' + fmtN(c.noturnoPct, 0) + '% ad. noturno) = ' + fmt(r.noturna) + '/h');
+  L.push('  HE 50%         = ' + fmt(r.hh) + ' × 1,50 = ' + fmt(r.he50) + '/h');
+  L.push('  HE 100%        = ' + fmt(r.hh) + ' × 2,00 = ' + fmt(r.he100) + '/h');
+  L.push('  HE 50% noturna = ' + fmt(r.hh) + ' × ' + fmtN(r.kNot, 2) + ' (50% extra + ' + fmtN(c.noturnoPct, 0) + '% noturno) = ' + fmt(r.he50Not) + '/h');
   return L.join('\n');
 }
 
@@ -1321,9 +1310,9 @@ function renderCompDetalhe(){
       </div>
       <div class="res">
         <div><div class="l">HH normal · ${compReg === 'fabrica' ? 'Fábrica' : 'Campo'}</div><div class="v" style="color:var(--pri)">${fmt(r.hh)}</div><div class="s">${fmt(r.custoMes)}/mês ÷ ${fmtN(r.hp, 0)} h</div></div>
-        <div><div class="l">HE 50%</div><div class="v" style="color:var(--warn)">${fmt(r.he50)}</div><div class="s">custo marginal da hora</div></div>
-        <div><div class="l">HE 100%</div><div class="v" style="color:var(--bad)">${fmt(r.he100)}</div><div class="s">custo marginal da hora</div></div>
-        <div><div class="l">HH noturna</div><div class="v" style="color:var(--vio)">${fmt(r.noturna)}</div><div class="s">HH normal + adicional ${fmtN(S.cfg.noturnoPct, 0)}%</div></div>
+        <div><div class="l">HE 50%</div><div class="v" style="color:var(--warn)">${fmt(r.he50)}</div><div class="s">HH normal × 1,50</div></div>
+        <div><div class="l">HE 100%</div><div class="v" style="color:var(--bad)">${fmt(r.he100)}</div><div class="s">HH normal × 2,00</div></div>
+        <div><div class="l">HH noturna</div><div class="v" style="color:var(--vio)">${fmt(r.noturna)}</div><div class="s">HH normal × ${fmtN(r.kNoturna, 2)}</div></div>
         <div><div class="l">HE 50% noturna</div><div class="v" style="color:#ff6b9a">${fmt(r.he50Not)}</div><div class="s">HH normal × ${fmtN(r.kNot, 2)}</div></div>
       </div>
       <div class="hint" style="margin-top:10px">Campo ${fmt(rc.hh)}/h · Fábrica ${fmt(rf.hh)}/h${f.ref2026 ? ` · Tabela 2026 do OrcaSystem ${fmt(f.ref2026)}/h (<b class="${dif > 0 ? 'up' : 'down'}">${dif > 0 ? '+' : ''}${fmtN(dif, 1)}%</b>)` : ''} · valores de custo, sem BDI.</div>
@@ -1509,8 +1498,7 @@ RENDER.encargos = () => {
         ${campo('diasMes', 'Dias por mês (itens diários)', 'Padrão dos itens em período diário', 1)}
         ${campo('pericPct', 'Periculosidade (%)', 'NR-16, sobre o salário-base', 0.5)}
         ${campo('noturnoPct', 'Adicional noturno (%)', '', 0.5)}
-        <div class="fr" style="align-items:center"><div class="f w2"><b style="font-size:13px">Hora noturna reduzida (52 min 30 s)</b></div><div class="f"><select onchange="alterarCfg('horaReduzida',this.value==='1')"><option value="1" ${c.horaReduzida ? 'selected' : ''}>Sim</option><option value="0" ${!c.horaReduzida ? 'selected' : ''}>Não</option></select></div></div>
-        ${campo('dsrHE', 'Reflexo das horas extras no DSR (%)', '1/6 ≈ 16,67%', 0.01)}</div>
+        <div class="alert a-info" style="margin:0">Horas especiais sobre a hora normal: Noturna × ${fmtN(1 + num(c.noturnoPct, 20) / 100, 2)} · HE 50% × 1,50 · HE 100% × 2,00 · HE 50% noturna × ${fmtN(1.5 + num(c.noturnoPct, 20) / 100, 2)}.</div></div>
       <div class="card"><div class="ct" style="margin-bottom:6px">Regime fábrica</div><div class="hint" style="margin-bottom:12px">Percentual de cada tipo de custo que entra no regime fábrica (campo = 100%).</div>
         ${Object.entries(REGRAS).map(([k, v]) => `<div class="fr" style="align-items:center"><div class="f w2"><b style="font-size:13px">${v}</b></div><div class="f"><input type="number" min="0" max="100" step="1" value="${num(c.fabrica[k], 100)}" onchange="alterarFabrica('${k}',this.value)"></div></div>`).join('')}</div>
       <div class="card"><div class="ct" style="margin-bottom:6px">BDI do relatório comercial</div>
@@ -1585,9 +1573,9 @@ function documentoRelatorio(){
       <tr class="tot"><td>CUSTO MENSAL</td><td class="n">${fmt(r.custoMes)}</td><td class="n">100,0%</td></tr>
       <tr><td>÷ Horas produtivas (${fmtN(S.cfg.horasMes, 0)} h × ${fmtN(S.cfg.produtividade, 0)}%${num(S.cfg.horasNaoProd) ? ' − ' + fmtN(S.cfg.horasNaoProd, 0) + ' h' : ''})</td><td class="n">${fmtN(r.hp, 1)} h</td><td></td></tr>
       <tr class="tot"><td>HH NORMAL</td><td class="n">${fmt(r.hh)}/h</td><td></td></tr>
-      <tr><td>HE 50% (custo marginal)</td><td class="n">${fmt(r.he50)}/h</td><td></td></tr>
-      <tr><td>HE 100% (custo marginal)</td><td class="n">${fmt(r.he100)}/h</td><td></td></tr>
-      <tr><td>HH noturna</td><td class="n">${fmt(r.noturna)}/h</td><td></td></tr>
+      <tr><td>HE 50% (HH normal × 1,50)</td><td class="n">${fmt(r.he50)}/h</td><td></td></tr>
+      <tr><td>HE 100% (HH normal × 2,00)</td><td class="n">${fmt(r.he100)}/h</td><td></td></tr>
+      <tr><td>HH noturna (HH normal × ${fmtN(r.kNoturna, 2)})</td><td class="n">${fmt(r.noturna)}/h</td><td></td></tr>
       <tr><td>HE 50% noturna (HH normal × ${fmtN(r.kNot, 2)})</td><td class="n">${fmt(r.he50Not)}/h</td><td></td></tr></tbody></table>`; }).join('') +
       regs.map(reg => `<h3>Memória de cálculo — ${nomeReg(reg)}</h3><pre>${esc(memoria(f, calcular(f, reg)))}</pre>`).join('');
   } else {
@@ -1603,8 +1591,8 @@ function documentoRelatorio(){
       <div class="notas"><b>CONDIÇÕES E NOTAS</b><br>
         ${com ? `• Valores por hora, com BDI de ${pct(bdiPct())} (impostos inclusos)${rel.validade ? ' · validade: ' + esc(rel.validade) : ''}.<br>` : `• Valores de CUSTO, sem BDI. Encargos sociais de ${pct(resumoEncargos().total)}; custo mensal dividido por ${fmtN(horasProdutivas(), 0)} h produtivas.<br>`}
         • HH normal: jornada contratual de ${fmtN(S.cfg.horasMes, 0)} h/mês.<br>
-        • HE 50% / 100%: custo da hora extra (salário-hora com adicional, reflexo no DSR e encargos), sem repetir os custos fixos do mês.<br>
-        • Noturna: HH normal + adicional de ${fmtN(S.cfg.noturnoPct, 0)}%${S.cfg.horaReduzida ? ' com hora reduzida' : ''} (22h–5h).<br>
+        • Noturna (22h–5h): HH normal × ${fmtN(1 + num(S.cfg.noturnoPct, 20) / 100, 2)} (adicional noturno de ${fmtN(S.cfg.noturnoPct, 0)}%).<br>
+        • HE 50%: HH normal × 1,50 · HE 100%: HH normal × 2,00.<br>
         • HE 50% noturna: HH normal × ${fmtN(1.5 + num(S.cfg.noturnoPct, 20) / 100, 2)} (50% de extra + ${fmtN(S.cfg.noturnoPct, 0)}% de adicional noturno).<br>
         ${regs.includes('fabrica') ? `• Regime fábrica: alimentação ${fmtN(S.cfg.fabrica.alim, 0)}%, hospedagem ${fmtN(S.cfg.fabrica.hosp, 0)}%, mobilização ${fmtN(S.cfg.fabrica.mob, 0)}% dos valores de campo.<br>` : ''}
         ${rel.obs ? '• ' + esc(rel.obs) + '<br>' : ''}</div>`;
@@ -1687,7 +1675,7 @@ function exportarExcel(){
   const E = resumoEncargos();
   const enc = [['Grupo','Encargo','%']].concat(S.encargos.map(e => [e.g, e.nome, num(e.pct)]), [['D','D1 · A × B', r2(E.D1)], ['D','D2 · FGTS × aviso indenizado', r2(E.D2)], ['','TOTAL', r2(E.total)], [], ['Parâmetro','Valor'],
     ['Jornada (h/mês)', S.cfg.horasMes], ['Produtividade (%)', S.cfg.produtividade], ['Horas não produtivas', S.cfg.horasNaoProd], ['Horas produtivas', r2(horasProdutivas())],
-    ['Periculosidade (%)', S.cfg.pericPct], ['Adicional noturno (%)', S.cfg.noturnoPct], ['Reflexo HE no DSR (%)', S.cfg.dsrHE], ['BDI comercial (%)', r2(bdiPct())]]);
+    ['Periculosidade (%)', S.cfg.pericPct], ['Adicional noturno (%)', S.cfg.noturnoPct], ['BDI comercial (%)', r2(bdiPct())]]);
   const we = XLSX.utils.aoa_to_sheet(enc); we['!cols'] = [{wch:22},{wch:42},{wch:10}];
   XLSX.utils.book_append_sheet(wb, we, 'Encargos e parâmetros');
   XLSX.writeFile(wb, 'OrcaSystem_HH_' + rel.tipo + '_' + hoje() + '.xlsx');
