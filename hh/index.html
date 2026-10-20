@@ -147,12 +147,11 @@ table.itens td input,table.itens td select{font-size:13px;padding:7px 9px}
 .up{color:var(--bad)}.down{color:var(--ok)}
 /* login (mesmo desenho do OrcaSystem) */
 #login{position:fixed;inset:0;display:flex;z-index:300;background:var(--bg)}
-.lg-l{flex:1 1 55%;position:relative;overflow:hidden;background:linear-gradient(160deg,#0b0f1a 0%,#12172a 45%,#171b28 100%);padding:56px 64px;display:flex;flex-direction:column;justify-content:center;border-right:1px solid var(--bd2);color:#f0f0f8}
+.lg-l{flex:1 1 55%;position:relative;overflow-x:hidden;overflow-y:auto;background:linear-gradient(160deg,#0b0f1a 0%,#12172a 45%,#171b28 100%);padding:56px 64px;display:flex;flex-direction:column;justify-content:safe center;border-right:1px solid var(--bd2);color:#f0f0f8}
 .lg-l::before{content:'';position:absolute;inset:0;background-image:radial-gradient(ellipse at 20% 20%,rgba(10,132,255,.18) 0%,transparent 55%),radial-gradient(ellipse at 85% 75%,rgba(48,209,88,.12) 0%,transparent 50%);pointer-events:none}
 .lg-l::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#0a84ff,#30d158,#0a84ff)}
 .lg-l>*{position:relative;z-index:2}
-.lg-logo{background:#fff;border-radius:12px;padding:8px 14px;display:inline-block;margin-bottom:22px;box-shadow:0 8px 32px rgba(10,132,255,.25)}
-.lg-logo img{height:52px;display:block}
+.lg-marca{width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#0a84ff,#30d158);display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:20px;box-shadow:0 8px 32px rgba(10,132,255,.3)}
 .lg-tit{font-family:var(--fd);font-size:34px;font-weight:800;line-height:1.12;margin-bottom:14px}
 .lg-tit span{display:block;color:#30d158}
 .lg-desc{font-size:15px;color:#a0a0b8;line-height:1.65;max-width:440px}
@@ -227,7 +226,7 @@ table.itens td input,table.itens td select{font-size:13px;padding:7px 9px}
 <!-- LOGIN -->
 <div id="login" style="display:none">
   <div class="lg-l">
-    <div><div class="lg-logo"><img src="img/logo-innova.png" id="lg-logo" alt="INNOVA"></div></div>
+    <div class="lg-marca">⏱</div>
     <div class="lg-tit">OrcaSystem<span>HH</span></div>
     <div class="lg-desc">Composição de custo da hora-homem da INNOVA HYDRO — encargos, regimes campo e fábrica, convenções e reajustes, integrado ao OrcaSystem.</div>
     <div class="lg-feats">
@@ -2039,7 +2038,7 @@ function carregarLogoPadrao(){
       if (max > 0 && max < 255) { const k = 255 / max; for (let i = 3; i < d.length; i += 4) d[i] = Math.min(255, Math.round(d[i] * k)); g.putImageData(id, 0, 0); }
       LOGO_PADRAO = c.toDataURL('image/png');
     } catch (e) { LOGO_PADRAO = new URL('img/logo-innova.png', location.href).href; } // aberto como arquivo local: usa a imagem como está
-    aplicarMarca(); const lg = $('lg-logo'); if (lg) lg.src = LOGO_PADRAO; if (SESSAO && (pagina === 'relatorios' || pagina === 'config')) render();
+    aplicarMarca(); if (SESSAO && (pagina === 'relatorios' || pagina === 'config')) render();
   };
   img.src = 'img/logo-innova.png';
 }
