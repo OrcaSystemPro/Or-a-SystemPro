@@ -928,6 +928,18 @@ body{
 .btn-ghost:hover{background:var(--bg3);border-color:var(--border2)}
 .icon-btn{border-radius:8px;width:32px;height:32px;padding:0;background:var(--bg2);box-shadow:var(--hairline)}
 .btn-sm .ui-ico,.btn-ghost .ui-ico,.report-btn .ui-ico,.icon-btn .ui-ico{width:15px;height:15px}
+/* Texto sobre o acento: claro em acentos escuros, escuro em acentos claros (dourado, ciano, esmeralda) */
+.btn-sm,.btn-primary,.report-btn{color:var(--on-accent,#fff)}
+
+/* Ajustes para temas claros (atributo definido pelo applyTheme) */
+[data-theme-mode="light"]{--hairline:inset 0 1px 0 rgba(255,255,255,.7)}
+[data-theme-mode="light"] .stat-card,[data-theme-mode="light"] .dash-card,[data-theme-mode="light"] .table-wrap,
+[data-theme-mode="light"] .builder-panel,[data-theme-mode="light"] .fase-card{background:var(--bg2);box-shadow:0 1px 2px rgba(16,18,24,.04)}
+[data-theme-mode="light"] .modal{box-shadow:0 24px 60px rgba(16,18,24,.18)}
+[data-theme-mode="light"] .modal-overlay{background:rgba(16,18,24,.32)}
+[data-theme-mode="light"] .nav-dropdown-menu,[data-theme-mode="light"] .status-popup,[data-theme-mode="light"] .toast{box-shadow:0 12px 32px rgba(16,18,24,.14)}
+[data-theme-mode="light"] .badge-status::before{box-shadow:none}
+[data-theme-mode="light"] tr:hover td{background:rgba(16,18,24,.025)}
 
 /* ── Topbar ── */
 .topbar{height:56px;background:color-mix(in srgb, var(--bg) 82%, transparent);backdrop-filter:saturate(140%) blur(14px);-webkit-backdrop-filter:saturate(140%) blur(14px)}
@@ -10964,7 +10976,16 @@ function restaurarBackup() {
 
 // ══ THEMES ══
 var THEMES = {
-  'Escuro Premium':         {bg:'#08090C',bg2:'#0F1115',bg3:'#171A21',accent:'#4C9AFF',green:'#3DD68C',amber:'#F5B544',red:'#F2555A',text:'#ECEDEF',text2:'#9198A5'},
+  // ── Premium (escuros) — paleta neutra + um único acento; campos extras são opcionais ──
+  'Escuro Premium':         {bg:'#08090C',bg2:'#0F1115',bg3:'#171A21',accent:'#4C9AFF',green:'#3DD68C',amber:'#F5B544',red:'#F2555A',text:'#ECEDEF',text2:'#9198A5',text3:'#5C6270',elevated:'#1C1F27'},
+  'Esmeralda Premium':      {bg:'#070A09',bg2:'#0D1211',bg3:'#151B19',accent:'#34D399',green:'#4ADE80',amber:'#F5B544',red:'#F2555A',text:'#EAF0EE',text2:'#8D9A95',text3:'#5A6762',elevated:'#1A211F',onAccent:'#04140D'},
+  'Ônix Dourado':           {bg:'#0A0A09',bg2:'#11110F',bg3:'#1A1916',accent:'#D9B26F',green:'#5BD69A',amber:'#E8A54B',red:'#EF5B5B',text:'#F1EEE7',text2:'#A19B8F',text3:'#6A655B',elevated:'#201F1B',onAccent:'#1A1408'},
+  'Aço Ciano':              {bg:'#070A0E',bg2:'#0C1117',bg3:'#131A22',accent:'#22D3EE',green:'#34D399',amber:'#FBBF24',red:'#F87171',text:'#E6EEF5',text2:'#8A99A8',text3:'#56636F',elevated:'#18212B',onAccent:'#03161B'},
+  'Cobre Industrial':       {bg:'#0B0A09',bg2:'#12100F',bg3:'#1C1917',accent:'#E07A45',green:'#4ADE80',amber:'#F5B544',red:'#F25C5C',text:'#F2EDE9',text2:'#A39790',text3:'#6B615B',elevated:'#221E1B'},
+  // ── Premium (claros) ──
+  'Claro Premium':          {bg:'#F7F7F5',bg2:'#FFFFFF',bg3:'#EFEFEC',accent:'#1F6FEB',green:'#15803D',amber:'#B45309',red:'#DC2626',text:'#111214',text2:'#5D626B',text3:'#9A9FA8',elevated:'#FFFFFF'},
+  'Areia Premium':          {bg:'#F5F2EC',bg2:'#FFFDF9',bg3:'#ECE6DB',accent:'#9A5B2E',green:'#2F7D4F',amber:'#B7791F',red:'#C2410C',text:'#241C15',text2:'#6E6155',text3:'#A3968A',elevated:'#FFFDF9'},
+  // ── Clássicos ──
   'Escuro Azul (Padrão)':  {bg:'#0F1117',bg2:'#171B28',bg3:'#1E2535',accent:'#4F6EF7',green:'#22C55E',amber:'#F59E0B',red:'#EF4444',text:'#E8EAF0',text2:'#8B92A8'},
   'Midnight Blue':          {bg:'#0A0E1A',bg2:'#111830',bg3:'#192040',accent:'#6C8AFF',green:'#34D399',amber:'#FBBF24',red:'#F87171',text:'#E0E7FF',text2:'#818CF8'},
   'Escuro Verde':           {bg:'#0D1410',bg2:'#131F18',bg3:'#1A2B21',accent:'#22C55E',green:'#4ADE80',amber:'#FBBF24',red:'#F87171',text:'#E2F0E8',text2:'#7FA98A'},
@@ -11011,6 +11032,7 @@ function renderThemeSwatches() {
         '<div style="width:14px;height:14px;border-radius:50%;background:'+t.amber+'"></div>'+
       '</div>'+
       '<div style="font-size:11px;font-weight:600;color:'+t.text+'">'+name+'</div>'+
+      (t.text3?'<div style="font-size:9px;color:'+t.text2+';margin-top:2px;letter-spacing:.04em;">PREMIUM</div>':'')+
       (name===current?'<div style="font-size:9px;color:'+t.accent+';margin-top:3px;">● Ativo</div>':'')+
     '</div>';
   }).join('');
@@ -11058,6 +11080,14 @@ function applyTheme(name) {
     root.style.setProperty('--bg-elevated', '#222838');
   }
   root.style.setProperty('--accent-subtle', _hexToRGBA(t.accent, 0.12));
+  // Campos opcionais dos temas Premium (temas antigos sem esses campos seguem iguais)
+  root.style.setProperty('--accent2', t.accent2 || ('color-mix(in srgb, '+t.accent+' 86%, #000)'));
+  root.style.setProperty('--on-accent', t.onAccent || '#FFFFFF');
+  if (t.text3)    root.style.setProperty('--text3', t.text3);
+  if (t.elevated) root.style.setProperty('--bg-elevated', t.elevated);
+  if (t.border)   root.style.setProperty('--border', t.border);
+  if (t.border2)  root.style.setProperty('--border2', t.border2);
+  root.setAttribute('data-theme-mode', isLight ? 'light' : 'dark');
   DB.save('theme', name);
   renderThemeSwatches();
   showToast('🎨 Tema "'+name+'" aplicado!','success');
