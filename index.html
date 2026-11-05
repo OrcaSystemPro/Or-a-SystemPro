@@ -2278,6 +2278,29 @@ html[data-glass] .bar-fill{box-shadow:0 0 26px -2px var(--glow,transparent), ins
           <div id="rel-orc-badge" style="font-size:11px;color:var(--text3);white-space:nowrap;"></div>
         </div>
 
+        <!-- Estilo dos relatórios: vale para todo relatório/impressão aberto pelo sistema -->
+        <style>
+          .rs-box{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:14px 18px;margin-bottom:20px}
+          html[data-glass] .rs-box{background:var(--glass);border-color:var(--glass-border);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);border-radius:20px}
+          .rs-box .rs-tit{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px}
+          .rs-box .rs-sub{font-size:12px;color:var(--text2);margin-bottom:12px}
+          #rs-seletor{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+          .rs-opt{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;gap:6px;padding:10px;border-radius:14px;border:1px solid var(--border2);background:var(--bg3);transition:border-color .15s,transform .15s}
+          html[data-glass] .rs-opt{background:var(--glass-strong);border-color:var(--glass-border)}
+          .rs-opt:hover{border-color:var(--text3)}
+          .rs-opt.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+          .rs-prev{display:flex;height:34px;border-radius:9px;overflow:hidden;border:1px solid var(--border)}
+          .rs-prev i{flex:1}.rs-prev i:first-child{flex:2}
+          .rs-nome{font-size:12.5px;font-weight:600;color:var(--text)}.rs-nome b{color:var(--accent)}
+          .rs-desc{font-size:11px;color:var(--text2);line-height:1.35}
+          @media (max-width:900px){#rs-seletor{grid-template-columns:repeat(2,1fr)}}
+        </style>
+        <div class="rs-box">
+          <div class="rs-tit">🎨 Estilo dos relatórios</div>
+          <div class="rs-sub">Vale para todo relatório e impressão do sistema (Relatório Geral, por Fase, Dashboard, Proposta, Organograma…). Também dá para trocar direto na janela do relatório.</div>
+          <div id="rs-seletor"></div>
+        </div>
+
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px;">
           <div class="builder-panel" style="cursor:pointer;" onclick="gerarRelatorio()">
             <div class="builder-panel-head">📄 Relatório Geral</div>
@@ -14373,6 +14396,198 @@ function recalcularResumo() {
   function schedule(){ if (pend) return; pend = true; requestAnimationFrame(function(){ pend = false; scan(document); }); }
   function start(){ scan(document); new MutationObserver(schedule).observe(document.body, {childList:true, subtree:true}); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+})();
+</script>
+<script id="relatorio-estilos">
+/* ═══════════════════════════════════════════════════════════════
+   Estilos de Relatório (skin) — vale para TODO relatório/impressão aberto
+   em janela nova (window.open), inclusive os que forem criados no futuro.
+   Não altera a lógica de nenhum relatório: depois que a janela é montada,
+   o motor troca a paleta antiga (#1a3c7a, #c5d8f0, #eef4fb…) pela do estilo
+   escolhido, aplica fonte/cantos e uma barra para trocar de estilo na hora.
+   Opções: original · aurora · claro · noturno · minimal
+   ═══════════════════════════════════════════════════════════════ */
+(function(){
+  var KEY = 'orca_estilo_relatorio', PADRAO = 'aurora';
+  var ESTILOS = [
+    {id:'aurora',  nome:'Aurora Executivo', desc:'Faixas em aurora escura, corpo branco',  cores:['#072530','#14B8A6','#F5FAFA']},
+    {id:'claro',   nome:'Vidro Claro',      desc:'Aurora pastel e cards de vidro',         cores:['#0F9D8F','#BFE9E4','#EEF3FA']},
+    {id:'noturno', nome:'Vidro Noturno',    desc:'Escuro, para PDF e tela',                cores:['#0A1020','#7DD3FC','#1B2540']},
+    {id:'minimal', nome:'Minimal Corporativo', desc:'Branco, linhas finas, pouca tinta',  cores:['#111214','#0F9D8F','#F6F7F8']},
+    {id:'original',nome:'Original',         desc:'Visual anterior, sem alterações',       cores:['#1a3c7a','#c5d8f0','#f7fafd']}
+  ];
+  window.RS_ESTILOS = ESTILOS;
+  window.rsEstiloAtual = function(){ try { return localStorage.getItem(KEY) || PADRAO; } catch(e) { return PADRAO; } };
+  window.rsDefinirEstilo = function(id){ try { localStorage.setItem(KEY, id); } catch(e) {} renderRsSeletor();
+    if (typeof showToast === 'function') { var e = ESTILOS.filter(function(x){return x.id===id;})[0]; showToast('Estilo dos relatórios: ' + (e ? e.nome : id), 'success'); } };
+
+  // ── Motor que roda DENTRO da janela do relatório ──
+  function __rsEngine(){
+    var KEY = 'orca_estilo_relatorio', d = document, root = d.documentElement;
+    if (window.__rsAtivo) return; window.__rsAtivo = true;
+    var NOMES = {aurora:'Aurora', claro:'Vidro Claro', noturno:'Noturno', minimal:'Minimal', original:'Original'};
+    var AUR = 'radial-gradient(120% 160% at 0% 0%, rgba(45,212,191,.42), transparent 55%), radial-gradient(120% 160% at 100% 0%, rgba(56,132,246,.36), transparent 55%), linear-gradient(160deg,#04161C,#072530 60%,#061A26)';
+    var T = {
+      aurora:  {primBg:AUR, primSolid:'#072530', onPrim:'#F2FBFB', muted:'#A7C4C8', primText:'#0F766E', tint:'#F5FAFA', border:'#E1EEEE', line:'#0F9D8F', chart:'#0F766E', radius:'12px'},
+      claro:   {primBg:'#0F9D8F', primSolid:'#0F9D8F', onPrim:'#FFFFFF', muted:'rgba(255,255,255,.82)', primText:'#0B7D72', tint:'rgba(255,255,255,.62)', white:'rgba(255,255,255,.55)', border:'rgba(15,157,143,.20)', line:'#0F9D8F', chart:'#0F766E', radius:'14px'},
+      noturno: {primBg:'#7DD3FC', primSolid:'#7DD3FC', onPrim:'#062235', muted:'#0B3A57', primText:'#7DD3FC', tint:'rgba(255,255,255,.07)', white:'rgba(255,255,255,.05)', border:'rgba(255,255,255,.14)', line:'#7DD3FC', chart:'#38BDF8', radius:'14px', dark:true, text:'#EEF3FF', text2:'#9DA9C4'},
+      minimal: {primBg:'#111214', primSolid:'#111214', onPrim:'#FFFFFF', muted:'#9AA1AB', primText:'#111214', tint:'#F6F7F8', border:'#E4E6EA', line:'#0F9D8F', chart:'#111214', radius:'6px', th:{bg:'#F3F4F6', color:'#111214'}}
+    };
+    var PRIM = [[26,60,122],[26,92,69],[45,45,45],[30,58,95],[10,22,40],[30,64,175],[29,78,216]];
+    function rgb(c){ var m = c && c.match(/rgba?\(([^)]+)\)/); if (!m) return null; var p = m[1].split(/[\s,\/]+/).filter(Boolean).map(parseFloat); return {r:p[0],g:p[1],b:p[2],a:p.length>3?p[3]:1}; }
+    function L(c){ return (0.2126*c.r + 0.7152*c.g + 0.0722*c.b)/255; }
+    function sat(c){ var mx=Math.max(c.r,c.g,c.b), mn=Math.min(c.r,c.g,c.b); return mx ? (mx-mn)/mx : 0; }
+    function isPrim(c){ return c && c.a > .5 && PRIM.some(function(p){ return Math.abs(c.r-p[0])+Math.abs(c.g-p[1])+Math.abs(c.b-p[2]) < 30; }); }
+    function isWhite(c){ return c && c.a > .5 && c.r >= 250 && c.g >= 250 && c.b >= 250; }
+    function isTint(c){ return c && c.a > .3 && !isWhite(c) && L(c) > .86 && (c.b - c.r >= 4 || c.g - c.r >= 6); }
+    function isLightBorder(c){ return c && c.a > .3 && L(c) > .70 && L(c) < .985; }
+    function isSoftOnPrim(c){ return c && L(c) > .62 && c.b > c.r + 15; }
+    var STATUS = {elaboracao:'Em elaboração', aprovado:'Aprovado', enviado:'Enviado', pendente:'Pendente', perdido:'Perdido', cancelado:'Cancelado'};
+    var ehOrganograma = /^Organograma/.test(d.title || '');
+
+    // CSS do estilo (fonte, página, barra) — cores dos elementos são trocadas pelo motor
+    var css = d.createElement('style'); css.id = 'rs-css';
+    css.textContent =
+      'html[data-rs]:not([data-rs="original"]) body, html[data-rs]:not([data-rs="original"]) body *:not(code):not(pre){font-family:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif!important;font-variant-numeric:tabular-nums}' +
+      'html[data-rs="claro"],html[data-rs="claro"] body{background:radial-gradient(110mm 80mm at 5% 0%,rgba(94,234,212,.55),transparent 70%),radial-gradient(110mm 80mm at 100% 10%,rgba(147,197,253,.55),transparent 70%),radial-gradient(130mm 90mm at 50% 100%,rgba(167,243,208,.45),transparent 70%),linear-gradient(160deg,#EAF4F6,#EEF3FA 55%,#EAF5F1)!important;background-attachment:fixed!important;color:#0E2228}' +
+      'html[data-rs="noturno"],html[data-rs="noturno"] body{background:radial-gradient(110mm 80mm at 5% 0%,rgba(37,99,235,.45),transparent 70%),radial-gradient(100mm 80mm at 100% 25%,rgba(14,165,233,.30),transparent 70%),linear-gradient(160deg,#050812,#0A1020 55%,#060A16)!important;background-attachment:fixed!important;color:#EEF3FF}' +
+      'html[data-rs="noturno"] img{background:#fff;border-radius:10px;padding:4px 8px}' +
+      'html[data-rs]:not([data-rs="original"]) .tb-btn,html[data-rs]:not([data-rs="original"]) .theme-bar>label{display:none!important}' +
+      '#rs-bar{position:fixed;left:12px;bottom:12px;z-index:100000;display:flex;align-items:center;gap:6px;padding:6px;border-radius:999px;background:rgba(14,34,40,.92);box-shadow:0 10px 30px rgba(0,0,0,.25);font:600 12px Inter,system-ui,sans-serif;color:#E6F4F4;backdrop-filter:blur(8px)}' +
+      '#rs-bar span{padding:0 6px 0 10px;opacity:.75}' +
+      '#rs-bar button{all:unset;cursor:pointer;padding:7px 12px;border-radius:999px;font:600 12px Inter,system-ui,sans-serif;color:#E6F4F4}' +
+      '#rs-bar button:hover{background:rgba(255,255,255,.10)}#rs-bar button.on{background:#5EEAD4;color:#042F2E}' +
+      'html[data-rs="claro"],html[data-rs="noturno"]{min-height:100%}' +
+      '@media print{#rs-bar{display:none!important}html[data-rs] body,html[data-rs]{background-attachment:scroll!important}}';
+    (d.head || root).appendChild(css);
+    var fonte = d.createElement('link'); fonte.rel = 'stylesheet';
+    fonte.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap';
+    (d.head || root).appendChild(fonte);
+    var pagina = d.createElement('style'); pagina.id = 'rs-page';   // sem cabeçalho/rodapé do navegador
+    pagina.textContent = '@page{margin:0}@media print{body{padding:11mm 12mm!important;margin:0!important}}';
+
+    var salvos = [];   // [elemento, style original, texto original]
+    function restaurar(){
+      salvos.forEach(function(s){ if (s[1] === null) s[0].removeAttribute('style'); else s[0].setAttribute('style', s[1]); if (s[2] !== undefined) s[0].textContent = s[2]; });
+      salvos = []; if (pagina.parentNode) pagina.parentNode.removeChild(pagina);
+    }
+    function guardar(el, txt){ if (!el.__rsG) { el.__rsG = 1; salvos.push([el, el.getAttribute('style'), txt]); } }
+    function set(el, p, v){ guardar(el); el.style.setProperty(p, v, 'important'); }
+
+    function aplicar(id){
+      restaurar(); d.querySelectorAll('*').forEach(function(e){ e.__rsG = 0; });
+      root.setAttribute('data-rs', id); marcarBarra(id);
+      if (id === 'original' || !T[id]) return;
+      var t = T[id];
+      if (!ehOrganograma) (d.head || root).appendChild(pagina);
+      var els = Array.prototype.slice.call(d.body.querySelectorAll('*')).filter(function(e){ return !e.closest('#rs-bar') && e.tagName !== 'SCRIPT' && e.tagName !== 'STYLE'; });
+      var info = els.map(function(e){ return [e, getComputedStyle(e)]; });
+      var prim = new Set();
+      info.forEach(function(x){ if (isPrim(rgb(x[1].backgroundColor)) || /26,\s*60,\s*122/.test(x[1].backgroundImage)) prim.add(x[0]); });
+      function dentroPrim(e){ for (var p = e; p && p !== d.body; p = p.parentElement) if (prim.has(p)) return p; return null; }
+      var muda = [];
+      info.forEach(function(x){
+        var e = x[0], cs = x[1], bg = rgb(cs.backgroundColor), col = rgb(cs.color), pai = dentroPrim(e), th = (e.tagName === 'TH');
+        // Fundo
+        if (prim.has(e)) {
+          if (th && t.th) { muda.push([e,'background',t.th.bg],[e,'color',t.th.color],[e,'border-color',t.border]); }
+          else muda.push([e,'background', th || e.tagName === 'TD' || e.tagName === 'TR' ? t.primSolid : t.primBg]);
+        } else if (isTint(bg)) muda.push([e,'background-color', t.tint]);
+        else if (isWhite(bg) && t.white) muda.push([e,'background-color', t.white]);
+        // No escuro, qualquer outro fundo claro (aviso amarelo, selo lilás…) vira versão translúcida da própria cor
+        else if (t.dark && bg && bg.a > .5 && L(bg) > .78) muda.push([e,'background-color','color-mix(in srgb, ' + cs.backgroundColor + ' 18%, transparent)']);
+        // Texto
+        if (col) {
+          var thMin = pai && t.th && pai.tagName === 'TH';
+          if (isPrim(col)) muda.push([e,'color', pai ? (thMin ? t.th.color : t.onPrim) : t.primText]);
+          else if (pai && !thMin) { if (isWhite(col)) muda.push([e,'color', t.onPrim]); else if (isSoftOnPrim(col)) muda.push([e,'color', t.muted]); }
+          else if (thMin && isWhite(col)) muda.push([e,'color', t.th.color]);
+          else if (t.dark && !pai) {
+            if (sat(col) < .18 && L(col) < .62) muda.push([e,'color', L(col) < .32 ? t.text : t.text2]);
+            else if (L(col) < .5) muda.push([e,'color','color-mix(in srgb, ' + cs.color + ' 45%, #ffffff)']);
+          }
+          // Estilos claros: cor viva e clara em texto (ex.: âmbar "20,1%") fica um pouco mais escura para ler
+          else if (!t.dark && !pai && sat(col) > .45 && L(col) > .52) muda.push([e,'color','color-mix(in srgb, ' + cs.color + ' 72%, #000000)']);
+        }
+        // Bordas
+        ['top','right','bottom','left'].forEach(function(s){
+          if (parseFloat(cs['border-' + s + '-width']) > 0) {
+            var bc = rgb(cs['border-' + s + '-color']);
+            if (isPrim(bc)) muda.push([e,'border-' + s + '-color', t.line]);
+            else if (isLightBorder(bc) || (t.dark && isWhite(bc))) muda.push([e,'border-' + s + '-color', t.border]);
+          }
+        });
+        // Gráficos SVG
+        if (e instanceof SVGElement) { if (isPrim(rgb(cs.fill))) muda.push([e,'fill', t.chart]); if (isPrim(rgb(cs.stroke))) muda.push([e,'stroke', t.line]); }
+        // Cantos e sombras
+        // Só caixas largas com os 4 cantos arredondados (barras de gráfico e selos ficam como estão)
+        var r = parseFloat(cs.borderTopLeftRadius), rb = parseFloat(cs.borderBottomLeftRadius);
+        if (r >= 3 && r < 20 && rb >= 3 && !/^(TD|TH|TR|TABLE|TBODY|THEAD)$/.test(e.tagName) && e.offsetHeight > 24 && e.offsetWidth > 120) muda.push([e,'border-radius', t.radius]);
+        if (/26,\s*60,\s*122/.test(cs.boxShadow)) muda.push([e,'box-shadow','none']);
+        // Status cru ("elaboracao") → rótulo
+        if (!e.children.length) { var tx = (e.textContent || '').trim().toLowerCase(); if (STATUS[tx]) { guardar(e, e.textContent); muda.push([e,'__txt', STATUS[tx]]); } }
+      });
+      muda.forEach(function(m){ if (m[1] === '__txt') m[0].textContent = m[2]; else set(m[0], m[1], m[2]); });
+      ajustarValores();
+    }
+    // Valores grandes ("R$ 729.797,47") não quebram: diminui a fonte até caber
+    function ajustarValores(){
+      d.body.querySelectorAll('*').forEach(function(e){
+        if (e.children.length || e.closest('#rs-bar')) return;
+        var tx = (e.textContent || '').trim(); if (!/^R\$\s?[\d.]+,\d{2}$/.test(tx)) return;
+        var cs = getComputedStyle(e), fs = parseFloat(cs.fontSize); if (fs < 15 || cs.display === 'inline') return;
+        set(e, 'white-space', 'nowrap');
+        var n = 0; while (e.scrollWidth > e.clientWidth + 1 && fs > 10 && n++ < 30) { fs -= .5; set(e, 'font-size', fs + 'px'); }
+      });
+    }
+    // Barra para trocar o estilo direto no relatório
+    var barra = d.createElement('div'); barra.id = 'rs-bar'; barra.className = 'no-print';
+    barra.innerHTML = '<span>Estilo</span>' + ['aurora','claro','noturno','minimal','original'].map(function(k){ return '<button type="button" data-k="' + k + '">' + NOMES[k] + '</button>'; }).join('');
+    d.body.appendChild(barra);
+    barra.addEventListener('click', function(ev){ var b = ev.target.closest('button'); if (!b) return; var k = b.getAttribute('data-k');
+      try { localStorage.setItem(KEY, k); } catch(e) {} try { if (window.opener && window.opener.renderRsSeletor) window.opener.renderRsSeletor(); } catch(e) {}
+      aplicar(k); });
+    function marcarBarra(id){ barra.querySelectorAll('button').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-k') === id); }); }
+    var atual = 'aurora'; try { atual = localStorage.getItem(KEY) || 'aurora'; } catch(e) {}
+    aplicar(atual);
+    if (d.fonts && d.fonts.ready) d.fonts.ready.then(function(){ if (root.getAttribute('data-rs') !== 'original') ajustarValores(); });
+  }
+  window.__rsEngine = __rsEngine;
+
+  // ── Entra em toda janela de relatório aberta pelo sistema ──
+  function injetar(w){
+    try {
+      if (!w || w.closed || w.__rsInjetado) return; var wd = w.document; if (!wd || !wd.body) return;
+      w.__rsInjetado = true;
+      var s = wd.createElement('script'); s.textContent = '(' + __rsEngine.toString() + ')();';
+      wd.body.appendChild(s);
+    } catch(e) { console.warn('Estilo de relatório não aplicado:', e); }
+  }
+  var abrirOriginal = window.open;
+  window.open = function(url){
+    var w = abrirOriginal.apply(window, arguments);
+    try {
+      if (w && (!url || url === 'about:blank')) {
+        var wd = w.document, escrever = wd.write, fechar = wd.close;
+        wd.write = function(){ var r = escrever.apply(wd, arguments); w.setTimeout(function(){ injetar(w); }, 0); return r; };
+        wd.close = function(){ var r = fechar.apply(wd, arguments); injetar(w); return r; };
+      }
+    } catch(e) {}
+    return w;
+  };
+
+  // ── Seletor na tela de Relatórios ──
+  window.renderRsSeletor = function(){
+    var el = document.getElementById('rs-seletor'); if (!el) return;
+    var atual = window.rsEstiloAtual();
+    el.innerHTML = ESTILOS.map(function(e){
+      var on = e.id === atual;
+      return '<button type="button" class="rs-opt' + (on ? ' on' : '') + '" onclick="rsDefinirEstilo(\'' + e.id + '\')">' +
+        '<span class="rs-prev">' + e.cores.map(function(c){ return '<i style="background:' + c + '"></i>'; }).join('') + '</span>' +
+        '<span class="rs-nome">' + e.nome + (on ? ' <b>✓</b>' : '') + '</span><span class="rs-desc">' + e.desc + '</span></button>';
+    }).join('');
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', renderRsSeletor); else renderRsSeletor();
 })();
 </script>
 </body></html>
