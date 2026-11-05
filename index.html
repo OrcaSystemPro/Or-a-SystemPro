@@ -14408,7 +14408,11 @@ function recalcularResumo() {
    Opções: original · aurora · claro · noturno · minimal
    ═══════════════════════════════════════════════════════════════ */
 (function(){
-  var KEY = 'orca_estilo_relatorio', PADRAO = 'aurora';
+  // Configuração por sistema (opcional), definida antes deste script:
+  // window.RS_CONFIG = { chave:'gc_estilo_relatorio', prim:[[r,g,b],…], primFundo:[[r,g,b],…], seletor:{dentro:'#rc', classe:'card'} }
+  var CFG = window.RS_CONFIG || {};
+  var KEY = CFG.chave || 'orca_estilo_relatorio', PADRAO = 'aurora';
+  var CFG_JANELA = { chave: KEY, prim: CFG.prim || null, primFundo: CFG.primFundo || [] };
   var ESTILOS = [
     {id:'aurora',  nome:'Aurora Executivo', desc:'Faixas em aurora escura, corpo branco',  cores:['#072530','#14B8A6','#F5FAFA']},
     {id:'claro',   nome:'Vidro Claro',      desc:'Aurora pastel e cards de vidro',         cores:['#0F9D8F','#BFE9E4','#EEF3FA']},
@@ -14423,7 +14427,8 @@ function recalcularResumo() {
 
   // ── Motor que roda DENTRO da janela do relatório ──
   function __rsEngine(){
-    var KEY = 'orca_estilo_relatorio', d = document, root = d.documentElement;
+    var CF = window.__RS_CFG || {};
+    var KEY = CF.chave || 'orca_estilo_relatorio', d = document, root = d.documentElement;
     if (window.__rsAtivo) return; window.__rsAtivo = true;
     var NOMES = {aurora:'Aurora', claro:'Vidro Claro', noturno:'Noturno', minimal:'Minimal', original:'Original'};
     var AUR = 'radial-gradient(120% 160% at 0% 0%, rgba(45,212,191,.42), transparent 55%), radial-gradient(120% 160% at 100% 0%, rgba(56,132,246,.36), transparent 55%), linear-gradient(160deg,#04161C,#072530 60%,#061A26)';
@@ -14433,11 +14438,14 @@ function recalcularResumo() {
       noturno: {primBg:'#7DD3FC', primSolid:'#7DD3FC', onPrim:'#062235', muted:'#0B3A57', primText:'#7DD3FC', tint:'rgba(255,255,255,.07)', white:'rgba(255,255,255,.05)', border:'rgba(255,255,255,.14)', line:'#7DD3FC', chart:'#38BDF8', radius:'14px', dark:true, text:'#EEF3FF', text2:'#9DA9C4'},
       minimal: {primBg:'#111214', primSolid:'#111214', onPrim:'#FFFFFF', muted:'#9AA1AB', primText:'#111214', tint:'#F6F7F8', border:'#E4E6EA', line:'#0F9D8F', chart:'#111214', radius:'6px', th:{bg:'#F3F4F6', color:'#111214'}}
     };
-    var PRIM = [[26,60,122],[26,92,69],[45,45,45],[30,58,95],[10,22,40],[30,64,175],[29,78,216]];
+    var PRIM = CF.prim || [[26,60,122],[26,92,69],[45,45,45],[30,58,95],[10,22,40],[30,64,175],[29,78,216]];
+    var PRIM_FUNDO = CF.primFundo || [];   // cores que só contam como "principal" quando são FUNDO (evita trocar texto escuro comum)
+    function perto(c, lista){ return c && c.a > .5 && lista.some(function(p){ return Math.abs(c.r-p[0])+Math.abs(c.g-p[1])+Math.abs(c.b-p[2]) < 30; }); }
     function rgb(c){ var m = c && c.match(/rgba?\(([^)]+)\)/); if (!m) return null; var p = m[1].split(/[\s,\/]+/).filter(Boolean).map(parseFloat); return {r:p[0],g:p[1],b:p[2],a:p.length>3?p[3]:1}; }
     function L(c){ return (0.2126*c.r + 0.7152*c.g + 0.0722*c.b)/255; }
     function sat(c){ var mx=Math.max(c.r,c.g,c.b), mn=Math.min(c.r,c.g,c.b); return mx ? (mx-mn)/mx : 0; }
-    function isPrim(c){ return c && c.a > .5 && PRIM.some(function(p){ return Math.abs(c.r-p[0])+Math.abs(c.g-p[1])+Math.abs(c.b-p[2]) < 30; }); }
+    function isPrim(c){ return perto(c, PRIM); }
+    function isPrimFundo(c){ return isPrim(c) || perto(c, PRIM_FUNDO); }
     function isWhite(c){ return c && c.a > .5 && c.r >= 250 && c.g >= 250 && c.b >= 250; }
     function isTint(c){ return c && c.a > .3 && !isWhite(c) && L(c) > .86 && (c.b - c.r >= 4 || c.g - c.r >= 6); }
     function isLightBorder(c){ return c && c.a > .3 && L(c) > .70 && L(c) < .985; }
@@ -14476,14 +14484,24 @@ function recalcularResumo() {
 
     function aplicar(id){
       restaurar(); d.querySelectorAll('*').forEach(function(e){ e.__rsG = 0; });
+      // Mede o fundo ORIGINAL do relatório antes de aplicar o fundo do estilo
+      root.setAttribute('data-rs', 'original');
+      var bodyBg = rgb(getComputedStyle(d.body).backgroundColor) || rgb(getComputedStyle(root).backgroundColor);
       root.setAttribute('data-rs', id); marcarBarra(id);
       if (id === 'original' || !T[id]) return;
       var t = T[id];
       if (!ehOrganograma) (d.head || root).appendChild(pagina);
       var els = Array.prototype.slice.call(d.body.querySelectorAll('*')).filter(function(e){ return !e.closest('#rs-bar') && e.tagName !== 'SCRIPT' && e.tagName !== 'STYLE'; });
       var info = els.map(function(e){ return [e, getComputedStyle(e)]; });
+      // Relatório originalmente ESCURO (ex.: Dashboard Analítico): seus cards quase pretos não são "cor principal"
+      var relEscuro = bodyBg && bodyBg.a > .5 && L(bodyBg) < .25;
+      var inverter = !t.dark && relEscuro;   // estilo claro → inverte para fundo claro
+      var reDegrade = new RegExp(PRIM.map(function(p){ return 'rgb\\(' + p[0] + ',\\s*' + p[1] + ',\\s*' + p[2] + '\\)'; }).join('|'));
       var prim = new Set();
-      info.forEach(function(x){ if (isPrim(rgb(x[1].backgroundColor)) || /26,\s*60,\s*122/.test(x[1].backgroundImage)) prim.add(x[0]); });
+      info.forEach(function(x){ var b = rgb(x[1].backgroundColor);
+        if ((relEscuro ? isPrim(b) : isPrimFundo(b)) || /26,\s*60,\s*122/.test(x[1].backgroundImage) || (x[1].backgroundImage !== 'none' && reDegrade.test(x[1].backgroundImage))) prim.add(x[0]); });
+      function fundoClaro(e){ for (var p = e; p; p = p.parentElement) { var cs2 = getComputedStyle(p), b2 = rgb(cs2.backgroundColor); if (cs2.backgroundImage && cs2.backgroundImage !== 'none' && p !== d.body && p !== root) return false; if (b2 && b2.a > .5) return L(b2) > .7; } return !relEscuro; }
+      if (inverter) { set(d.body, 'background-color', id === 'claro' ? 'transparent' : '#FFFFFF'); set(d.body, 'color', '#1F2937'); }
       function dentroPrim(e){ for (var p = e; p && p !== d.body; p = p.parentElement) if (prim.has(p)) return p; return null; }
       var muda = [];
       info.forEach(function(x){
@@ -14492,7 +14510,8 @@ function recalcularResumo() {
         if (prim.has(e)) {
           if (th && t.th) { muda.push([e,'background',t.th.bg],[e,'color',t.th.color],[e,'border-color',t.border]); }
           else muda.push([e,'background', th || e.tagName === 'TD' || e.tagName === 'TR' ? t.primSolid : t.primBg]);
-        } else if (isTint(bg)) muda.push([e,'background-color', t.tint]);
+        } else if (inverter && bg && bg.a > .3 && L(bg) < .32 && sat(bg) < .4) muda.push([e,'background-color', t.tint]);
+        else if (isTint(bg)) muda.push([e,'background-color', t.tint]);
         else if (isWhite(bg) && t.white) muda.push([e,'background-color', t.white]);
         // No escuro, qualquer outro fundo claro (aviso amarelo, selo lilás…) vira versão translúcida da própria cor
         else if (t.dark && bg && bg.a > .5 && L(bg) > .78) muda.push([e,'background-color','color-mix(in srgb, ' + cs.backgroundColor + ' 18%, transparent)']);
@@ -14502,19 +14521,24 @@ function recalcularResumo() {
           if (isPrim(col)) muda.push([e,'color', pai ? (thMin ? t.th.color : t.onPrim) : t.primText]);
           else if (pai && !thMin) { if (isWhite(col)) muda.push([e,'color', t.onPrim]); else if (isSoftOnPrim(col)) muda.push([e,'color', t.muted]); }
           else if (thMin && isWhite(col)) muda.push([e,'color', t.th.color]);
+          else if (inverter && !pai && sat(col) < .3 && L(col) > .55) muda.push([e,'color', L(col) > .8 ? '#1F2937' : '#5B6472']);
           else if (t.dark && !pai) {
             if (sat(col) < .18 && L(col) < .62) muda.push([e,'color', L(col) < .32 ? t.text : t.text2]);
             else if (L(col) < .5) muda.push([e,'color','color-mix(in srgb, ' + cs.color + ' 45%, #ffffff)']);
           }
-          // Estilos claros: cor viva e clara em texto (ex.: âmbar "20,1%") fica um pouco mais escura para ler
-          else if (!t.dark && !pai && sat(col) > .45 && L(col) > .52) muda.push([e,'color','color-mix(in srgb, ' + cs.color + ' 72%, #000000)']);
+          // Estilos claros: texto branco sem fundo escuro por trás (invisível no original) → cor principal
+          else if (!t.dark && !pai && L(col) > .9 && sat(col) < .15 && fundoClaro(e)) muda.push([e,'color', t.primText]);
+          // Estilos claros: cor viva e clara em texto (ex.: âmbar "20,1%", violeta #a78bfa) fica mais escura para ler
+          else if (!t.dark && !pai && sat(col) > .35 && L(col) > .52) muda.push([e,'color','color-mix(in srgb, ' + cs.color + ' 68%, #000000)']);
+          // Estilos claros: cinza-claro de legenda (#94a3b8) fica um pouco mais escuro sobre os cards
+          else if (!t.dark && !pai && sat(col) < .3 && L(col) > .55 && L(col) < .8) muda.push([e,'color','#5F6B7A']);
         }
         // Bordas
         ['top','right','bottom','left'].forEach(function(s){
           if (parseFloat(cs['border-' + s + '-width']) > 0) {
             var bc = rgb(cs['border-' + s + '-color']);
             if (isPrim(bc)) muda.push([e,'border-' + s + '-color', t.line]);
-            else if (isLightBorder(bc) || (t.dark && isWhite(bc))) muda.push([e,'border-' + s + '-color', t.border]);
+            else if (isLightBorder(bc) || (t.dark && isWhite(bc)) || (inverter && bc && bc.r > 200 && bc.g > 200 && bc.b > 200)) muda.push([e,'border-' + s + '-color', t.border]);
           }
         });
         // Gráficos SVG
@@ -14559,7 +14583,7 @@ function recalcularResumo() {
     try {
       if (!w || w.closed || w.__rsInjetado) return; var wd = w.document; if (!wd || !wd.body) return;
       w.__rsInjetado = true;
-      var s = wd.createElement('script'); s.textContent = '(' + __rsEngine.toString() + ')();';
+      var s = wd.createElement('script'); s.textContent = 'window.__RS_CFG=' + JSON.stringify(CFG_JANELA) + ';(' + __rsEngine.toString() + ')();';
       wd.body.appendChild(s);
     } catch(e) { console.warn('Estilo de relatório não aplicado:', e); }
   }
@@ -14577,8 +14601,19 @@ function recalcularResumo() {
   };
 
   // ── Seletor na tela de Relatórios ──
+  window.RS_CFG_JANELA = CFG_JANELA;
   window.renderRsSeletor = function(){
-    var el = document.getElementById('rs-seletor'); if (!el) return;
+    var el = document.getElementById('rs-seletor');
+    // Sistema sem o bloco no HTML: cria o card dentro do container configurado (sem editar o HTML do sistema)
+    if (!el && CFG.seletor && CFG.seletor.dentro) {
+      var alvo = document.querySelector(CFG.seletor.dentro);
+      if (alvo) {
+        var box = document.createElement('div'); box.className = (CFG.seletor.classe || '') + ' rs-box';
+        box.innerHTML = '<div class="rs-tit">🎨 Estilo dos relatórios</div><div class="rs-sub">Vale para todo relatório e impressão do sistema. Também dá para trocar direto na janela do relatório.</div><div id="rs-seletor"></div>';
+        alvo.insertBefore(box, alvo.firstChild); el = document.getElementById('rs-seletor');
+      }
+    }
+    if (!el) return;
     var atual = window.rsEstiloAtual();
     el.innerHTML = ESTILOS.map(function(e){
       var on = e.id === atual;
