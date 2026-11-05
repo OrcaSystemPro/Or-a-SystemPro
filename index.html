@@ -12,7 +12,7 @@
 <title>OrcaSystem Pro V35</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 /* ═══════════════════════════════════════════════════════════════
    OrcaSystem Pro — Commercial Visual Redesign
@@ -1054,6 +1054,110 @@ tr:hover td{background:rgba(255,255,255,.022)}
 .panel{animation:panelFadeIn .2s ease-out}
 @media (max-width:480px){ .content{padding:18px 16px} .page-title{font-size:24px} .login-title{font-size:34px} }
 @media print{ body{background-image:none!important} .bar-fill,.gantt-bar,.pi-fill{box-shadow:none!important} }
+</style>
+<style id="vidro-layer">
+/* ═══════════════════════════════════════════════════════════════
+   OrcaSystem Pro — Modo "Vidro" (skill Tema Sistema)
+   Ativo só quando o tema tem glass (atributo html[data-glass]).
+   Fundo aurora desfocado + cards de vidro fosco + tipografia Inter em
+   negrito para números/títulos + pílulas. Os demais temas não mudam.
+   ═══════════════════════════════════════════════════════════════ */
+html[data-glass]{
+  --glass:rgba(255,255,255,.07);--glass-strong:rgba(255,255,255,.12);--glass-hover:rgba(255,255,255,.10);
+  --glass-border:rgba(255,255,255,.14);--glass-modal:rgba(8,30,38,.86);--glass-input:rgba(0,0,0,.20);
+  --glass-blur:saturate(150%) blur(18px);
+  --font-body:'Inter',system-ui,sans-serif;--font-display:'Inter',system-ui,sans-serif;
+  --glass-shadow:0 10px 30px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.10);
+}
+html[data-glass="aurora"]{--aurora:
+  radial-gradient(900px 620px at 12% 8%, rgba(45,212,191,.34), transparent 62%),
+  radial-gradient(820px 620px at 88% 18%, rgba(56,132,246,.30), transparent 62%),
+  radial-gradient(900px 720px at 55% 105%, rgba(16,185,129,.22), transparent 62%),
+  linear-gradient(160deg,#04161C 0%,#072530 50%,#061A26 100%)}
+html[data-glass="noturno"]{--glass-modal:rgba(10,16,32,.88);--aurora:
+  radial-gradient(900px 620px at 10% 0%, rgba(37,99,235,.32), transparent 62%),
+  radial-gradient(800px 600px at 90% 25%, rgba(14,165,233,.24), transparent 62%),
+  radial-gradient(900px 700px at 50% 110%, rgba(56,189,248,.14), transparent 62%),
+  linear-gradient(160deg,#050812 0%,#0A1020 55%,#060A16 100%)}
+html[data-glass="claro"]{
+  --glass:rgba(255,255,255,.55);--glass-strong:rgba(255,255,255,.72);--glass-hover:rgba(255,255,255,.66);
+  --glass-border:rgba(255,255,255,.85);--glass-modal:rgba(255,255,255,.92);--glass-input:rgba(255,255,255,.75);
+  --glass-shadow:0 10px 30px rgba(14,34,40,.08), inset 0 1px 0 rgba(255,255,255,.9);
+  --aurora:
+  radial-gradient(900px 620px at 10% 5%, rgba(94,234,212,.45), transparent 62%),
+  radial-gradient(820px 620px at 90% 15%, rgba(147,197,253,.50), transparent 62%),
+  radial-gradient(900px 720px at 50% 110%, rgba(167,243,208,.40), transparent 62%),
+  linear-gradient(160deg,#EAF4F6 0%,#EEF3FA 55%,#EAF5F1 100%)}
+
+html[data-glass] body{background:var(--aurora)!important;background-attachment:fixed!important;font-family:var(--font-body);letter-spacing:-.01em}
+
+/* Superfícies de vidro */
+html[data-glass] .stat-card,html[data-glass] .dash-card,html[data-glass] .table-wrap,html[data-glass] .builder-panel,
+html[data-glass] .fase-card,html[data-glass] .login-feature{
+  background:var(--glass)!important;border:1px solid var(--glass-border)!important;
+  backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);box-shadow:var(--glass-shadow)!important;border-radius:20px}
+html[data-glass] .stat-card{transition:transform .25s cubic-bezier(.2,.8,.2,1), background .25s}
+html[data-glass] .stat-card:hover{transform:translateY(-5px);background:var(--glass-hover)!important}
+html[data-glass] .stat-card .stat-icon{background:var(--glass-strong)!important;border-color:var(--glass-border);border-radius:12px}
+
+/* Layout: menu lateral e topo como painéis de vidro */
+html[data-glass] .topbar{background:var(--glass)!important;backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
+  border-bottom:1px solid var(--glass-border)}
+html[data-glass] .sidebar{background:var(--glass)!important;backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
+  border:1px solid var(--glass-border);border-radius:20px;margin:12px 0 12px 12px;box-shadow:var(--glass-shadow)}
+html[data-glass] .sidebar-item{border-radius:12px}
+html[data-glass] .sidebar-item.active{background:var(--glass-strong);box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}
+html[data-glass] .sidebar-item .badge{background:var(--glass-strong);border-color:var(--glass-border)}
+
+/* Tipografia do vídeo: Inter, títulos e números em negrito */
+html[data-glass] .page-title{font-weight:700;letter-spacing:-.03em;font-size:30px}
+html[data-glass] .stat-card .stat-value{font-weight:700;letter-spacing:-.03em}
+html[data-glass] .stat-card .stat-label{color:var(--text2);font-weight:500}
+html[data-glass] .dash-card h3,html[data-glass] .table-header h3{font-weight:600}
+html[data-glass] .topbar .logo{font-weight:700}
+html[data-glass] .login-title,html[data-glass] .login-form-title{font-weight:700;letter-spacing:-.035em}
+
+/* Pílulas */
+html[data-glass] .btn-sm,html[data-glass] .btn-primary,html[data-glass] .report-btn,html[data-glass] .btn-ghost{border-radius:999px}
+html[data-glass] .btn-ghost,html[data-glass] .icon-btn,html[data-glass] .topbar-actions .user-chip{background:var(--glass)!important;border-color:var(--glass-border)!important;
+  backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur)}
+html[data-glass] .btn-ghost:hover,html[data-glass] .icon-btn:hover{background:var(--glass-strong)!important}
+html[data-glass] .icon-btn{border-radius:999px}
+html[data-glass] .topbar nav button.active,html[data-glass] .nav-dropdown.open .nav-dropdown-btn{background:var(--glass-strong);border-radius:999px}
+html[data-glass] .topbar nav button,html[data-glass] .nav-dropdown-btn{border-radius:999px}
+html[data-glass] .tab-btn.active{border-bottom-color:var(--accent);color:var(--text)}
+html[data-glass] .badge-status{background:var(--glass-strong)!important;border-color:var(--glass-border)}
+
+/* Campos */
+html[data-glass] .form-group input,html[data-glass] .field input,html[data-glass] .field select,html[data-glass] .field textarea,html[data-glass] .search-box{
+  background:var(--glass-input);border-color:var(--glass-border);border-radius:12px}
+
+/* Tabelas */
+html[data-glass] th{background:transparent;color:var(--text2)}
+html[data-glass] tr:hover td{background:var(--glass)}
+html[data-glass] .tbl-itens thead th,html[data-glass] .tbl-itens tbody td:first-child{background-color:var(--bg2)}
+
+/* Camadas flutuantes: vidro mais opaco para leitura */
+html[data-glass] .modal,html[data-glass] .modal-head,html[data-glass] .nav-dropdown-menu,html[data-glass] .status-popup,html[data-glass] .toast,html[data-glass] #theme-picker{
+  background:var(--glass-modal)!important;backdrop-filter:saturate(150%) blur(24px);-webkit-backdrop-filter:saturate(150%) blur(24px);border-color:var(--glass-border)!important}
+html[data-glass] .modal{border-radius:22px}
+html[data-glass] .modal-overlay{background:rgba(2,10,14,.35)}
+
+/* Login */
+html[data-glass] .login-left{background:transparent!important;border-right:1px solid var(--glass-border)}
+html[data-glass] .login-left::before{opacity:.35}
+html[data-glass] .login-right{background:transparent!important}
+html[data-glass] .login-form-wrap{background:var(--glass);border:1px solid var(--glass-border);border-radius:24px;padding:32px;
+  backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);box-shadow:var(--glass-shadow)}
+html[data-glass] .login-feature{padding:14px 16px;margin-bottom:10px;border-radius:16px}
+html[data-glass] .login-features{border-top:0}
+
+/* Gráficos: barras com mais brilho no vidro */
+html[data-glass] .bar-fill{box-shadow:0 0 26px -2px var(--glow,transparent), inset 0 1px 0 rgba(255,255,255,.35)}
+
+@media (max-width:900px){ html[data-glass] .sidebar{margin:0;border-radius:0} }
+@media (prefers-reduced-motion:reduce){ html[data-glass] .stat-card:hover{transform:none} }
+@media print{ html[data-glass] body{background:#fff!important} }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 </head>
@@ -10977,6 +11081,10 @@ function restaurarBackup() {
 // ══ THEMES ══
 var THEMES = {
   // ── Premium (escuros) — paleta neutra + um único acento; campos extras são opcionais ──
+  // ── Vidro (padrão): fundo aurora + cards de vidro fosco; campo glass liga html[data-glass] ──
+  'Vidro Aurora':           {bg:'#051B22',bg2:'#0A2832',bg3:'#10343F',accent:'#5EEAD4',green:'#34D399',amber:'#FBBF24',red:'#FB7185',text:'#F2FBFB',text2:'#A7C4C8',text3:'#6E8E94',elevated:'#0F2F3A',onAccent:'#042F2E',glass:'aurora'},
+  'Vidro Noturno':          {bg:'#060914',bg2:'#0C1222',bg3:'#131B30',accent:'#7DD3FC',green:'#34D399',amber:'#FBBF24',red:'#FB7185',text:'#EEF3FF',text2:'#9DA9C4',text3:'#66718C',elevated:'#141C31',onAccent:'#062235',glass:'noturno'},
+  'Vidro Claro':            {bg:'#EAF3F5',bg2:'#FFFFFF',bg3:'#EEF5F7',accent:'#0F9D8F',green:'#15803D',amber:'#B45309',red:'#DC2626',text:'#0E2228',text2:'#4E666C',text3:'#8AA0A5',elevated:'#FFFFFF',glass:'claro'},
   'Escuro Premium':         {bg:'#08090C',bg2:'#0F1115',bg3:'#171A21',accent:'#4C9AFF',green:'#3DD68C',amber:'#F5B544',red:'#F2555A',text:'#ECEDEF',text2:'#9198A5',text3:'#5C6270',elevated:'#1C1F27'},
   'Esmeralda Premium':      {bg:'#070A09',bg2:'#0D1211',bg3:'#151B19',accent:'#34D399',green:'#4ADE80',amber:'#F5B544',red:'#F2555A',text:'#EAF0EE',text2:'#8D9A95',text3:'#5A6762',elevated:'#1A211F',onAccent:'#04140D'},
   'Ônix Dourado':           {bg:'#0A0A09',bg2:'#11110F',bg3:'#1A1916',accent:'#D9B26F',green:'#5BD69A',amber:'#E8A54B',red:'#EF5B5B',text:'#F1EEE7',text2:'#A19B8F',text3:'#6A655B',elevated:'#201F1B',onAccent:'#1A1408'},
@@ -11021,7 +11129,7 @@ document.addEventListener('click', function(e) {
 
 function renderThemeSwatches() {
   var el = document.getElementById('theme-swatches'); if(!el) return;
-  var current = DB.load('theme')||'Escuro Premium';
+  var current = DB.load('theme')||'Vidro Aurora';
   el.innerHTML = Object.keys(THEMES).map(function(name){
     var t = THEMES[name];
     var brd = name===current ? 'border:2px solid '+t.accent+';' : 'border:1px solid rgba(255,255,255,0.15);';
@@ -11032,7 +11140,7 @@ function renderThemeSwatches() {
         '<div style="width:14px;height:14px;border-radius:50%;background:'+t.amber+'"></div>'+
       '</div>'+
       '<div style="font-size:11px;font-weight:600;color:'+t.text+'">'+name+'</div>'+
-      (t.text3?'<div style="font-size:9px;color:'+t.text2+';margin-top:2px;letter-spacing:.04em;">PREMIUM</div>':'')+
+      (t.text3?'<div style="font-size:9px;color:'+t.text2+';margin-top:2px;letter-spacing:.04em;">'+(t.glass?'VIDRO':'PREMIUM')+'</div>':'')+
       (name===current?'<div style="font-size:9px;color:'+t.accent+';margin-top:3px;">● Ativo</div>':'')+
     '</div>';
   }).join('');
@@ -11088,6 +11196,7 @@ function applyTheme(name) {
   if (t.border)   root.style.setProperty('--border', t.border);
   if (t.border2)  root.style.setProperty('--border2', t.border2);
   root.setAttribute('data-theme-mode', isLight ? 'light' : 'dark');
+  if (t.glass) root.setAttribute('data-glass', t.glass); else root.removeAttribute('data-glass');
   DB.save('theme', name);
   renderThemeSwatches();
   showToast('🎨 Tema "'+name+'" aplicado!','success');
@@ -11110,7 +11219,14 @@ function initTheme() {
     if (!saved || saved === 'Escuro Azul (Padrão)') saved = 'Escuro Premium';
     try { localStorage.setItem('orca_theme_premium_migrado', '1'); } catch(e) {}
   }
-  if (!saved) saved = 'Escuro Premium';
+  // Segunda migração única: o padrão passa a ser "Vidro Aurora". Quem estava no padrão
+  // anterior (Escuro Premium) muda uma vez; qualquer escolha feita depois é respeitada.
+  var _migrV = null; try { _migrV = localStorage.getItem('orca_theme_vidro_migrado'); } catch(e) {}
+  if (!_migrV) {
+    if (!saved || saved === 'Escuro Premium' || saved === 'Escuro Azul (Padrão)') saved = 'Vidro Aurora';
+    try { localStorage.setItem('orca_theme_vidro_migrado', '1'); } catch(e) {}
+  }
+  if (!saved) saved = 'Vidro Aurora';
   if (THEMES[saved]) applyTheme(saved);
 }
 
